@@ -74,14 +74,20 @@
   gap: var(--space-6);
 }
 
+/* A milled tile: near-black face, a rim that catches light from above, and a
+   faint halo so it sits on the canvas rather than being cut out of it. */
 .mark-tile {
+  position: relative;
   display: grid;
   place-items: center;
   flex: none;
   color: var(--fg);
-  background: linear-gradient(160deg, #141414 0%, #050505 62%);
-  border: 1px solid var(--border-strong);
-  box-shadow: var(--edge-lit-strong);
+  background: radial-gradient(120% 100% at 50% 0%, #1a1a1a 0%, #0b0b0b 55%, #050505 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 10%),
+    inset 0 0 0 1px rgb(255 255 255 / 6%),
+    0 0 0 1px rgb(0 0 0 / 60%),
+    0 8px 28px rgb(0 0 0 / 55%);
 }
 .mark-glyph { display: inline-grid; place-items: center; color: currentColor; }
 
