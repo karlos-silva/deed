@@ -7,7 +7,7 @@ An independent study in domain-ownership verification. The app says what it is
 in its own footer, because a page that asks strangers to paste records into their
 DNS has no business being ambiguous about who it is (D9).
 
-**Deployed at:** _pending — see [Deploying](#deploying)._
+**Deployed at:** <https://domains.karlos.dev>
 
 ---
 
@@ -158,18 +158,53 @@ import. The reasoning for each is in [`docs/prd.md`](docs/prd.md) §5.
 The app is a Next.js project inside a pnpm workspace, so the Vercel project's
 **root directory must be `apps/web`**.
 
-1. Import `karlos-silva/deed` on Vercel and set the root directory
-   to `apps/web`.
-2. Set the environment variables from
-   [`apps/web/.env.example`](apps/web/.env.example). `SUPABASE_SECRET_KEY` is
-   the Supabase project's secret API key and must never carry a `NEXT_PUBLIC_`
-   prefix — a post-build scan fails the build if it ever reaches a client chunk.
-3. In Supabase → Authentication → Providers, enable **GitHub** and **Google**,
-   and add `https://<deployment>/auth/callback` to the redirect allow-list.
-4. Apply
-   [`packages/db/migrations/0003_sweep_schedule.sql`](packages/db/migrations/0003_sweep_schedule.sql),
-   substituting the deployed URL and the `SWEEP_SECRET` you set in step 2. That
-   is what makes verification keep happening while nobody is watching.
+**Environment variables** are listed in
+[`apps/web/.env.example`](apps/web/.env.example). `SUPABASE_SECRET_KEY` is the
+Supabase project's secret API key and must never carry a `NEXT_PUBLIC_` prefix —
+a post-build scan fails the build if it ever reaches a client chunk.
+
+**The custom domain.** Add `domains.karlos.dev` to the Vercel project, then
+create the record Vercel asks for — normally:
+
+```
+domains.karlos.dev.   CNAME   300   cname.vercel-dns.com.
+```
+
+Add it **where the zone actually lives**, which is not always where the domain
+was bought. `karlos.dev` is registered through Squarespace but its authoritative
+nameservers are Google Cloud DNS:
+
+```
+$ dig +short NS karlos.dev
+ns-cloud-d1.googledomains.com.   ns-cloud-d2.googledomains.com.
+ns-cloud-d3.googledomains.com.   ns-cloud-d4.googledomains.com.
+```
+
+A record added in the registrar's panel while a different provider is
+authoritative simply never resolves — which is, more or less, the class of
+failure this whole product exists to make legible.
+
+**Sign-in** takes two callback URLs, and they are not the same one:
+
+| Where | Value |
+| --- | --- |
+| GitHub OAuth app → *Authorization callback URL* | `https://<ref>.supabase.co/auth/v1/callback` |
+| Google OAuth client → *Authorised redirect URI* | `https://<ref>.supabase.co/auth/v1/callback` |
+| Supabase → Authentication → URL Configuration → *Site URL* | `https://domains.karlos.dev` |
+| Supabase → *Redirect URLs* | `https://domains.karlos.dev/auth/callback` |
+
+The providers redirect to **Supabase**, and Supabase redirects to **the app**.
+Pointing the provider at the app directly is the usual first mistake.
+
+**The sweep.** Apply
+[`packages/db/migrations/0003_sweep_schedule.sql`](packages/db/migrations/0003_sweep_schedule.sql),
+substituting the deployed URL and the `SWEEP_SECRET` set above. That is what
+makes verification keep happening while nobody is watching (D5).
+
+**Proving the real path.** The sandbox covers every failure state, but only a
+real zone proves the real one. Claim `demo.karlos.dev` in the app and publish
+the TXT record it gives you in Google Cloud DNS — same engine, same matrix, real
+resolvers.
 
 ## The documents
 
