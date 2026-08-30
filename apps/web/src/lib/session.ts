@@ -13,7 +13,7 @@ export type Session = {
 export async function session(): Promise<Session | null> {
   const db = await requestDb()
   const { data, error } = await db.auth.getUser()
-  if (error !== null || data.user === null) return null
+  if (error !== null) return null
   return {
     db,
     userId: userId(data.user.id),

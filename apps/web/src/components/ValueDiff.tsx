@@ -56,9 +56,7 @@ function Runs({ runs }: { runs: DiffRun[] }) {
  * A defect nobody can see is a defect nobody can fix. Whitespace and zero-width
  * characters get a printable stand-in inside the diff, and only there.
  */
+const INVISIBLE = /\u200b|\u200c|\u200d|\u2060|\ufeff/g
+
 const visible = (text: string): string =>
-  text
-    .replace(/ /g, '␣')
-    .replace(/\t/g, '⇥')
-    .replace(/[​‌‍⁠﻿]/g, '␀')
-    .replace(/ /g, '␠')
+  text.replace(/ /g, '␣').replace(/\t/g, '⇥').replace(/\u00a0/g, '␠').replace(INVISIBLE, '␀')

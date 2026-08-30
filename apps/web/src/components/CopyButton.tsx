@@ -18,7 +18,9 @@ export function CopyButton({ value, label }: { value: string; label: string }) {
       onClick={() => {
         void navigator.clipboard.writeText(value).then(() => {
           setCopied(true)
-          setTimeout(() => setCopied(false), 1_400)
+          setTimeout(() => {
+            setCopied(false)
+          }, 1_400)
         })
       }}
     >

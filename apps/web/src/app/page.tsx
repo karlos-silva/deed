@@ -31,8 +31,8 @@ export default async function SignInPage({
       provider,
       options: { redirectTo: `${await origin()}/auth/callback` },
     })
-    if (failure !== null || data.url === null) {
-      redirect(`/?error=${encodeURIComponent(failure?.message ?? 'sign-in unavailable')}`)
+    if (failure !== null) {
+      redirect(`/?error=${encodeURIComponent(failure.message)}`)
     }
     // The provider's authorisation URL is external, so it is not one of the
     // app's typed routes.

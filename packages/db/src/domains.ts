@@ -233,7 +233,7 @@ export async function lastManualCheck(db: Db, id: DomainId): Promise<Timestamp |
 
 /* ------------------------------- the sandbox ------------------------------ */
 
-export async function loadZone(db: Db, id: DomainId): Promise<unknown | null> {
+export async function loadZone(db: Db, id: DomainId): Promise<unknown> {
   const { data, error } = await db
     .from('sandbox_zones')
     .select('zone')

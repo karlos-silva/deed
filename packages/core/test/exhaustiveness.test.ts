@@ -42,7 +42,7 @@ function compileWithExtraVariant(variant: string | null): { code: number; output
     JSON.stringify({
       compilerOptions: {
         target: 'ES2023',
-        lib: ['ES2023'],
+        lib: ['ES2023', 'DOM'],
         module: 'ESNext',
         moduleResolution: 'Bundler',
         strict: true,

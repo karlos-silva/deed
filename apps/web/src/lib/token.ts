@@ -20,11 +20,11 @@ export function mintToken(): Token {
     value = (value << 8) | byte
     bits += 8
     while (bits >= 5) {
-      out += ALPHABET[(value >>> (bits - 5)) & 31]
+      out += ALPHABET.charAt((value >>> (bits - 5)) & 31)
       bits -= 5
     }
   }
-  if (bits > 0) out += ALPHABET[(value << (5 - bits)) & 31]
+  if (bits > 0) out += ALPHABET.charAt((value << (5 - bits)) & 31)
 
   return token(out.slice(0, TOKEN_LENGTH))
 }

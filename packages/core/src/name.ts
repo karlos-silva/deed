@@ -80,7 +80,7 @@ export function parseClaim(input: string): ClaimParse {
     return refuse({ reason: 'too_long', detail: 'name', offending: name })
   }
 
-  const tld = labels.at(-1)!
+  const tld = labels.at(-1) ?? ''
   if (tld === 'localhost' || name === 'localhost') {
     return refuse({ reason: 'not_a_public_domain', detail: 'localhost' })
   }
@@ -203,6 +203,8 @@ function toUnicode(name: string): string {
     return name
   }
 }
+
+/* eslint-disable @typescript-eslint/no-misused-spread -- RFC 3492 operates on code points, which is exactly what spreading a string yields. */
 
 /** RFC 3492 decoding, the half `URL` does not expose. */
 function decodePunycode(input: string): string | null {

@@ -2,6 +2,10 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true,
+    // `URL` (punycode) and `TextEncoder` (byte lengths) are platform globals
+    // available in every runtime this ships to. `types` is for the tests, which
+    // do read the filesystem; nothing under `src` may.
+    "lib": ["ES2023", "DOM"],
     "types": ["node"]
   },
   "include": ["src", "test"]

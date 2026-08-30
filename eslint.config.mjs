@@ -66,6 +66,10 @@ export default tseslint.config(
         'error',
         { name: 'fetch', message: 'packages/core has no I/O (state-model §6).' },
         { name: 'process', message: 'packages/core reads no environment.' },
+        { name: 'document', message: 'packages/core has no UI (D7).' },
+        { name: 'window', message: 'packages/core has no UI (D7).' },
+        { name: 'localStorage', message: 'packages/core has no I/O (state-model §6).' },
+        { name: 'crypto', message: 'packages/core has no randomness; tokens are minted outside it.' },
       ],
       'no-restricted-syntax': [
         'error',

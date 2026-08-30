@@ -45,6 +45,12 @@ import { mintToken } from '@/lib/token'
 import { now, runCheck } from '@/lib/verification'
 import { refusalMessage } from '@/lib/refusal'
 
+/** `FormData.get` yields `string | File | null`; only the first is ever a field here. */
+const text = (form: FormData, key: string, fallback = ''): string => {
+  const value = form.get(key)
+  return typeof value === 'string' ? value : fallback
+}
+
 const back: (id: DomainId, notice?: string) => never = (id, notice) => {
   revalidatePath(`/domains/${id}`)
   redirect(notice === undefined ? `/domains/${id}` : `/domains/${id}?notice=${encodeURIComponent(notice)}`)
@@ -54,7 +60,7 @@ const back: (id: DomainId, notice?: string) => never = (id, notice) => {
 
 export async function claimDomain(formData: FormData): Promise<void> {
   const { db, userId } = await requireSession()
-  const raw = String(formData.get('domain') ?? '')
+  const raw = text(formData, 'domain', '')
 
   // Every refusal happens before a single lookup is attempted (prd §8).
   const parsed = parseClaim(raw)
@@ -92,7 +98,7 @@ export async function claimDomain(formData: FormData): Promise<void> {
 
 export async function checkNow(formData: FormData): Promise<void> {
   const { db, userId } = await requireSession()
-  const id = asDomainId(String(formData.get('id') ?? ''))
+  const id = asDomainId(text(formData, 'id', ''))
 
   const stored = await getDomain(db, id)
   // RLS already hid anyone else's domain. Saying no more than this is the
@@ -125,7 +131,7 @@ export async function checkNow(formData: FormData): Promise<void> {
 
 export async function rotateToken(formData: FormData): Promise<void> {
   const { db, userId } = await requireSession()
-  const id = asDomainId(String(formData.get('id') ?? ''))
+  const id = asDomainId(text(formData, 'id', ''))
   const stored = await getDomain(db, id)
   if (stored === null) redirect('/domains?error=Not+found')
 
@@ -174,7 +180,7 @@ export async function rotateToken(formData: FormData): Promise<void> {
 
 export async function releaseDomain(formData: FormData): Promise<void> {
   const { db, userId } = await requireSession()
-  const id = asDomainId(String(formData.get('id') ?? ''))
+  const id = asDomainId(text(formData, 'id', ''))
   const stored = await getDomain(db, id)
   if (stored === null) redirect('/domains?error=Not+found')
 
@@ -244,11 +250,11 @@ async function withZone(id: DomainId, edit: (zone: SandboxZone) => SandboxZone):
 }
 
 export async function addZoneRecord(formData: FormData): Promise<void> {
-  const id = asDomainId(String(formData.get('id') ?? ''))
-  const host = String(formData.get('host') ?? '').trim()
-  const value = String(formData.get('value') ?? '')
-  const type = String(formData.get('type') ?? 'TXT') as ZoneRecordType
-  const ttl = Number(formData.get('ttl') ?? 300)
+  const id = asDomainId(text(formData, 'id', ''))
+  const host = text(formData, 'host', '').trim()
+  const value = text(formData, 'value', '')
+  const type = text(formData, 'type', 'TXT') as ZoneRecordType
+  const ttl = Number(text(formData, 'ttl', '300'))
   if (host === '') back(id, 'A record needs a host.')
 
   const at = now()
@@ -259,15 +265,15 @@ export async function addZoneRecord(formData: FormData): Promise<void> {
 }
 
 export async function removeZoneRecord(formData: FormData): Promise<void> {
-  const id = asDomainId(String(formData.get('id') ?? ''))
-  const recordId = String(formData.get('record') ?? '')
+  const id = asDomainId(text(formData, 'id', ''))
+  const recordId = text(formData, 'record', '')
   await withZone(id, (zone) => deleteRecord(zone, recordId, now()))
   back(id)
 }
 
 export async function setZoneOutage(formData: FormData): Promise<void> {
-  const id = asDomainId(String(formData.get('id') ?? ''))
-  const raw = String(formData.get('outage') ?? '')
+  const id = asDomainId(text(formData, 'id', ''))
+  const raw = text(formData, 'outage', '')
   const outage = (raw === '' ? null : raw) as ZoneOutage
   await withZone(id, (zone) => setOutage(zone, outage))
   back(id)
