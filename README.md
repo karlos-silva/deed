@@ -201,6 +201,18 @@ failure this whole product exists to make legible.
 The providers redirect to **Supabase**, and Supabase redirects to **the app**.
 Pointing the provider at the app directly is the usual first mistake.
 
+Two more things on the Google side, both of which a visitor hits before they
+see a single screen of the product:
+
+- **Set an app name** under *APIs & Services → Branding*. Without one, Google's
+  consent screen falls back to the redirect URI's host and asks the visitor to
+  sign in to `<ref>.supabase.co` — an unidentifiable string, on the first screen
+  of a product whose entire subject is proving identity (D9).
+- **Publish the consent screen to Production.** While it is in *Testing*, only
+  addresses added as test users can sign in and everyone else is blocked. The
+  scopes here are `email` and `profile`, which are not sensitive, so publishing
+  needs no review from Google.
+
 **The sweep.** Store the shared secret in Supabase Vault, using the same value
 set as `SWEEP_SECRET` in the deployment:
 
