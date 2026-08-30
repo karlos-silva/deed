@@ -176,8 +176,7 @@ domains.karlos.dev.   CNAME   300   cname.vercel-dns.com.
 ```
 
 Add it **where the zone actually lives**, which is not always where the domain
-was bought. `karlos.dev` is registered through Squarespace but its authoritative
-nameservers are Google Cloud DNS:
+appears to be managed. `karlos.dev` answers from Google Cloud DNS:
 
 ```
 $ dig +short NS karlos.dev
@@ -185,9 +184,11 @@ ns-cloud-d1.googledomains.com.   ns-cloud-d2.googledomains.com.
 ns-cloud-d3.googledomains.com.   ns-cloud-d4.googledomains.com.
 ```
 
-A record added in the registrar's panel while a different provider is
-authoritative simply never resolves — which is, more or less, the class of
-failure this whole product exists to make legible.
+…while the panel that writes those records is Squarespace's, because domains
+migrated from Google Domains kept the Google-hosted nameservers. Both facts are
+true at once, which is precisely why guessing from the registrar's name is a bad
+idea in either direction: check the `NS`, then find the panel that drives *those*
+servers.
 
 **Sign-in** takes two callback URLs, and they are not the same one:
 

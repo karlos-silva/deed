@@ -24,9 +24,15 @@ select cron.unschedule(jobname)
   from cron.job
  where jobname in ('recheck-sweep', 'recheck-sweep-retention', 'sweep-runs-retention');
 
+-- Every 30 seconds, not every minute. The cadence table's fastest tier is 30s,
+-- for the window right after a change — the moment a user is actually watching
+-- a record propagate. A one-minute schedule cannot honour it, and misses by a
+-- hair besides: `next_check_at` carries the sub-second offset of the check that
+-- set it, so a job firing at :00.0xx finds a claim due at :00.9xx not yet due
+-- and skips a whole minute. Observed doing exactly that on the first real domain.
 select cron.schedule(
   'recheck-sweep',
-  '* * * * *',
+  '30 seconds',
   $$
     select net.http_post(
       url     := 'https://domains.karlos.dev/api/sweep',
