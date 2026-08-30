@@ -163,6 +163,11 @@ The app is a Next.js project inside a pnpm workspace, so the Vercel project's
 Supabase project's secret API key and must never carry a `NEXT_PUBLIC_` prefix —
 a post-build scan fails the build if it ever reaches a client chunk.
 
+`GET /api/health` reports which of them are present — never a value — and
+whether Postgres answers. `NEXT_PUBLIC_*` variables are inlined at build time,
+so setting one after a deploy does nothing until you redeploy; that is the
+failure this endpoint exists to name out loud.
+
 **The custom domain.** Add `domains.karlos.dev` to the Vercel project, then
 create the record Vercel asks for — normally:
 

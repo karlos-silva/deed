@@ -53,11 +53,3 @@ export async function POST(request: Request): Promise<Response> {
   return Response.json({ due: due.length, checked, failed })
 }
 
-/** A cheap liveness probe that touches Postgres, so an uptime pinger keeps the free project awake (D10). */
-export async function GET(): Promise<Response> {
-  const db = serviceDb()
-  const { error } = await db.from('sweep_runs').select('id').limit(1)
-  return error === null
-    ? Response.json({ ok: true })
-    : Response.json({ ok: false, error: error.message }, { status: 503 })
-}
