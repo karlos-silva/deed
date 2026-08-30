@@ -531,3 +531,34 @@ a faster way to keep running the checks, not the only place they have ever run.
 
 Neither is visible to a unit test, a mock, or a query run as the owner of the
 database.
+
+---
+
+## D18 — A drawn mark, and the disclaimer moved into the name
+
+**Decided.** The app uses a drawn glyph — a flag planted on a horizon — as its
+mark, on the sign-in screen and in the top bar. The disclaimer paragraph is
+removed from the sign-in screen.
+
+**Amends D9**, which asked for a footer line and an honest title on the grounds
+that a page asking strangers to paste DNS records must not be mistakable for
+anyone else's.
+
+**Why the line moves rather than disappears.** D13 already made the argument
+without noticing it applied here: the product carries its own name precisely so
+that a cold visitor knows who is asking. The sign-in screen now reads **Log in
+to Deed** directly beneath the mark — the product's name before anything else,
+in type larger than the mark itself. The paragraph underneath was restating in
+three lines what the headline already says in one.
+
+**What is deliberately kept.** The honest `<title>`, and the footer line on
+every screen inside the app. The claim is not that the disclosure is
+unnecessary — it is that the headline carries it better than a paragraph
+nobody finishes reading.
+
+**The mark stays small.** A glyph beside a headline naming the product reads as
+a signature. A large illustration with no name beside it would read as a landing
+page, which D1 ruled out. That distinction is the whole of this entry and it
+survives intact.
+
+**Reversal cost.** One component and one paragraph.

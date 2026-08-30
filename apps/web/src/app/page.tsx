@@ -1,9 +1,9 @@
-import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import { requestDb } from '@/lib/db'
 import { origin } from '@/lib/origin'
 import { session } from '@/lib/session'
 import { GitHubMark, GoogleMark } from '@/components/ProviderIcon'
+import { Mark } from '@/components/Mark'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,12 +36,12 @@ export default async function SignInPage({
   return (
     <div className="signin-stage">
       <div className="signin-panel enter">
-        <div className="tile-mark">
-          <Image src="/domains-tile.png" alt="" width={740} height={740} priority />
-        </div>
+        <Mark size={56} />
 
         <div className="stack-2">
-          <h1 className="signin-title">Log in to Deed</h1>
+          <h1 className="signin-title">
+            Log in to <span className="whole">Deed</span>
+          </h1>
           <p className="signin-lede">Prove you own a domain, and see exactly why when you cannot.</p>
         </div>
 
@@ -62,10 +62,6 @@ export default async function SignInPage({
           </div>
         )}
 
-        <p className="signin-note">
-          <strong>Deed</strong> — an independent study in domain-ownership verification.
-          It only ever reads your DNS; it never writes to it.
-        </p>
       </div>
     </div>
   )
