@@ -3,17 +3,15 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import {
-  CHECK_NOW_COOLDOWN,
   CLAIM_TTL,
   DOMAINS_PER_ACCOUNT,
   SUPERSEDE_FLOOR,
-  USER_LOOKUP_BUDGET,
+  budgetWindowStart,
+  checkNowDecision,
   type Domain,
   type DomainId,
   domainId as asDomainId,
-  hours,
   longest,
-  minus,
   minutes,
   parseClaim,
   plus,
@@ -105,15 +103,18 @@ export async function checkNow(formData: FormData): Promise<void> {
   if (stored === null) redirect('/domains?error=Not+found')
 
   const at = now()
-  const last = await lastManualCheck(db, id)
-  if (last !== null && at - last < CHECK_NOW_COOLDOWN) {
-    const remaining = Math.ceil((CHECK_NOW_COOLDOWN - (at - last)) / 1_000)
-    back(id, `Checked a moment ago. You can check again in ${remaining}s.`)
-  }
-
-  const spent = await countLookups(db, userId, minus(at, hours(1)))
-  if (spent >= USER_LOOKUP_BUDGET) {
-    back(id, `That is ${USER_LOOKUP_BUDGET} checks this hour. The background sweep keeps running.`)
+  const decision = checkNowDecision({
+    lastManualCheck: await lastManualCheck(db, id),
+    spentThisHour: await countLookups(db, userId, budgetWindowStart(at)),
+    now: at,
+  })
+  if (!decision.allowed) {
+    back(
+      id,
+      decision.reason === 'cooldown'
+        ? `Checked a moment ago. You can check again in ${decision.retryInSeconds}s.`
+        : `That is ${decision.perHour} checks this hour. The background sweep keeps running.`,
+    )
   }
 
   await recordLookup(db, userId, 'check_now', id)

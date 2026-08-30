@@ -10,6 +10,7 @@ export * from './recordSpec'
 export * from './txt'
 export * from './name'
 export * from './cadence'
+export * from './rateLimit'
 export * from './reduce'
 
 export * from './model/ids'

@@ -17,6 +17,7 @@ import { AuditLog } from '../src/components/AuditLog'
 import { ResolverMatrix } from '../src/components/ResolverMatrix'
 import { ValueDiff } from '../src/components/ValueDiff'
 import { ClaimBadge, RecordBadge } from '../src/components/StatusBadge'
+import { NothingClaimedYet } from '../src/components/NothingClaimedYet'
 
 /**
  * The detail page renders these on every visit, so anything that throws here is
@@ -102,6 +103,22 @@ describe('the detail page renders every state', () => {
   it('draws an empty log without pretending something happened', () => {
     const html = renderToStaticMarkup(<AuditLog events={[]} now={T0} />)
     expect(html).toContain('Nothing has happened yet')
+  })
+
+  it('A first-time account has somewhere to start', () => {
+    const html = renderToStaticMarkup(<NothingClaimedYet />)
+
+    // It explains what claiming does and what will be needed…
+    expect(html).toContain('_deed-challenge')
+    expect(html).toMatch(/access to the domain/i)
+    expect(html).toMatch(/\.test/)
+    // …and states the thing a stranger most wants to know about a product that
+    // reads their DNS.
+    expect(html).toMatch(/only ever make read queries/i)
+
+    // …and it is not an empty table under a heading.
+    expect(html).not.toContain('<table')
+    expect(html).not.toContain('<tbody')
   })
 
   it('marks exactly the two quote characters in the diff', () => {

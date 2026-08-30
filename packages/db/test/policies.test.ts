@@ -221,6 +221,56 @@ describe('the log grows without becoming unreadable', () => {
   })
 })
 
+describe('the background sweep', () => {
+  it('The sweep runs with nobody watching', async () => {
+    const due = await claim(alice, 'due.com', TOKEN_A)
+    const later = await claim(bob, 'later.com', TOKEN_B)
+
+    await db.admin.query(
+      `update public.domains set next_check_at = case when id = $1
+         then now() - interval '5 minutes' else now() + interval '1 hour' end`,
+      [due],
+    )
+
+    // The sweep has no session at all, which is why RLS cannot express "due":
+    // due-ness is a property of the fleet, not of one account's rows.
+    const claims = await db.as(null, 'service_role').query<{ id: string }>(
+      `select id from public.claims_due(now(), 25)`,
+    )
+    expect(claims.map((c) => c.id)).toEqual([due])
+    expect(claims.map((c) => c.id)).not.toContain(later)
+
+    // And nobody else may ask. A signed-in account reading the whole fleet's
+    // schedule would be reading other people's domains by another name.
+    expect(await db.as(alice).refused(`select id from public.claims_due(now(), 25)`)).toBe('42501')
+    expect(await db.as(null, 'anon').refused(`select id from public.claims_due(now(), 25)`)).toBe('42501')
+
+    // It writes the transition with no user present…
+    const [result] = await transition(null, due, 0, verifiedOwnership(TOKEN_A), [
+      { kind: 'check_completed', actor: 'sweep', to: 'verified' },
+    ])
+    expect(result!.apply_transition).toMatchObject({ applied: true })
+
+    // …and the owner, who was not watching, finds it done and attributed.
+    const [event] = await db.as(alice).query<{ actor: string }>(
+      `select actor from public.audit_events
+        where domain_id = $1 and kind = 'check_completed' order by id desc limit 1`,
+      [due],
+    )
+    expect(event!.actor).toBe('sweep')
+
+    // Each run leaves a row of its own, which is both the freshness the product
+    // claims and the real database activity a paused free project needs (D10).
+    await db.as(null, 'service_role').query(
+      `insert into public.sweep_runs (due, checked, failed) values (1, 1, 0)`,
+    )
+    const [run] = await db.as(alice).query<{ checked: number }>(
+      `select checked from public.sweep_runs order by id desc limit 1`,
+    )
+    expect(run!.checked).toBe(1)
+  })
+})
+
 describe('recovery', () => {
   it('Re-claiming gets a fresh token', async () => {
     const first = await claim(alice, 'lapsed.com', TOKEN_A)

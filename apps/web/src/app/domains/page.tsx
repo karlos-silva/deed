@@ -5,6 +5,7 @@ import { lastSweep, listDomains } from '@deed/db'
 import { session } from '@/lib/session'
 import { humanSince } from '@/lib/copy'
 import { ClaimBadge } from '@/components/StatusBadge'
+import { NothingClaimedYet } from '@/components/NothingClaimedYet'
 import { Footer } from '@/components/Footer'
 import { TopBar } from '@/components/TopBar'
 import { claimDomain } from './actions'
@@ -84,19 +85,7 @@ export default async function DomainsPage({
         </section>
 
         {domains.length === 0 ? (
-          <section className="empty" style={{ marginTop: 'var(--space-6)' }}>
-            <div className="stack">
-              <h2 className="t-section">Nothing claimed yet</h2>
-              <p className="t-body muted" style={{ maxWidth: '52ch', margin: '0 auto' }}>
-                Claiming generates one high-entropy token scoped to you and this domain. You publish
-                it as a single TXT record at{' '}
-                <span className="t-mono">_deed-challenge.&lt;your-domain&gt;</span>, and we read
-                it back. You will need access to the domain’s DNS — or, if you would rather not use
-                a real one, a <span className="t-mono">.test</span> name and nothing else.
-              </p>
-              <p className="t-small subtle">We only ever make read queries against your DNS.</p>
-            </div>
-          </section>
+          <NothingClaimedYet />
         ) : (
           <div className="domain-list" style={{ marginTop: 'var(--space-6)' }}>
             {domains.map(({ domain }) => (
