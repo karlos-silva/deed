@@ -19,6 +19,7 @@ import { ClaimBadge, RecordBadge } from '@/components/StatusBadge'
 import { NothingClaimedYet } from '@/components/NothingClaimedYet'
 import { ResolverMatrix } from '@/components/ResolverMatrix'
 import { ValueDiff } from '@/components/ValueDiff'
+import { TopBar } from '@/components/TopBar'
 
 export const dynamic = 'force-dynamic'
 
@@ -165,6 +166,8 @@ export default function DesignGallery() {
 
   return (
     <div className="shell">
+      <TopBar email="alan.turing@example.com" />
+
       <main className="main stack-6">
         <div className="stack-2">
           <h1 className="t-title">Every state</h1>

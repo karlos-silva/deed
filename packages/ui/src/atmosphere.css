@@ -32,9 +32,8 @@
   position: relative;
   min-height: 100dvh;
   display: grid;
-  align-items: center;
-  justify-items: end;
-  padding: var(--space-10) clamp(var(--space-6), 7vw, 96px);
+  place-items: center;
+  padding: var(--space-16) var(--space-5) var(--space-10);
   overflow: hidden;
   background-color: var(--bg);
 }
@@ -59,18 +58,18 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(58% 70% at 76% 50%, rgb(8 8 8 / 94%) 0%, rgb(8 8 8 / 72%) 55%, transparent 100%),
-    linear-gradient(100deg, transparent 0%, rgb(8 8 8 / 22%) 34%, rgb(8 8 8 / 82%) 66%, var(--bg) 96%);
+    radial-gradient(60% 54% at 50% 46%, rgb(8 8 8 / 93%) 0%, rgb(8 8 8 / 66%) 56%, transparent 100%),
+    linear-gradient(102deg, transparent 0%, rgb(8 8 8 / 26%) 40%, rgb(8 8 8 / 78%) 72%, var(--bg) 97%);
 }
 
 .signin-panel {
   position: relative;
   z-index: 1;
-  width: min(440px, 100%);
+  width: min(500px, 100%);
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
+  align-items: center;
+  text-align: center;
   gap: var(--space-6);
 }
 
@@ -97,14 +96,14 @@
    read as two. */
 .signin-title .whole { white-space: nowrap; }
 
-.signin-lede { color: var(--fg-2); font-size: var(--text-lg); line-height: var(--lh-lg); max-width: 34ch; }
+.signin-lede { color: var(--fg-2); font-size: var(--text-lg); line-height: var(--lh-lg); max-width: 38ch; }
 
 /* Neither provider is the primary one. Choosing between GitHub and Google is
    not a primary/secondary decision, so they carry identical weight. */
 .signin-actions {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-2);
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
   width: 100%;
 }
 .signin-actions .btn {
@@ -120,7 +119,7 @@
 .signin-actions .btn svg { width: 17px; height: 17px; flex: none; }
 
 @media (max-width: 640px) {
-  .signin-stage { padding: var(--space-10) var(--space-5); justify-items: stretch; }
+  .signin-stage { padding: var(--space-10) var(--space-5); }
   .signin-stage::before { background-position: 30% top; filter: brightness(1.1) contrast(1.02); }
   .signin-stage::after {
     background:
@@ -129,4 +128,5 @@
   }
   .signin-title { font-size: 26px; }
   .signin-panel { width: 100%; }
+  .signin-actions { grid-template-columns: 1fr; }
 }

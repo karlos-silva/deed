@@ -1,13 +1,13 @@
+import Image from 'next/image'
 import Link from 'next/link'
 
 export function TopBar({ email }: { email: string | null }) {
   return (
     <header className="topbar">
-      <Link className="brand" href="/domains" style={{ textDecoration: 'none' }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none">
-          <rect x="1" y="1" width="22" height="22" rx="6" stroke="var(--border-strong)" />
-          <path d="M8 7h3.2a5 5 0 0 1 0 10H8Z" stroke="var(--fg)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+      <Link className="brand" href="/domains">
+        <span className="brand-mark">
+          <Image src="/domains-tile.png" alt="" width={740} height={740} />
+        </span>
         Deed
       </Link>
       <span className="spacer" />
