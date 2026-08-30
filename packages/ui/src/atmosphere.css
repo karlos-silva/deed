@@ -74,29 +74,16 @@
   gap: var(--space-6);
 }
 
-/* The tile is presented inside a thick bezel: a milled frame lit from above,
-   with the glyph recessed into pure black behind it. The frame is the shape
-   people recognise, so it is drawn rather than implied by a hairline. */
-.mark-tile {
-  position: relative;
-  display: grid;
-  place-items: center;
+.signin-panel .tile-mark {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  overflow: hidden;
   flex: none;
-  color: var(--fg);
-  background: linear-gradient(165deg, #2a2a2a 0%, #141414 38%, #0a0a0a 100%);
-  padding: 7%;
-  box-shadow: 0 10px 30px rgb(0 0 0 / 60%);
+  border: 1px solid var(--border);
+  box-shadow: var(--edge-lit-strong);
 }
-.mark-tile::before {
-  content: '';
-  position: absolute;
-  inset: 7%;
-  border-radius: inherit;
-  background: #000;
-  box-shadow: inset 0 2px 5px rgb(0 0 0 / 90%);
-}
-.mark-tile svg { position: relative; z-index: 1; }
-.mark-glyph { display: inline-grid; place-items: center; color: currentColor; }
+.signin-panel .tile-mark img { display: block; width: 100%; height: auto; }
 
 .signin-title {
   font-family: var(--font-display);

@@ -562,3 +562,21 @@ page, which D1 ruled out. That distinction is the whole of this entry and it
 survives intact.
 
 **Reversal cost.** One component and one paragraph.
+
+### D18a — the mark reverts; the disclaimer decision stands
+
+**Reversed, same day.** The app does not use the drawn glyph. The tile goes back
+on the sign-in screen and the top bar keeps its own glyph.
+
+The glyph behind D18 was sound — drawn on the same 1800-unit canvas as the tile
+and checked at every size it renders — and it turned out not to be the
+interesting question. What the mark cost was attention, on a screen whose job is
+to get someone signed in. The tile already says what the product is about: a
+flag planted on a horizon, lit the green of a verified claim.
+
+**The second half of D18 is not reversed.** The disclaimer paragraph stays off
+the sign-in screen: the headline reads "Log in to Deed", which is D13's argument
+that the name carries the trust posture. The honest `<title>` and the in-app
+footer stay.
+
+So D9 ends where it began — a quiet interface, and a product that says who it is.

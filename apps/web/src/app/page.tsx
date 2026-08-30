@@ -1,9 +1,9 @@
+import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import { requestDb } from '@/lib/db'
 import { origin } from '@/lib/origin'
 import { session } from '@/lib/session'
 import { GitHubMark, GoogleMark } from '@/components/ProviderIcon'
-import { Mark } from '@/components/Mark'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,7 +36,9 @@ export default async function SignInPage({
   return (
     <div className="signin-stage">
       <div className="signin-panel enter">
-        <Mark size={56} />
+        <div className="tile-mark">
+          <Image src="/domains-tile.png" alt="" width={740} height={740} priority />
+        </div>
 
         <div className="stack-2">
           <h1 className="signin-title">
