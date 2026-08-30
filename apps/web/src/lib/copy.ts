@@ -2,12 +2,19 @@ import type {
   Domain,
   MismatchCause,
   OwnershipState,
+  PreflightWarning,
+  Provider,
   RecordState,
   ResolverId,
 } from '@deed/core'
 
 /**
  * Every message in the product comes from here.
+ *
+ * Core is imported for *types only*, deliberately: this module is pulled into a
+ * client component, and a value import would reach the core barrel, which
+ * re-exports the Public Suffix List. Shipping 140KB of it to the browser to
+ * render a sentence is not a trade worth making.
  *
  * Three rules, from prd §3, made mechanical:
  *   — never conflate "not yet" with "wrong": every state answers *does waiting
@@ -271,6 +278,98 @@ export const causeWaitingHelps = (cause: MismatchCause): boolean => {
 }
 
 export const challengeHostOf = (domain: Domain): string => `_deed-challenge.${domain.name}`
+
+/* ------------------------------- pre-flight ------------------------------- */
+
+/**
+ * The field names the user is actually looking at. Getting one wrong sends
+ * somebody hunting for a control that does not exist, so an unrecognised zone
+ * gets generic labels rather than a guess.
+ */
+export const fieldLabels = (provider: Provider | null) => ({
+  host: provider?.hostLabel ?? 'Host',
+  value: provider?.valueLabel ?? 'Value',
+  relativeHost: provider?.relativeHost ?? true,
+  name: provider?.name ?? null,
+})
+
+/**
+ * A warning is not a refusal. Each of these is something we noticed about the
+ * zone before a token existed; none of them stops anybody claiming anything.
+ */
+export function warningCopy(warning: PreflightWarning): Guidance {
+  switch (warning.kind) {
+    case 'provider_quirk':
+      return quirkCopy(warning.provider, warning.cause)
+
+    case 'wildcard':
+      return {
+        headline: 'This zone has a wildcard TXT record',
+        body: `A random hostname under this domain already answers with “${warning.value}”. That is fine — an explicit record always wins over a wildcard — but it means a missing record looks present, so we check for it explicitly rather than trusting the answer.`,
+        waitingHelps: null,
+        tone: 'unknown',
+      }
+
+    case 'cname_at_host':
+      return {
+        headline: 'Something already lives at the challenge host',
+        body: `It is a CNAME pointing at ${warning.target}. DNS does not allow other records alongside a CNAME, so a TXT added here would never resolve.`,
+        fix: 'Remove that CNAME, or claim a different subdomain instead.',
+        waitingHelps: false,
+        tone: 'problem',
+      }
+
+    case 'domain_unregistered':
+      return {
+        headline: 'This name does not resolve at all',
+        body: 'No nameservers answer for it, which usually means it is not registered or its delegation has not propagated. Once a record exists this is indistinguishable from a missing record, so it is worth saying now.',
+        fix: 'Check the domain is registered and its nameservers are set.',
+        waitingHelps: false,
+        tone: 'problem',
+      }
+
+    case 'zone_failing':
+      return {
+        headline: 'The nameservers are failing to answer',
+        body: 'Every resolver got an error rather than an answer when asking who runs this zone. Nothing can be published or read here until that clears — and it is upstream of us.',
+        waitingHelps: null,
+        tone: 'problem',
+      }
+  }
+}
+
+function quirkCopy(provider: Provider, cause: MismatchCause): Guidance {
+  const base = { waitingHelps: false as const, tone: 'unknown' as const }
+  switch (cause) {
+    case 'quoted_value':
+      return {
+        ...base,
+        headline: `${provider.name} adds the quotes for you`,
+        body: `Paste the value into ${provider.valueLabel} without quotes of your own. ${provider.name} stores TXT data as a quoted string, so a value that arrives already quoted ends up quoted twice — and the record then reads as wrong.`,
+      }
+    case 'appended_apex':
+      return {
+        ...base,
+        headline: `${provider.name} may append the domain to the value`,
+        body: `Panels that treat a value as a hostname add the zone name to the end of it. If ${provider.valueLabel} shows your domain appended after the token, add a trailing dot or use the raw-value field.`,
+      }
+    case 'truncated':
+      return {
+        ...base,
+        headline: `${provider.name} may cut a long value short`,
+        body: 'Check that what the panel saved is the whole value, not just its beginning.',
+      }
+    case 'whitespace':
+    case 'wrong_token':
+    case 'wildcard_shadow':
+    case 'unknown_value':
+      return {
+        ...base,
+        headline: `A known quirk of ${provider.name}`,
+        body: 'Copy the value with the button rather than by selecting it, and compare what the panel saved against what is shown here.',
+      }
+  }
+}
 
 export function humanTtl(seconds: number): string {
   if (seconds <= 0) return 'a moment'

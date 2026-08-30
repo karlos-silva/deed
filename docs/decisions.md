@@ -493,3 +493,41 @@ was verified by planting one.
 **The general rule.** Configuration that must reach the browser cannot also be
 hidden from it. Any store offering a "secret" flag will happily accept both
 instructions and honour the wrong one silently.
+
+---
+
+## D17 — Real Postgres for RLS, without the rest of the Supabase stack
+
+**Decided.** Tests that touch row-level security run against a real Postgres in
+Docker, seeded with the three Supabase primitives our policies depend on: the
+`anon` / `authenticated` / `service_role` roles, `auth.uid()`, and the
+`request.jwt.claims` setting. `supabase start` is not used.
+
+**Refines** the delivery plan's tooling line, which named `supabase start`, and
+keeps the reasoning behind it: for RLS, a mock tests the mock (D12).
+
+**Why not the full stack.** Policy evaluation depends on those three things and
+nothing else. GoTrue, Kong, Realtime, Storage and Studio have no say in whether
+a row is visible, and booting nine containers to find that out costs a minute
+per run and a working Supabase CLI on every machine. One container starts in
+about two seconds from an image most machines already have.
+
+**What this gives up, and the mitigation.** A stub can drift from the real
+thing. So `auth.uid()` is reproduced verbatim rather than approximated, the
+grants match what Supabase issues, and every assertion in the suite was also run
+once by hand against the live project before being written down. The harness is
+a faster way to keep running the checks, not the only place they have ever run.
+
+**It paid for itself immediately.** Two defects that only appear with RLS on:
+
+- **The audit index was unreachable.** `(domain_id, at, id)` is exactly the
+  index the query looks like it wants, and a real session can never use it: the
+  policy predicate on `owner_id` is a security barrier, so the planner enters
+  through `owner_id`, filters `domain_id` afterwards, and sorts — scanning an
+  account's whole history to render 25 rows. As superuser it plans beautifully.
+- **The audit cursor keyed on `id` while ordering by `(at, id)`**, which holds
+  only while the two agree. Backfilling a missing event gives an old timestamp a
+  new id, and the pages start skipping rows.
+
+Neither is visible to a unit test, a mock, or a query run as the owner of the
+database.

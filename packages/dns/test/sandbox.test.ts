@@ -71,13 +71,13 @@ describe('what only the sandbox can stage', () => {
     const port = createSandboxPort(zone)
 
     // Cloudflare at 25s, Google at 55s, AdGuard at 95s.
-    const at40 = await port.lookupTxt(HOST, { now: plus(T0, seconds(40)) })
+    const at40 = await port.lookup(HOST, 'TXT', { now: plus(T0, seconds(40)) })
     expect(at40.filter((a) => a.outcome === 'answered').map((a) => a.resolver)).toEqual(['cloudflare'])
 
-    const at60 = await port.lookupTxt(HOST, { now: plus(T0, seconds(60)) })
+    const at60 = await port.lookup(HOST, 'TXT', { now: plus(T0, seconds(60)) })
     expect(at60.filter((a) => a.outcome === 'answered')).toHaveLength(2)
 
-    const at100 = await port.lookupTxt(HOST, { now: plus(T0, seconds(100)) })
+    const at100 = await port.lookup(HOST, 'TXT', { now: plus(T0, seconds(100)) })
     expect(at100.filter((a) => a.outcome === 'answered')).toHaveLength(3)
   })
 
@@ -88,13 +88,13 @@ describe('what only the sandbox can stage', () => {
     const port = createSandboxPort(removed)
 
     // Deleted at 200s: Cloudflare drops it at 225s, AdGuard not until 295s.
-    const at230 = await port.lookupTxt(HOST, { now: plus(T0, seconds(230)) })
+    const at230 = await port.lookup(HOST, 'TXT', { now: plus(T0, seconds(230)) })
     expect(at230.filter((a) => a.outcome === 'answered').map((a) => a.resolver)).toEqual([
       'google',
       'adguard',
     ])
 
-    const at300 = await port.lookupTxt(HOST, { now: plus(T0, seconds(300)) })
+    const at300 = await port.lookup(HOST, 'TXT', { now: plus(T0, seconds(300)) })
     expect(at300.every((a) => a.outcome === 'nxdomain')).toBe(true)
   })
 

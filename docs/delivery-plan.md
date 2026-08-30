@@ -218,10 +218,9 @@ myself, so that I can see how the product behaves when things go wrong.
 
 ## S3 — Claim and prove
 
-**Status.** In progress — 5 of 8 scenarios. Name parsing, the Public Suffix
-List, the claim flow, the record instructions and the sandbox are done; the
-three remaining scenarios are the ones that need real Postgres and a second
-account.
+**Status.** Done — 8/8. The three that needed real Postgres and a second account
+are covered by a harness that boots one in Docker (D17), and the first of them
+found a missing INSERT policy that had been shipping a broken claim flow.
 
 **Context.** The first slice that does what the product is for: claim a domain
 and prove it. From here the product exists; everything after makes it legible.
@@ -291,9 +290,9 @@ plainly when it is proven mine, so that I can stop thinking about it.
 
 ## S4 — Understanding the wait
 
-**Status.** In progress — 4 of 5 scenarios. The resolver matrix, direction and
-freshness are done; *Check now* is implemented and rate-limited but its scenario
-is not yet a test.
+**Status.** Done — 5/5. The *Check now* limit moved into `packages/core` as a
+rule: it is never told which domain it is deciding about, so a refusal cannot
+disclose whether one exists.
 
 **Context.** This is where most products render a spinner. It is the difference
 between a demo and a product.
@@ -332,9 +331,10 @@ actually happening, so that I know whether to wait or to go fix something.
 
 ## S5 — Understanding failure
 
-**Status.** In progress — 6 of 7 scenarios. Every row of the PRD §7 taxonomy is
-reachable by hand in the sandbox and produces its named cause. Pre-flight is the
-one missing piece; it needs the port widened past TXT to read NS records.
+**Status.** Done — 7/7. Every row of the PRD §7 taxonomy is reachable by hand in
+the sandbox and produces its named cause. Pre-flight reads the zone's NS records
+before a token is issued, names the provider, and uses that panel's own field
+labels — and never blocks.
 
 **Context.** The PRD asks for a product that explains failure and enables
 recovery. This slice is that sentence.
@@ -389,9 +389,10 @@ already pasted correctly.
 
 ## S6 — Continuity
 
-**Status.** In progress — 3 of 7 scenarios. Degradation, the grace window and
-the our-outage rule are done and tested on injected time. The sweep, the
-double-write test and audit paging need the deployed cron and real Postgres.
+**Status.** Done — 7/7. Degradation and the windows run on injected time; the
+sweep, the double-write guard and audit paging are asserted against real
+Postgres. Paging found two defects the code could not have shown otherwise: an
+audit index unreachable under RLS, and a cursor keyed on the wrong tuple.
 
 **Context.** Verification decays (prd §3). Without this slice the product claims
 a permanent fact from a mutable source.
@@ -442,9 +443,7 @@ what changed and when, so that I can fix sending without opening a ticket.
 
 ## S7 — Recovery
 
-**Status.** In progress — 3 of 5 scenarios. Rotation, supersession and its
-expiry are done; re-claiming and deletion are implemented but not yet covered by
-tests of their own names.
+**Status.** Done — 5/5.
 
 **Context.** The PRD's promise is *recover when it breaks*. Rotation is the
 sharpest case, and the one that breaks a naive engine.

@@ -6,6 +6,7 @@ import { session } from '@/lib/session'
 import { humanSince } from '@/lib/copy'
 import { ClaimBadge } from '@/components/StatusBadge'
 import { NothingClaimedYet } from '@/components/NothingClaimedYet'
+import { ClaimField } from '@/components/ClaimField'
 import { Footer } from '@/components/Footer'
 import { TopBar } from '@/components/TopBar'
 import { claimDomain } from './actions'
@@ -50,21 +51,7 @@ export default async function DomainsPage({
         <section className="card">
           <div className="card-body stack">
             <form action={claimDomain} className="zone-form">
-              <div className="field wide">
-                <label className="t-label" htmlFor="domain">
-                  Domain
-                </label>
-                <input
-                  className="input"
-                  id="domain"
-                  name="domain"
-                  placeholder="acme.com — or acme.test to try it without owning one"
-                  autoComplete="off"
-                  autoCapitalize="off"
-                  spellCheck={false}
-                  required
-                />
-              </div>
+              <ClaimField />
               <button className="btn btn-primary" type="submit">
                 Claim
               </button>

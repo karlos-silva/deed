@@ -10,10 +10,10 @@ import {
   parseClaim,
 } from '@deed/core'
 import { getDomain, listAudit, loadZone } from '@deed/db'
-import type { SandboxZone } from '@deed/dns'
+import { type SandboxZone, preflight, randomProbeLabel } from '@deed/dns'
 import { session } from '@/lib/session'
-import { claimGuidance, humanSince, humanUntil, recordGuidance } from '@/lib/copy'
-import { revalidateIfDue } from '@/lib/verification'
+import { claimGuidance, fieldLabels, humanSince, humanUntil, recordGuidance, warningCopy } from '@/lib/copy'
+import { revalidateIfDue, router } from '@/lib/verification'
 import { ClaimBadge, RecordBadge } from '@/components/StatusBadge'
 import { CopyButton } from '@/components/CopyButton'
 import { ResolverMatrix } from '@/components/ResolverMatrix'
@@ -61,6 +61,21 @@ export default async function DomainPage({
 
   const parsedName = parseClaim(domain.name)
   const unicode = parsedName.ok ? parsedName.value.unicode : null
+
+  // Only while a claim is still pending: this is when instructions are read, and
+  // it is the only moment their field names are worth nine extra lookups.
+  const zoneInfo =
+    domain.ownership.status === 'pending'
+      ? await preflight(await router(current.db)(domain.name), domain.name, {
+          now: clock,
+          probeLabel: randomProbeLabel(),
+          timeoutMs: 3_000,
+        }).catch(() => null)
+      : null
+  const labels = fieldLabels(zoneInfo?.provider ?? null)
+  const relativeHost = `${CHALLENGE_LABEL}${
+    domain.name.split('.').length > 2 ? `.${domain.name.split('.').slice(0, -2).join('.')}` : ''
+  }`
 
   const mismatch = domain.record.status === 'mismatch' ? domain.record : null
   const offending = mismatch?.observed.find((o) => o.kind === 'unknown') ?? null
@@ -164,25 +179,46 @@ export default async function DomainPage({
                 <dd>TXT</dd>
                 <dd />
 
-                <dt>Host</dt>
-                <dd>{host}</dd>
+                <dt>{labels.host}</dt>
+                <dd>{labels.relativeHost ? relativeHost : host}</dd>
                 <dd>
-                  <CopyButton value={host} label="host" />
+                  <CopyButton value={labels.relativeHost ? relativeHost : host} label="host" />
                 </dd>
 
-                <dt>Name only</dt>
-                <dd className="subtle">
-                  {CHALLENGE_LABEL}
-                  {domain.name.split('.').length > 2 ? `.${domain.name.split('.').slice(0, -2).join('.')}` : ''}
-                </dd>
+                <dt>{labels.relativeHost ? 'Full host' : 'Relative'}</dt>
+                <dd className="subtle">{labels.relativeHost ? host : relativeHost}</dd>
                 <dd />
 
-                <dt>Value</dt>
+                <dt>{labels.value}</dt>
                 <dd>{value}</dd>
                 <dd>
                   <CopyButton value={value} label="value" />
                 </dd>
               </dl>
+
+              {zoneInfo?.provider != null && (
+                <p className="t-small subtle" style={{ marginTop: 'var(--space-3)' }}>
+                  Field names are {zoneInfo.provider.name}’s, because that is whose panel your
+                  nameservers say you are about to open.
+                </p>
+              )}
+
+              {(zoneInfo?.warnings ?? []).map(warningCopy).map((warning, index) => (
+                <div
+                  key={index}
+                  className={`callout callout-${warning.tone === 'problem' ? 'warning' : 'info'}`}
+                  style={{ marginTop: 'var(--space-3)' }}
+                >
+                  <div className="guidance">
+                    <strong className="headline" style={{ fontSize: 'var(--text-base)' }}>
+                      {warning.headline}
+                    </strong>
+                    <p className="body">{warning.body}</p>
+                    {warning.fix !== undefined && <p className="fix">{warning.fix}</p>}
+                  </div>
+                </div>
+              ))}
+
               <p className="t-small subtle" style={{ marginTop: 'var(--space-3)' }}>
                 Most panels want the name without the domain; both forms are above. Paste the value
                 without quotes — the panel adds its own.

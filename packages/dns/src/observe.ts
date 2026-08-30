@@ -33,8 +33,8 @@ export async function observe(
       : { now: options.now, timeoutMs: options.timeoutMs }
 
   const [answers, probe] = await Promise.all([
-    port.lookupTxt(challengeHost(name), context),
-    port.lookupTxt(`${options.probeLabel}.${name}`, context),
+    port.lookup(challengeHost(name), 'TXT', context),
+    port.lookup(`${options.probeLabel}.${name}`, 'TXT', context),
   ])
 
   return { startedAt: options.now, actor: options.actor, answers, probe }

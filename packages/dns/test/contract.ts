@@ -51,7 +51,7 @@ const each = (answers: readonly ResolverAnswer[]) => {
 export function describeResolverContract(harness: ContractHarness): void {
   const look = async (kase: ContractCase, which: 'host' | 'probeHost' = 'host') => {
     const staged = await harness.stage(kase)
-    const answers = await staged.port.lookupTxt(staged[which], { now: staged.now })
+    const answers = await staged.port.lookup(staged[which], 'TXT', { now: staged.now })
     return { staged, answers: each(answers) }
   }
 
@@ -146,8 +146,8 @@ export function describeResolverContract(harness: ContractHarness): void {
 
   it(`an explicit record overrides the wildcard`, async () => {
     const staged = await harness.stage('wildcard-and-record')
-    const atHost = each(await staged.port.lookupTxt(staged.host, { now: staged.now }))
-    const atProbe = each(await staged.port.lookupTxt(staged.probeHost, { now: staged.now }))
+    const atHost = each(await staged.port.lookup(staged.host, 'TXT', { now: staged.now }))
+    const atProbe = each(await staged.port.lookup(staged.probeHost, 'TXT', { now: staged.now }))
 
     for (const answer of atHost) {
       expect(answer.outcome).toBe('answered')

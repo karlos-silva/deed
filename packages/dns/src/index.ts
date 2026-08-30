@@ -8,6 +8,7 @@
 export * from './port'
 export * from './classify'
 export * from './observe'
+export * from './preflight'
 export * from './route'
 export * from './doh/adapter'
 export * from './sandbox/zone'

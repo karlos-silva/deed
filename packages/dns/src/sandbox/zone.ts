@@ -13,7 +13,7 @@ import { type Duration, type ResolverId, type Timestamp, seconds } from '@deed/c
  * `A` exists so a host can *exist* while holding no TXT — the difference
  * between `nxdomain` and `nodata`, which warrant different hints (state-model §3).
  */
-export type ZoneRecordType = 'TXT' | 'CNAME' | 'A'
+export type ZoneRecordType = 'TXT' | 'CNAME' | 'A' | 'NS'
 
 export type ZoneRecord = {
   readonly id: string

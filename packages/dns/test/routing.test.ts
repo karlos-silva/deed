@@ -25,7 +25,7 @@ describe('routing', () => {
 
     // Every lookup a real check makes: the challenge host and the control probe.
     await observe(port, 'acme.test', { now, actor: 'user', probeLabel: randomProbeLabel() })
-    await port.lookupTxt(challengeHost('acme.test'), { now })
+    await port.lookup(challengeHost('acme.test'), 'TXT', { now })
 
     expect(network).not.toHaveBeenCalled()
   })
@@ -37,7 +37,7 @@ describe('routing', () => {
       doh: createDohPort({ fetch: network }),
     })
 
-    const answers = await (await route('nobody.test')).lookupTxt('_deed-challenge.nobody.test', {
+    const answers = await (await route('nobody.test')).lookup('_deed-challenge.nobody.test', 'TXT', {
       now: T0,
     })
     expect(answers.every((a) => a.outcome === 'nxdomain')).toBe(true)
@@ -53,7 +53,7 @@ describe('routing', () => {
       doh: createDohPort({ fetch: network }),
     })
 
-    await (await route('acme.com')).lookupTxt('_deed-challenge.acme.com', { now: T0 })
+    await (await route('acme.com')).lookup('_deed-challenge.acme.com', 'TXT', { now: T0 })
     expect(network).toHaveBeenCalledTimes(3)
   })
 

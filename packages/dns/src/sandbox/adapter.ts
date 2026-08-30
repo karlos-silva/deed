@@ -1,6 +1,6 @@
 import { RESOLVERS, type ResolverAnswer, type ResolverId, type Timestamp } from '@deed/core'
 import { classifyLookup, ourFailure } from '../classify'
-import { RCODE, type DnsPort, type RawRecord } from '../port'
+import { RCODE, type DnsPort, type RawRecord, type RecordType } from '../port'
 import { type SandboxZone, answersFor, labelOf, visibleTo } from './zone'
 
 /**
@@ -12,8 +12,10 @@ import { type SandboxZone, answersFor, labelOf, visibleTo } from './zone'
  */
 export function createSandboxPort(zone: SandboxZone): DnsPort {
   return {
-    lookupTxt(host, context) {
-      return Promise.resolve(RESOLVERS.map((resolver) => answer(zone, resolver, host, context.now)))
+    lookup(host, type, context) {
+      return Promise.resolve(
+        RESOLVERS.map((resolver) => answer(zone, resolver, host, type, context.now)),
+      )
     },
   }
 }
@@ -22,6 +24,7 @@ function answer(
   zone: SandboxZone,
   resolver: ResolverId,
   host: string,
+  type: RecordType,
   now: Timestamp,
 ): ResolverAnswer {
   switch (zone.outage) {
@@ -29,38 +32,35 @@ function answer(
     case 'throttled':
       return ourFailure(resolver, zone.outage)
     case 'servfail':
-      return classifyLookup({ resolver, rcode: RCODE.servfail, records: [] })
+      return classifyLookup({ resolver, rcode: RCODE.servfail, records: [] }, type)
     case 'dnssec':
-      return classifyLookup({
-        resolver,
-        rcode: RCODE.servfail,
-        records: [],
-        comment: 'DNSSEC validation failure',
-      })
+      return classifyLookup(
+        { resolver, rcode: RCODE.servfail, records: [], comment: 'DNSSEC validation failure' },
+        type,
+      )
     case 'refused':
-      return classifyLookup({ resolver, rcode: RCODE.refused, records: [] })
+      return classifyLookup({ resolver, rcode: RCODE.refused, records: [] }, type)
     case null:
       break
   }
 
   const label = labelOf(host, zone.name)
-  if (label === null) return classifyLookup({ resolver, rcode: RCODE.nxdomain, records: [] })
+  if (label === null) return classifyLookup({ resolver, rcode: RCODE.nxdomain, records: [] }, type)
 
   const matched = answersFor(visibleTo(zone, resolver, now), label)
   if (matched.length === 0) {
-    return classifyLookup({ resolver, rcode: RCODE.nxdomain, records: [] })
+    return classifyLookup({ resolver, rcode: RCODE.nxdomain, records: [] }, type)
   }
 
   // A CNAME cannot coexist with other data at the same name, and it is *why*
   // the TXT cannot resolve (prd §7, `cname_at_host`).
   const cname = matched.find((r) => r.type === 'CNAME')
   const records: RawRecord[] =
-    cname !== undefined
+    cname !== undefined && type !== 'CNAME'
       ? [{ type: 'CNAME', ttl: cname.ttl, value: cname.value }]
-      : matched
-          .filter((r) => r.type === 'TXT')
-          .map((r) => ({ type: 'TXT', ttl: r.ttl, value: r.value }))
+      : matched.map((r) => ({ type: r.type, ttl: r.ttl, value: r.value }))
 
-  // The name exists and holds no TXT: nodata, never nxdomain.
-  return classifyLookup({ resolver, rcode: RCODE.noerror, records })
+  // The name exists and holds no record of the type asked for: nodata, never
+  // nxdomain — the difference between "does not exist" and "exists, wrong type".
+  return classifyLookup({ resolver, rcode: RCODE.noerror, records }, type)
 }

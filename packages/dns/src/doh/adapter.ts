@@ -1,10 +1,17 @@
 import { type ResolverId, parseCharacterStrings } from '@deed/core'
 import type { ResolverAnswer } from '@deed/core'
 import { classifyLookup, ourFailure } from '../classify'
-import type { DnsPort, RawLookup, RawRecord } from '../port'
+import {
+  RECORD_TYPE_NUMBER,
+  type DnsPort,
+  type RawLookup,
+  type RawRecord,
+  type RecordType,
+} from '../port'
 
-const TYPE_CNAME = 5
-const TYPE_TXT = 16
+const TYPE_NAME = new Map<number, RecordType>(
+  Object.entries(RECORD_TYPE_NUMBER).map(([name, number]) => [number, name as RecordType]),
+)
 
 /**
  * Three independent resolvers with independent caches (D4), so the propagation
@@ -17,25 +24,26 @@ const TYPE_TXT = 16
  */
 export type Endpoint = {
   readonly resolver: ResolverId
-  /** Given the host to look up, the URL to request. */
-  readonly url: (host: string) => string
+  /** Given the host and record type to look up, the URL to request. */
+  readonly url: (host: string, type: RecordType) => string
 }
 
 export const DOH_ENDPOINTS: readonly Endpoint[] = [
   {
     resolver: 'cloudflare',
-    url: (host) => `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(host)}&type=TXT`,
+    url: (host, type) =>
+      `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(host)}&type=${type}`,
   },
   {
     resolver: 'google',
-    url: (host) => `https://dns.google/resolve?name=${encodeURIComponent(host)}&type=TXT`,
+    url: (host, type) => `https://dns.google/resolve?name=${encodeURIComponent(host)}&type=${type}`,
   },
   {
     // Unfiltered on purpose: AdGuard's default endpoint blocks domains, and a
     // blocked name would read as `absent` — a silently wrong verdict.
     resolver: 'adguard',
-    url: (host) =>
-      `https://unfiltered.adguard-dns.com/resolve?name=${encodeURIComponent(host)}&type=TXT`,
+    url: (host, type) =>
+      `https://unfiltered.adguard-dns.com/resolve?name=${encodeURIComponent(host)}&type=${type}`,
   },
 ]
 
@@ -52,10 +60,10 @@ export function createDohPort(options: DohOptions = {}): DnsPort {
   const doFetch = options.fetch ?? globalThis.fetch
 
   return {
-    async lookupTxt(host, context) {
+    async lookup(host, type, context) {
       const timeoutMs = context.timeoutMs ?? options.timeoutMs ?? DEFAULT_TIMEOUT_MS
       return Promise.all(
-        endpoints.map((endpoint) => askOne(endpoint, host, timeoutMs, doFetch)),
+        endpoints.map((endpoint) => askOne(endpoint, host, type, timeoutMs, doFetch)),
       )
     },
   }
@@ -64,12 +72,13 @@ export function createDohPort(options: DohOptions = {}): DnsPort {
 async function askOne(
   endpoint: Endpoint,
   host: string,
+  type: RecordType,
   timeoutMs: number,
   doFetch: typeof globalThis.fetch,
 ): Promise<ResolverAnswer> {
   let response: Response
   try {
-    response = await doFetch(endpoint.url(host), {
+    response = await doFetch(endpoint.url(host, type), {
       headers: { accept: 'application/dns-json' },
       signal: AbortSignal.timeout(timeoutMs),
     })
@@ -82,7 +91,7 @@ async function askOne(
   if (!response.ok) return ourFailure(endpoint.resolver, 'network')
 
   try {
-    return classifyLookup(fromJson(endpoint.resolver, await response.json()))
+    return classifyLookup(fromJson(endpoint.resolver, await response.json()), type)
   } catch (error) {
     return ourFailure(endpoint.resolver, isTimeout(error) ? 'timeout' : 'network')
   }
@@ -114,13 +123,17 @@ export function fromJson(resolver: ResolverId, body: unknown): RawLookup {
   for (const answer of json.Answer ?? []) {
     const ttl = answer.TTL ?? 0
     const data = answer.data ?? ''
+    const type = TYPE_NAME.get(answer.type ?? -1)
+    if (type === undefined) continue
     // Cloudflare and AdGuard return TXT data quoted; Google returns a single
     // string bare. `parseCharacterStrings` reads both, joining chunks with no
     // separator — the >255-byte case a 2048-bit DKIM key actually produces.
-    if (answer.type === TYPE_TXT) records.push({ type: 'TXT', ttl, value: parseCharacterStrings(data) })
-    else if (answer.type === TYPE_CNAME) {
-      records.push({ type: 'CNAME', ttl, value: data.replace(/\.$/, '') })
-    }
+    // Names come back absolute; the trailing dot is presentation, not identity.
+    records.push({
+      type,
+      ttl,
+      value: type === 'TXT' ? parseCharacterStrings(data) : data.replace(/\.$/, '').toLowerCase(),
+    })
   }
   const comment = diagnostics(json)
   return comment === ''

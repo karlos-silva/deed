@@ -6,9 +6,19 @@ import type { ResolverAnswer, ResolverId, Timestamp } from '@deed/core'
  * than a parallel demo mode — the engine cannot tell the difference.
  */
 export type DnsPort = {
-  /** A TXT lookup, asked of every resolver independently. */
-  lookupTxt(host: string, context: LookupContext): Promise<readonly ResolverAnswer[]>
+  /** One lookup, asked of every resolver independently. */
+  lookup(host: string, type: RecordType, context: LookupContext): Promise<readonly ResolverAnswer[]>
 }
+
+/**
+ * `TXT` carries the proof. `NS` is what pre-flight reads to know whose panel the
+ * user is about to open, so the instructions can use that panel's own field
+ * names (prd §5). `CNAME` and `A` exist because a host that holds one is *why*
+ * a TXT cannot resolve there.
+ */
+export type RecordType = 'TXT' | 'NS' | 'CNAME' | 'A'
+
+export const RECORD_TYPE_NUMBER: Record<RecordType, number> = { A: 1, NS: 2, CNAME: 5, TXT: 16 }
 
 export type LookupContext = {
   /**
@@ -30,9 +40,11 @@ export type RawLookup = {
   readonly comment?: string
 }
 
-export type RawRecord =
-  | { readonly type: 'TXT'; readonly ttl: number; readonly value: string }
-  | { readonly type: 'CNAME'; readonly ttl: number; readonly value: string }
+export type RawRecord = {
+  readonly type: RecordType
+  readonly ttl: number
+  readonly value: string
+}
 
 /** RCODEs we act on. Everything else is treated as the zone failing to answer. */
 export const RCODE = { noerror: 0, servfail: 2, nxdomain: 3, refused: 5 } as const

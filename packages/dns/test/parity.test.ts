@@ -19,7 +19,7 @@ describe('the two adapters are interchangeable', () => {
 
         // Every case must answer for every resolver. An adapter that returns two
         // answers where the other returns three is not the same port.
-        const answers = await staged.port.lookupTxt(staged.host, { now: staged.now })
+        const answers = await staged.port.lookup(staged.host, 'TXT', { now: staged.now })
         expect(answers.map((a) => a.resolver).sort(), `${harness.name}/${kase}`).toEqual(
           [...RESOLVERS].sort(),
         )

@@ -1,5 +1,5 @@
 import type { ResolverAnswer, ResolverId } from '@deed/core'
-import { RCODE, type RawLookup } from './port'
+import { RCODE, type RawLookup, type RecordType } from './port'
 
 /**
  * One classifier, shared by every transport. Their failure and our failure are
@@ -8,12 +8,12 @@ import { RCODE, type RawLookup } from './port'
  * a timeout or a throttle is *our* failure, and dressing it up as a DNS problem
  * sends the user to debug a zone that is fine (state-model §3).
  */
-export function classifyLookup(raw: RawLookup): ResolverAnswer {
+export function classifyLookup(raw: RawLookup, asked: RecordType = 'TXT'): ResolverAnswer {
   const { resolver } = raw
 
   switch (raw.rcode) {
     case RCODE.noerror: {
-      const txt = raw.records.filter((r) => r.type === 'TXT')
+      const txt = raw.records.filter((r) => r.type === asked)
       const cname = raw.records.find((r) => r.type === 'CNAME')?.value
       if (txt.length === 0) {
         // The name exists but holds no TXT — usually a CNAME or a typo'd host.
