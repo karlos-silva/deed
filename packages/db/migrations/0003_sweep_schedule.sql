@@ -1,25 +1,41 @@
 -- The background sweep (D5).
 --
--- Apply this once the app has a deployed URL, substituting <APP_URL> and
--- <SWEEP_SECRET>. Vercel Cron is not usable here: on the Hobby plan it fires
--- roughly once a day, and a grace window measured in hours cannot be honoured
--- by a daily sweep.
+-- Vercel Cron is not usable here: on the Hobby plan it fires roughly once a day,
+-- and a grace window measured in hours cannot be honoured by a daily sweep.
+-- `pg_cron` is not plan-gated on Supabase and accepts sub-minute intervals, so a
+-- one-minute sweep is well within the free tier.
 --
--- `pg_cron` is not plan-gated on Supabase and accepts sub-minute intervals, so
--- a one-minute sweep is well within the free tier.
+-- PREREQUISITE — store the shared secret in Vault first, with the same value set
+-- as SWEEP_SECRET in the deployment's environment:
+--
+--   select vault.create_secret('<the secret>', 'sweep_secret',
+--                              'Bearer token pg_cron presents to /api/sweep');
+--
+-- It goes in Vault rather than inline because `cron.job.command` is plain text
+-- readable by anyone with database access, and a secret pasted into a scheduled
+-- job is a secret published to every future reader of that table.
 
 create extension if not exists pg_cron with schema cron;
 create extension if not exists pg_net with schema extensions;
+
+-- Idempotent: re-running this migration re-points an existing schedule rather
+-- than failing or quietly creating a second one.
+select cron.unschedule(jobname)
+  from cron.job
+ where jobname in ('recheck-sweep', 'recheck-sweep-retention', 'sweep-runs-retention');
 
 select cron.schedule(
   'recheck-sweep',
   '* * * * *',
   $$
     select net.http_post(
-      url     := '<APP_URL>/api/sweep',
+      url     := 'https://domains.karlos.dev/api/sweep',
       headers := jsonb_build_object(
         'Content-Type', 'application/json',
-        'Authorization', 'Bearer <SWEEP_SECRET>'
+        'Authorization',
+        'Bearer ' || (select decrypted_secret
+                        from vault.decrypted_secrets
+                       where name = 'sweep_secret')
       ),
       body    := '{}'::jsonb,
       timeout_milliseconds := 20000

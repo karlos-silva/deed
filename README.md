@@ -196,10 +196,21 @@ failure this whole product exists to make legible.
 The providers redirect to **Supabase**, and Supabase redirects to **the app**.
 Pointing the provider at the app directly is the usual first mistake.
 
-**The sweep.** Apply
-[`packages/db/migrations/0003_sweep_schedule.sql`](packages/db/migrations/0003_sweep_schedule.sql),
-substituting the deployed URL and the `SWEEP_SECRET` set above. That is what
-makes verification keep happening while nobody is watching (D5).
+**The sweep.** Store the shared secret in Supabase Vault, using the same value
+set as `SWEEP_SECRET` in the deployment:
+
+```sql
+select vault.create_secret('<the secret>', 'sweep_secret',
+                           'Bearer token pg_cron presents to /api/sweep');
+```
+
+Then apply
+[`packages/db/migrations/0003_sweep_schedule.sql`](packages/db/migrations/0003_sweep_schedule.sql).
+It reads the secret from Vault rather than carrying it inline, because
+`cron.job.command` is plain text readable by anyone with database access — a
+secret pasted into a scheduled job is a secret published to every future reader
+of that table. This is what makes verification keep happening while nobody is
+watching (D5).
 
 **Proving the real path.** The sandbox covers every failure state, but only a
 real zone proves the real one. Claim `demo.karlos.dev` in the app and publish
