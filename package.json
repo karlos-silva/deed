@@ -12,7 +12,8 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "scenarios": "node scripts/check-scenarios.mjs"
+    "scenarios": "node scripts/check-scenarios.mjs",
+    "scan": "node apps/web/scripts/scan-bundle.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

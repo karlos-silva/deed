@@ -7,13 +7,18 @@
  * the one mistake that is only detectable at build time and only catastrophic
  * after deploy. So it is wired in S0, before there is anything to leak.
  *
- *   node scripts/scan-bundle.mjs [apps/web/.next]
+ * It lives inside `apps/web` rather than at the repo root on purpose: the build
+ * runs with `apps/web` as its root directory, and a build step that reaches
+ * outside it is a build step that can vanish depending on how the platform
+ * uploads the repository.
+ *
+ *   node scripts/scan-bundle.mjs [.next]
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
-const root = new URL('..', import.meta.url).pathname
-const build = process.argv[2] ?? join(root, 'apps/web/.next')
+const app = new URL('..', import.meta.url).pathname
+const build = process.argv[2] ?? join(app, '.next')
 
 /** Anything here in a browser-served file is a leak, not a false positive. */
 const FORBIDDEN = [

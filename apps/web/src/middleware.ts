@@ -5,19 +5,30 @@ import { createServerClient } from '@supabase/ssr'
  * Refreshes the auth cookies on every navigation. Server Components cannot write
  * cookies, so without this a session would silently expire mid-visit and the
  * user would be signed out by a page load.
+ *
+ * Nothing in here may take the site down. Middleware runs before every route, so
+ * anything it throws becomes an opaque platform-level 500 on *every* URL, with
+ * no page rendered and no way for the app to explain itself — including
+ * `/api/health`, the one endpoint whose whole job is saying what is wrong. A
+ * session that failed to refresh is a request that carries on unauthenticated,
+ * which every route already handles.
  */
-export async function middleware(request: NextRequest) {
-  const url = process.env['NEXT_PUBLIC_SUPABASE_URL']
-  const key = process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY']
+export async function middleware(request: NextRequest): Promise<NextResponse> {
+  try {
+    return await refreshSession(request)
+  } catch (error) {
+    console.error('[middleware] session refresh failed, continuing unauthenticated:', error)
+    return NextResponse.next({ request })
+  }
+}
 
-  // Missing configuration is an operator error, and it must not present as a
-  // dead site. Crashing here fails every route at the edge with
-  // MIDDLEWARE_INVOCATION_FAILED and no clue attached; letting the request
-  // through means the page renders the app's own error boundary, and `/api/health`
-  // still answers with exactly which variable is absent.
+async function refreshSession(request: NextRequest): Promise<NextResponse> {
+  const url = process.env['NEXT_PUBLIC_SUPABASE_URL']?.trim()
+  const key = process.env['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY']?.trim()
+
   if (isBlank(url) || isBlank(key)) {
     console.error(
-      '[config] missing %s — the session cannot be refreshed, so sign-in will not persist.',
+      '[config] missing %s — sign-in will not persist. /api/health lists what is set.',
       [isBlank(url) && 'NEXT_PUBLIC_SUPABASE_URL', isBlank(key) && 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY']
         .filter(Boolean)
         .join(' and '),
@@ -38,14 +49,7 @@ export async function middleware(request: NextRequest) {
     },
   })
 
-  try {
-    await db.auth.getUser()
-  } catch (error) {
-    // A refresh failing is not a reason to refuse the page. The request carries
-    // on unauthenticated, which is a state every route already handles.
-    console.error('[auth] session refresh failed:', error)
-  }
-
+  await db.auth.getUser()
   return response
 }
 

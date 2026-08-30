@@ -32,6 +32,13 @@ export async function GET(): Promise<Response> {
     .filter(([, ok]) => !ok)
     .map(([name]) => name)
 
+  // Presence is not correctness. A value pasted with a trailing newline, or
+  // without its scheme, is present and still unusable — and it used to take the
+  // whole site down before anything could say so.
+  const supabaseUrl = process.env['NEXT_PUBLIC_SUPABASE_URL']
+  const urlParses =
+    supabaseUrl === undefined ? false : URL.canParse(supabaseUrl.trim()) && supabaseUrl === supabaseUrl.trim()
+
   let database: string
   try {
     const { error } = await serviceDb().from('sweep_runs').select('id').limit(1)
@@ -43,17 +50,27 @@ export async function GET(): Promise<Response> {
   // `NEXT_PUBLIC_SITE_URL` is optional — the app falls back to the request's own
   // host — so its absence is reported without failing the check.
   const required = missing.filter((name) => name !== 'NEXT_PUBLIC_SITE_URL')
-  const ok = required.length === 0 && database === 'ok'
+  const ok = required.length === 0 && urlParses && database === 'ok'
 
   return Response.json(
-    { ok, database, config, missing, hint: hintFor(required, database) },
+    {
+      ok,
+      database,
+      config,
+      missing,
+      supabaseUrlUsable: urlParses,
+      hint: hintFor(required, urlParses, database),
+    },
     { status: ok ? 200 : 503 },
   )
 }
 
-function hintFor(missing: string[], database: string): string | undefined {
+function hintFor(missing: string[], urlParses: boolean, database: string): string | undefined {
   if (missing.includes('NEXT_PUBLIC_SUPABASE_URL') || missing.includes('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY')) {
     return 'NEXT_PUBLIC_* variables are inlined at build time. Setting them after a deploy does nothing until you redeploy.'
+  }
+  if (!urlParses) {
+    return 'NEXT_PUBLIC_SUPABASE_URL is set but not a clean absolute URL — check for a missing https:// or for whitespace that came along with the paste.'
   }
   if (missing.includes('SUPABASE_SECRET_KEY')) {
     return 'The sweep and this check read the database with no session, which RLS cannot express. Set the Supabase secret API key — never with a NEXT_PUBLIC_ prefix.'
