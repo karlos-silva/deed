@@ -16,10 +16,13 @@ import type { AuditRow } from '@deed/db'
 import { claimGuidance, recordGuidance } from '@/lib/copy'
 import { AuditLog } from '@/components/AuditLog'
 import { ClaimBadge, RecordBadge } from '@/components/StatusBadge'
-import { NothingClaimedYet } from '@/components/NothingClaimedYet'
 import { ResolverMatrix } from '@/components/ResolverMatrix'
 import { ValueDiff } from '@/components/ValueDiff'
 import { TopBar } from '@/components/TopBar'
+import { NothingClaimedYet } from '@/components/NothingClaimedYet'
+import { AddDomainDialog } from '@/components/AddDomainDialog'
+import { claimDomain } from '@/app/domains/actions'
+import Image from 'next/image'
 
 export const dynamic = 'force-dynamic'
 
@@ -246,6 +249,44 @@ export default function DesignGallery() {
 
         <Section title="First run">
           <NothingClaimedYet />
+        </Section>
+
+        <Section title="The list, and the Add domain dialog">
+          <div className="page-head">
+            <h2 className="t-title">Domains</h2>
+            <AddDomainDialog action={claimDomain} />
+          </div>
+          <div className="table-wrap">
+            <table className="domains">
+              <thead>
+                <tr>
+                  <th scope="col">Domain</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Last checked</th>
+                  <th scope="col" className="created">Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {CLAIMS.slice(0, 5).map(([label, ownership], i) => (
+                  <tr key={label}>
+                    <th scope="row">
+                      <a href="#">
+                        <span className="row-mark">
+                          <Image src="/domains-tile.png" alt="" width={740} height={740} />
+                        </span>
+                        <span className="name">{['acme.com', 'updates.acme.com', 'shop.acme.co.uk', 'acme.test', 'lapsed.com'][i]}</span>
+                        {i === 3 && <span className="badge badge-info">simulated</span>}
+                      </a>
+                    </th>
+                    <td><ClaimBadge ownership={ownership} /></td>
+                    <td className="when">{['1 min ago', '4 min ago', '2 h ago', 'just now', '—'][i]}</td>
+                    <td className="when created">{['3 mo ago', '2 mo ago', '6 d ago', '1 h ago', '14 d ago'][i]}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="table-foot">5 domains · checked in the background 1 min ago</p>
         </Section>
       </main>
     </div>

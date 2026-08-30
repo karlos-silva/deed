@@ -1,18 +1,16 @@
-import { CHALLENGE_LABEL } from '@deed/core'
-
+/**
+ * S3 asks that a first-time account not be handed an empty table under a
+ * heading. One line, not a lecture: what a claim is, and the way in that needs
+ * nothing you do not already have.
+ */
 export function NothingClaimedYet() {
   return (
-    <section className="empty" style={{ marginTop: 'var(--space-6)' }}>
-      <div className="stack">
-        <h2 className="t-section">Nothing claimed yet</h2>
-        <p className="t-body muted" style={{ maxWidth: '52ch', margin: '0 auto' }}>
-          Claiming generates one high-entropy token scoped to you and this domain. You publish it as
-          a single TXT record at <span className="t-mono">{CHALLENGE_LABEL}.&lt;your-domain&gt;</span>,
-          and we read it back. You will need access to the domain’s DNS — or, if you would rather
-          not use a real one, a <span className="t-mono">.test</span> name and nothing else.
-        </p>
-        <p className="t-small subtle">We only ever make read queries against your DNS.</p>
-      </div>
+    <section className="empty-state">
+      <h2 className="t-section">No domains yet</h2>
+      <p>
+        Claiming issues one token to publish as a TXT record. A{' '}
+        <span className="t-mono">.test</span> name works without owning anything.
+      </p>
     </section>
   )
 }

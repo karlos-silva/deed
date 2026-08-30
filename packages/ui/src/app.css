@@ -88,31 +88,74 @@
 }
 .footer a { color: var(--fg-subtle); }
 
-/* --------------------------------------------------------------- lists --- */
+/* ------------------------------------------------------------- domains --- */
 
-.domain-list { display: flex; flex-direction: column; gap: var(--space-3); }
+.domains { width: 100%; border-collapse: collapse; font-size: var(--text-md); }
+.domains thead th {
+  text-align: left;
+  font-weight: var(--weight-regular);
+  font-size: var(--text-sm);
+  color: var(--fg-muted);
+  background: var(--surface-2);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-strong);
+  white-space: nowrap;
+}
+.domains thead th:first-child { border-left: 1px solid var(--border); border-top-left-radius: var(--radius-lg); }
+.domains thead th:last-child { border-right: 1px solid var(--border); border-top-right-radius: var(--radius-lg); }
 
-.domain-row {
+.domains tbody th,
+.domains tbody td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  font-weight: var(--weight-regular);
+  text-align: left;
+  vertical-align: middle;
+}
+.domains tbody tr:last-child th,
+.domains tbody tr:last-child td { border-bottom: none; }
+.domains tbody tr:hover { background: var(--surface-1); }
+
+.domains tbody th a {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-4) var(--space-5);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--surface-1);
-  color: inherit;
-  text-decoration: none;
-  transition: border-color var(--dur-1) var(--ease);
-}
-.domain-row:hover { border-color: var(--border-strong); }
-.domain-row .name {
-  font-family: var(--font-mono);
-  font-size: var(--text-md);
+  gap: var(--space-3);
   color: var(--fg);
-  overflow-wrap: anywhere;
+  text-decoration: none;
+  width: fit-content;
+  border-radius: var(--radius-sm);
 }
-.domain-row .grow { flex: 1; min-width: 0; }
-.domain-row .freshness { color: var(--fg-subtle); font-size: var(--text-xs); white-space: nowrap; }
+.domains tbody th a:hover .name { text-decoration: underline; text-underline-offset: 3px; }
+.domains .name { font-family: var(--font-mono); overflow-wrap: anywhere; }
+.domains .row-mark {
+  width: 28px; height: 28px; border-radius: 8px; overflow: hidden; flex: none;
+  border: 1px solid var(--border); box-shadow: var(--edge-lit);
+}
+.domains .row-mark img { display: block; width: 100%; height: auto; }
+.domains .when { color: var(--fg-muted); font-size: var(--text-sm); white-space: nowrap; }
+.domains .empty-row { color: var(--fg-muted); padding: var(--space-8) var(--space-4); text-align: center; }
+
+.empty-state {
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-xl);
+  padding: var(--space-10) var(--space-6);
+  text-align: center;
+  display: grid;
+  gap: var(--space-2);
+  justify-items: center;
+}
+.empty-state p { color: var(--fg-muted); font-size: var(--text-md); max-width: 46ch; }
+
+.table-foot {
+  margin-top: var(--space-4);
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+}
+
+@media (max-width: 720px) {
+  .domains .created { display: none; }
+}
 
 /* ---------------------------------------------------------- the record --- */
 

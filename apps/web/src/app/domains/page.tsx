@@ -1,12 +1,13 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { at, DOMAINS_PER_ACCOUNT } from '@deed/core'
+import { at } from '@deed/core'
 import { lastSweep, listDomains } from '@deed/db'
 import { session } from '@/lib/session'
 import { humanSince } from '@/lib/copy'
 import { ClaimBadge } from '@/components/StatusBadge'
+import { AddDomainDialog } from '@/components/AddDomainDialog'
 import { NothingClaimedYet } from '@/components/NothingClaimedYet'
-import { ClaimField } from '@/components/ClaimField'
 import { Footer } from '@/components/Footer'
 import { TopBar } from '@/components/TopBar'
 import { claimDomain } from './actions'
@@ -34,62 +35,58 @@ export default async function DomainsPage({
 
       <main className="main">
         <div className="page-head">
-          <div className="stack-2">
-            <h1 className="t-title">Domains</h1>
-            <p className="t-body muted">
-              Publish one TXT record and we will read it back from three independent resolvers —
-              and keep reading it, so this stays a fact rather than a badge.
-            </p>
-          </div>
-          {sweptAt !== null && (
-            <span className="t-small subtle nowrap">
-              background sweep · {humanSince(sweptAt, clock)}
-            </span>
-          )}
+          <h1 className="t-title">Domains</h1>
+          <AddDomainDialog action={claimDomain} {...(error !== undefined && { error })} />
         </div>
-
-        <section className="card">
-          <div className="card-body stack">
-            <form action={claimDomain} className="zone-form">
-              <ClaimField />
-              <button className="btn btn-primary" type="submit">
-                Claim
-              </button>
-            </form>
-
-            {error !== undefined && (
-              <div className="callout callout-danger" role="alert">
-                {error}
-              </div>
-            )}
-
-            <p className="t-small subtle">
-              Anything ending in <span className="t-mono">.test</span> runs against a simulated zone
-              you edit yourself — no domain required, and every failure state is reachable on
-              demand. {domains.length} of {DOMAINS_PER_ACCOUNT} domains used.
-            </p>
-          </div>
-        </section>
 
         {domains.length === 0 ? (
           <NothingClaimedYet />
         ) : (
-          <div className="domain-list" style={{ marginTop: 'var(--space-6)' }}>
-            {domains.map(({ domain }) => (
-              <Link className="domain-row" key={domain.id} href={`/domains/${domain.id}`}>
-                <span className="grow stack-2">
-                  <span className="name">{domain.name}</span>
-                  {domain.isSandbox && <span className="t-small subtle">simulated zone</span>}
-                </span>
-                <span className="freshness">
-                  {domain.lastCheckedAt === null
-                    ? 'not checked yet'
-                    : `checked ${humanSince(domain.lastCheckedAt, clock)}`}
-                </span>
-                <ClaimBadge ownership={domain.ownership} />
-              </Link>
-            ))}
+          <div className="table-wrap">
+            <table className="domains">
+              <thead>
+                <tr>
+                  <th scope="col">Domain</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Last checked</th>
+                  <th scope="col" className="created">
+                    Created
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {domains.map(({ domain }) => (
+                  <tr key={domain.id}>
+                    <th scope="row">
+                      <Link href={`/domains/${domain.id}`}>
+                        <span className="row-mark">
+                          <Image src="/domains-tile.png" alt="" width={740} height={740} />
+                        </span>
+                        <span className="name">{domain.name}</span>
+                        {domain.isSandbox && <span className="badge badge-info">simulated</span>}
+                      </Link>
+                    </th>
+                    <td>
+                      <ClaimBadge ownership={domain.ownership} />
+                    </td>
+                    <td className="when">
+                      {domain.lastCheckedAt === null
+                        ? '—'
+                        : humanSince(domain.lastCheckedAt, clock)}
+                    </td>
+                    <td className="when created">{humanSince(domain.createdAt, clock)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+        )}
+
+        {domains.length > 0 && (
+          <p className="table-foot">
+            {domains.length} {domains.length === 1 ? 'domain' : 'domains'}
+            {sweptAt !== null && <> · checked in the background {humanSince(sweptAt, clock)}</>}
+          </p>
         )}
       </main>
 

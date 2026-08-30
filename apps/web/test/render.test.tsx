@@ -115,17 +115,18 @@ describe('the detail page renders every state', () => {
   it('A first-time account has somewhere to start', () => {
     const html = renderToStaticMarkup(<NothingClaimedYet />)
 
-    // It explains what claiming does and what will be needed…
-    expect(html).toContain('_deed-challenge')
-    expect(html).toMatch(/access to the domain/i)
+    // It says what claiming does and names the way in that needs nothing you do
+    // not already have…
+    expect(html).toMatch(/token/i)
+    expect(html).toMatch(/TXT record/i)
     expect(html).toMatch(/\.test/)
-    // …and states the thing a stranger most wants to know about a product that
-    // reads their DNS.
-    expect(html).toMatch(/only ever make read queries/i)
 
     // …and it is not an empty table under a heading.
     expect(html).not.toContain('<table')
     expect(html).not.toContain('<tbody')
+
+    // Two lines, not a lecture. The screen this replaces had three paragraphs.
+    expect(html.replace(/<[^>]+>/g, ' ').trim().length).toBeLessThan(200)
   })
 
   it('marks exactly the two quote characters in the diff', () => {
