@@ -459,3 +459,37 @@ matrix is that the caches are independent, and they are.
 **Reversal cost.** One entry in `DOH_ENDPOINTS` and one rename of the
 `ResolverId` variant. If Quad9 is wanted back, the wireformat transport is in
 this repository's history and the runtime is the only blocker.
+
+---
+
+## D16 — `NEXT_PUBLIC_*` variables are Vercel "Config", never "Secret"
+
+**Decided.** `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+are stored as Vercel **Config** variables. `SUPABASE_SECRET_KEY` and
+`SWEEP_SECRET` are stored as **Secret**.
+
+**Why this is an entry and not a note.** Marking the two public ones as "Secret"
+looks like the cautious choice, and it is the one that took the deployment down
+for an hour. Vercel's Secret type withholds a value from the client bundle —
+which is exactly what the `NEXT_PUBLIC_` prefix exists to reach. The two cancel:
+the dashboard lists the variable as present, the build inlines `undefined`, and
+every route dies in middleware with `MIDDLEWARE_INVOCATION_FAILED` and no
+further explanation. Nothing in the code was wrong.
+
+**The publishable key is public by design.** It identifies the project; it
+authorises nothing. RLS is what protects the data, which is why `0001_schema.sql`
+spends a block on policies and why S3 requires a policy that denies *everyone* to
+fail its test too. Treating the publishable key as a secret buys no safety and
+costs a working deployment.
+
+**What changed in the code, and what deliberately did not.** The middleware can
+no longer take the site down: anything it throws becomes a log line and the
+request continues unauthenticated. `/api/health` reports which variables the
+*build* actually has and whether the URL parses, because presence is not
+correctness. What did not change is the guardrail in the other direction — the
+post-build scan still fails the build if a secret reaches a client chunk, and it
+was verified by planting one.
+
+**The general rule.** Configuration that must reach the browser cannot also be
+hidden from it. Any store offering a "secret" flag will happily accept both
+instructions and honour the wrong one silently.

@@ -58,11 +58,16 @@ deliberately do not test, and why, is D12.
 
 ## S0 — Walking skeleton
 
-**Status.** In progress. The monorepo, every mechanical guardrail, the
-scenario-coverage script and the client-bundle secret scan are in and proven to
-fire. The Supabase project exists with its schema and RLS applied. Remaining:
-the Vercel project (this connection cannot create one), the two OAuth apps, and
-the `pg_cron` sweep, which needs the deployed URL — see the README.
+**Status.** Done — deployed at <https://domains.karlos.dev>.
+
+Every assumption this slice existed to test was worth testing, and three of them
+bit. DoH from a serverless runtime held for two resolvers and forced D15 for the
+third. `pg_cron` on the free tier works exactly as D5 claimed. And the deploy
+itself failed twice in ways only a real deploy produces: a build step reaching
+outside the root directory, and `NEXT_PUBLIC_*` variables marked as Vercel
+"Secret", which are then withheld from the very bundle the prefix exists to
+reach — so the app read them as `undefined` while the dashboard showed them
+present.
 
 **Context.** Every hard external assumption gets validated before anything is
 built on it. Three could each force a redesign: DoH reachable from a Vercel
@@ -75,17 +80,21 @@ on day one, so that no later slice is blocked by infrastructure I assumed.
 
 **Acceptance**
 - [x] pnpm + Turborepo monorepo, packages per D7.
-- [ ] `apps/web` deployed to Vercel, reachable at a public URL.
-- [ ] Sign in with GitHub and Google, both working on the deployed origin.
+- [x] `apps/web` deployed to Vercel, reachable at a public URL.
+- [x] Sign in with GitHub and Google, both working on the deployed origin.
+      *Verified from a cold signed-out browser: the app hands off to Supabase,
+      Supabase to the provider, and GitHub names the app back — "to continue to
+      Deed".*
 - [x] A route handler resolves one hardcoded TXT record over DoH against all
       three resolvers and renders the raw answers. *Proven against the real
       internet by the release check in S2; the assumption it existed to test —
       DoH reachable from a serverless runtime — held for two of three resolvers
       and forced D15 for the third.*
-- [ ] A `pg_cron` job writes a heartbeat row every minute; the page shows the
-      last heartbeat, proving the sweep mechanism works. *The schedule is
-      written (`0003_sweep_schedule.sql`) and the endpoint and `sweep_runs`
-      table exist; it needs the deployed URL to be applied.*
+- [x] A `pg_cron` job writes a heartbeat row every minute; the page shows the
+      last heartbeat, proving the sweep mechanism works. *Running once a minute
+      against the deployment. `net._http_response` recorded the moment it
+      started working — six 500s, then `200 {"due":0,"checked":0,"failed":0}` —
+      which is the sweep proving itself with nobody watching.*
 - [x] A post-build test scans the client bundle for the service-role key and
       Supabase secret-key patterns, and fails the build on a hit. Wired in S0
       because this is the one mistake that is only detectable at build time, and
