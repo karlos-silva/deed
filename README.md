@@ -230,10 +230,21 @@ secret pasted into a scheduled job is a secret published to every future reader
 of that table. This is what makes verification keep happening while nobody is
 watching (D5).
 
-**Proving the real path.** The sandbox covers every failure state, but only a
-real zone proves the real one. Claim `demo.karlos.dev` in the app and publish
-the TXT record it gives you in Google Cloud DNS — same engine, same matrix, real
-resolvers.
+**The real path is proven, not only the sandbox.** `demo.karlos.dev` was claimed
+through the app and its TXT record published in the real zone; the sweep found
+it at Cloudflare and Google, reached quorum, and moved the claim to `verified`
+with the audit log recording each step and the evidence behind it:
+
+```
+04:31:00.6  state_changed   sweep    record: unchecked → absent
+04:45:00.4  state_changed   sweep    record: absent → verified
+04:45:00.4  state_changed   sweep    claim:  pending → verified
+04:45:45.3  check_completed system   → verified          (lazy revalidation on read)
+```
+
+D10 treated a real domain as optional, on the grounds that the sandbox reaches
+every failure state. It does — but only a real zone proves the resolvers, the
+cadence and the sweep are doing what they claim.
 
 ## The documents
 
