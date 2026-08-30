@@ -1,0 +1,268 @@
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import {
+  type Harness,
+  connect,
+  degradedOwnership,
+  pendingOwnership,
+  verifiedOwnership,
+} from './session'
+
+/**
+ * Everything a pure function cannot hold: isolation between accounts,
+ * exclusivity of proof, and serialized writes (state-model §4, invariants 1, 2
+ * and 8). Against real Postgres, because for RLS a mock tests the mock (D12).
+ */
+
+let db: Harness
+let alice: string
+let bob: string
+
+const TOKEN_A = 'a'.repeat(52)
+const TOKEN_B = 'b'.repeat(52)
+
+beforeAll(async () => {
+  db = await connect()
+})
+afterAll(async () => {
+  await db.close()
+})
+
+beforeEach(async () => {
+  await db.reset()
+  alice = await db.account('alice@example.com')
+  bob = await db.account('bob@example.com')
+})
+
+const claim = async (uid: string, name: string, token = TOKEN_A): Promise<string> => {
+  const rows = await db.as(uid).query<{ id: string }>(
+    `select * from public.create_claim($1, false, $2::jsonb, now(), now())`,
+    [name, JSON.stringify(pendingOwnership(token))],
+  )
+  return rows[0]!.id
+}
+
+const transition = (uid: string | null, id: string, version: number, ownership: unknown, events: unknown[] = []) =>
+  db.as(uid, uid === null ? 'service_role' : 'authenticated').query<{ apply_transition: unknown }>(
+    `select public.apply_transition(
+       $1::uuid, $2::bigint, now(), $3::jsonb,
+       '{"status":"verified"}'::jsonb, null, now(), null, now(), $4::jsonb
+     ) as apply_transition`,
+    [id, version, JSON.stringify(ownership), JSON.stringify(events)],
+  )
+
+describe('accounts are isolated', () => {
+  it('RLS isolates accounts without simply denying everyone', async () => {
+    const hers = await claim(alice, 'acme.com')
+
+    // B cannot read A's domain by id…
+    expect(await db.as(bob).query(`select id from public.domains where id = $1`, [hers])).toEqual([])
+    // …nor her audit history…
+    expect(await db.as(bob).query(`select id from public.audit_events where domain_id = $1`, [hers])).toEqual([])
+
+    // …nor change it. Zero rows affected, not an error: RLS filters, it does not shout.
+    const updated = await db.as(bob).query(
+      `update public.domains set name = 'stolen.com' where id = $1 returning id`,
+      [hers],
+    )
+    expect(updated).toEqual([])
+
+    // With no JWT at all, nothing.
+    expect(await db.as(null, 'anon').query(`select id from public.domains`)).toEqual([])
+
+    // And the half a deny-everyone policy would also pass: A reads her own.
+    // Without this assertion the three above are satisfied by a broken product.
+    const mine = await db.as(alice).query<{ id: string }>(`select id from public.domains`)
+    expect(mine.map((row) => row.id)).toEqual([hers])
+    expect(await db.as(alice).query(`select id from public.audit_events where domain_id = $1`, [hers]))
+      .toHaveLength(1)
+  })
+
+  it('the audit log is not writable by the account it belongs to', async () => {
+    const hers = await claim(alice, 'acme.com')
+    // A history the client can write is not evidence (prd §3).
+    const code = await db.as(alice).refused(
+      `insert into public.audit_events (domain_id, owner_id, domain_name, at, kind, actor, to_status)
+       values ($1, $2, 'acme.com', now(), 'state_changed', 'user', 'verified')`,
+      [hers, alice],
+    )
+    expect(code).toBe('42501')
+  })
+})
+
+describe('claiming is open, proof is not', () => {
+  it('Pending is open, verified is exclusive', async () => {
+    // Any number of accounts may attempt the same name. If claiming reserved
+    // it, squatting would cost one click (prd §8).
+    const hers = await claim(alice, 'contested.com', TOKEN_A)
+    const his = await claim(bob, 'contested.com', TOKEN_B)
+    expect(hers).not.toBe(his)
+
+    // A proves it. B's claim is revoked at that moment, with a reason.
+    const [result] = await transition(alice, hers, 0, verifiedOwnership(TOKEN_A))
+    expect(result!.apply_transition).toMatchObject({ applied: true, revoked_competing: 1 })
+
+    const [bobsClaim] = await db.as(bob).query<{ status: string; reason: string }>(
+      `select ownership->>'status' as status, ownership->>'reason' as reason
+         from public.domains where id = $1`,
+      [his],
+    )
+    expect(bobsClaim).toEqual({ status: 'revoked', reason: 'claimed_by_other' })
+
+    // B sees an explanation, not a silently vanished claim.
+    const explanation = await db.as(bob).query<{ to_status: string }>(
+      `select to_status from public.audit_events
+        where domain_id = $1 and kind = 'state_changed' order by id desc limit 1`,
+      [his],
+    )
+    expect(explanation[0]?.to_status).toBe('revoked')
+  })
+
+  it('Degradation keeps the domain', async () => {
+    // A degraded holder keeps the name for the whole grace window: you do not
+    // lose your domain to a squatter because of a DNS migration (invariant 2).
+    const hers = await claim(alice, 'migrating.com', TOKEN_A)
+    await transition(alice, hers, 0, verifiedOwnership(TOKEN_A))
+    await transition(alice, hers, 1, degradedOwnership(TOKEN_A))
+
+    const his = await claim(bob, 'migrating.com', TOKEN_B)
+    expect(his).toBeTruthy() // pending is still open to him
+
+    // But he cannot be promoted while her claim is live.
+    const code = await db.as(bob).refused(
+      `update public.domains set ownership = $2::jsonb where id = $1`,
+      [his, JSON.stringify(verifiedOwnership(TOKEN_B))],
+    )
+    expect(code).toBe('23505') // one live claim per name
+  })
+})
+
+describe('writes for one domain are serialized', () => {
+  it('A sweep and a manual check cannot double-write', async () => {
+    const hers = await claim(alice, 'raced.com')
+    const event = [{ kind: 'state_changed', actor: 'sweep', level: 'claim', from: 'pending', to: 'verified' }]
+
+    // Both read version 0 — the sweep and the user's Check now, firing together.
+    const [first] = await transition(null, hers, 0, verifiedOwnership(TOKEN_A), event)
+    const [second] = await transition(alice, hers, 0, verifiedOwnership(TOKEN_A), event)
+
+    expect(first!.apply_transition).toMatchObject({ applied: true, version: 1 })
+    // The second waited for the lock, found the state it read was gone, and
+    // discarded its observation rather than applying it to state it never read.
+    expect(second!.apply_transition).toMatchObject({ applied: false, reason: 'stale', version: 1 })
+
+    // One transition, one audit event. Not two.
+    const events = await db.as(alice).query(
+      `select id from public.audit_events where domain_id = $1 and kind = 'state_changed'`,
+      [hers],
+    )
+    expect(events).toHaveLength(1)
+  })
+})
+
+describe('the log grows without becoming unreadable', () => {
+  it('The audit log stays readable as it grows', async () => {
+    const hers = await claim(alice, 'noisy.com')
+    // A month of checks every six hours is ~120; make it an order worse. Ids
+    // ascend with time, as an append-only log's do…
+    await db.admin.query(
+      `insert into public.audit_events (domain_id, owner_id, domain_name, at, kind, actor, to_status)
+       select $1, $2, 'noisy.com', now() - ((1200 - g) || ' minutes')::interval,
+              'check_completed', 'sweep', 'verified'
+         from generate_series(1, 1200) g`,
+      [hers, alice],
+    )
+    // …except where they do not. A backfilled event has an old timestamp and a
+    // new id, and a cursor keyed on id alone silently skips rows around it.
+    await db.admin.query(
+      `insert into public.audit_events (domain_id, owner_id, domain_name, at, kind, actor, to_status)
+       values ($1, $2, 'noisy.com', now() - interval '600 minutes', 'check_completed', 'system', 'verified')`,
+      [hers, alice],
+    )
+
+    const page = async (before: { at: string; id: number } | null) =>
+      db.as(alice).query<{ id: number; at: string }>(
+        `select id::int as id, at from public.audit_events
+          where domain_id = $1
+            and ($2::timestamptz is null or (at, id) < ($2::timestamptz, $3::bigint))
+          order by at desc, id desc limit 25`,
+        [hers, before?.at ?? null, before?.id ?? null],
+      )
+
+    const first = await page(null)
+    const second = await page(first.at(-1)!)
+
+    expect(first).toHaveLength(25)
+    expect(second).toHaveLength(25)
+    // Newest first, and the pages neither overlap nor skip.
+    const seen = [...first, ...second]
+    expect(new Set(seen.map((r) => r.id)).size).toBe(50)
+    for (let i = 1; i < seen.length; i++) {
+      expect(Date.parse(seen[i]!.at)).toBeLessThanOrEqual(Date.parse(seen[i - 1]!.at))
+    }
+
+    // "Renders without loading every event" is a claim about the plan, and the
+    // plan has to be the one RLS actually produces: the policy predicate on
+    // owner_id is a security barrier, so an index keyed on domain_id alone is
+    // never reachable. Sorting the account's whole history to show 25 rows is
+    // what must be impossible, not merely unchosen.
+    const plan = (
+      await db.as(alice).query<{ 'QUERY PLAN': string }>(
+        `explain select * from public.audit_events
+          where domain_id = '${hers}' order by at desc, id desc limit 25`,
+        [],
+        { seqscan: false },
+      )
+    )
+      .map((row) => row['QUERY PLAN'])
+      .join('\n')
+
+    expect(plan).toMatch(/Index Scan/)
+    expect(plan).not.toMatch(/Sort/)
+  })
+})
+
+describe('recovery', () => {
+  it('Re-claiming gets a fresh token', async () => {
+    const first = await claim(alice, 'lapsed.com', TOKEN_A)
+    await transition(alice, first, 0, { status: 'revoked', reason: 'released_by_owner' }, [
+      { kind: 'released', actor: 'user' },
+    ])
+
+    // The name is free again, and the new claim is a new claim.
+    const second = await claim(alice, 'lapsed.com', TOKEN_B)
+    expect(second).not.toBe(first)
+
+    const [row] = await db.as(alice).query<{ token: string }>(
+      `select ownership->>'token' as token from public.domains where id = $1`,
+      [second],
+    )
+    expect(row!.token).toBe(TOKEN_B)
+    expect(row!.token).not.toBe(TOKEN_A)
+  })
+
+  it('Deletion is confirmed and logged', async () => {
+    const hers = await claim(alice, 'released.com', TOKEN_A)
+    await transition(alice, hers, 0, verifiedOwnership(TOKEN_A))
+    await transition(alice, hers, 1, { status: 'revoked', reason: 'released_by_owner' }, [
+      { kind: 'released', actor: 'user' },
+      { kind: 'state_changed', actor: 'user', level: 'claim', from: 'verified', to: 'revoked' },
+    ])
+
+    // The deletion is recorded, and her history is still hers to read (prd §10).
+    const history = await db.as(alice).query<{ kind: string }>(
+      `select kind from public.audit_events where domain_id = $1 order by id`,
+      [hers],
+    )
+    expect(history.map((h) => h.kind)).toContain('released')
+    expect(history.map((h) => h.kind)).toContain('claim_created')
+
+    // The name is free for others to prove.
+    const his = await claim(bob, 'released.com', TOKEN_B)
+    const [result] = await transition(bob, his, 0, verifiedOwnership(TOKEN_B))
+    expect(result!.apply_transition).toMatchObject({ applied: true })
+
+    // And his log starts empty of her history — it never crosses accounts.
+    const hisLog = await db.as(bob).query(`select id from public.audit_events where domain_id = $1`, [his])
+    expect(hisLog).toHaveLength(1) // his own claim_created, and nothing of hers
+  })
+})

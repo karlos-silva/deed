@@ -105,7 +105,8 @@ create table public.audit_events (
 );
 
 -- Newest first, and paginated: a domain checked every six hours for a month is
--- still a page, not a download (S6).
+-- still a page, not a download (S6). Superseded by 0005 — the index has to lead
+-- with `owner_id`, because that is what the RLS policy filters on.
 create index audit_by_domain on public.audit_events (domain_id, at desc, id desc);
 create index audit_by_owner on public.audit_events (owner_id, at desc);
 

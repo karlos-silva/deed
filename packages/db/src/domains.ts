@@ -146,7 +146,14 @@ export async function applyTransition(
   return asTransitionResult(data)
 }
 
-export type AuditPage = { readonly events: AuditRow[]; readonly nextCursor: number | null }
+/**
+ * A keyset cursor over the same tuple the rows are ordered by. Keying on `id`
+ * alone would be wrong the moment an event's timestamp and its id disagree —
+ * which is not hypothetical: backfilling a missing `claim_created` gives an old
+ * `at` a new `id`, and a page would then skip or repeat rows around it.
+ */
+export type AuditCursor = { readonly at: string; readonly id: number }
+export type AuditPage = { readonly events: AuditRow[]; readonly nextCursor: AuditCursor | null }
 
 /**
  * Newest first and paginated: a domain checked every six hours for a month is a
@@ -155,7 +162,7 @@ export type AuditPage = { readonly events: AuditRow[]; readonly nextCursor: numb
 export async function listAudit(
   db: Db,
   id: DomainId,
-  options: { before?: number; limit?: number } = {},
+  options: { before?: AuditCursor; limit?: number } = {},
 ): Promise<AuditPage> {
   const limit = options.limit ?? 25
   let query = db
@@ -165,14 +172,21 @@ export async function listAudit(
     .order('at', { ascending: false })
     .order('id', { ascending: false })
     .limit(limit + 1)
-  if (options.before !== undefined) query = query.lt('id', options.before)
+
+  const before = options.before
+  if (before !== undefined) {
+    query = query.or(`at.lt.${before.at},and(at.eq.${before.at},id.lt.${before.id})`)
+  }
 
   const { data, error } = await query
   if (error) throw new Error(error.message)
 
   const events = data.slice(0, limit).map(asAuditRow)
-  const more = data.length > limit
-  return { events, nextCursor: more ? (events.at(-1)?.id ?? null) : null }
+  const last = events.at(-1)
+  return {
+    events,
+    nextCursor: data.length > limit && last !== undefined ? { at: last.at, id: last.id } : null,
+  }
 }
 
 /* ------------------------------- rate limits ------------------------------ */
