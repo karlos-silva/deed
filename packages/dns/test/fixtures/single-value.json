@@ -1,0 +1,83 @@
+{
+  "case": "single-value",
+  "host": "mail.google.com",
+  "note": "Exactly one TXT record — the ordinary case.",
+  "capturedAt": "2026-08-29",
+  "responses": {
+    "cloudflare": {
+      "body": {
+        "Status": 0,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": false,
+        "CD": false,
+        "Question": [
+          {
+            "name": "mail.google.com",
+            "type": 16
+          }
+        ],
+        "Answer": [
+          {
+            "name": "mail.google.com",
+            "type": 16,
+            "TTL": 86400,
+            "data": "\"google-site-verification=PncXpRKRCAlDAdlesTtNFf6k9TvgxgcRfojdaKkEACY\""
+          }
+        ]
+      }
+    },
+    "google": {
+      "body": {
+        "Status": 0,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": false,
+        "CD": false,
+        "Question": [
+          {
+            "name": "mail.google.com.",
+            "type": 16
+          }
+        ],
+        "Answer": [
+          {
+            "name": "mail.google.com.",
+            "type": 16,
+            "TTL": 21600,
+            "data": "google-site-verification=PncXpRKRCAlDAdlesTtNFf6k9TvgxgcRfojdaKkEACY"
+          }
+        ],
+        "Comment": "Response from 216.239.34.10."
+      }
+    },
+    "adguard": {
+      "body": {
+        "Question": [
+          {
+            "name": "mail.google.com.",
+            "type": 16
+          }
+        ],
+        "Answer": [
+          {
+            "name": "mail.google.com.",
+            "data": "\"google-site-verification=PncXpRKRCAlDAdlesTtNFf6k9TvgxgcRfojdaKkEACY\"",
+            "TTL": 86400,
+            "type": 16,
+            "class": 1
+          }
+        ],
+        "Extra": null,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": false,
+        "CD": false,
+        "Status": 0
+      }
+    }
+  }
+}

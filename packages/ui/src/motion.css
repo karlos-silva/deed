@@ -1,0 +1,118 @@
+/* ============================================================================
+   Camada de movimento
+   ----------------------------------------------------------------------------
+   Quatro regras, e elas explicam cada animação deste arquivo:
+
+   1. Movimento relata mudança. Se nada mudou no mundo, nada se move.
+   2. Distâncias curtas (≤ 6px), uma curva só, duração curta.
+   3. Um único momento celebratório por ciclo de vida: a verificação passar.
+   4. Tudo desliga em prefers-reduced-motion — sem exceção e sem perda de
+      informação, porque nenhuma animação aqui é a única portadora de um estado.
+   ========================================================================== */
+
+/* --- Entrada de bloco ------------------------------------------------------
+   Um bloco novo sobe 6px e aparece. O escalonamento por posição dá ritmo de
+   leitura sem virar espetáculo: 40ms entre irmãos, teto em 8. */
+@keyframes rise { from { opacity: 0; transform: translateY(var(--lift)); } }
+
+.enter > * { animation: rise var(--dur-3) var(--ease-out) both; }
+.enter > *:nth-child(1) { animation-delay: 0ms }
+.enter > *:nth-child(2) { animation-delay: 40ms }
+.enter > *:nth-child(3) { animation-delay: 80ms }
+.enter > *:nth-child(4) { animation-delay: 120ms }
+.enter > *:nth-child(5) { animation-delay: 160ms }
+.enter > *:nth-child(6) { animation-delay: 200ms }
+.enter > *:nth-child(7) { animation-delay: 240ms }
+.enter > *:nth-child(n+8) { animation-delay: 280ms }
+
+/* --- Transições de estado --------------------------------------------------
+   Badges e linhas trocam de cor em vez de cortar. É o que faz um registro
+   virar "Verificado" parecer um acontecimento e não um repaint. */
+.badge, .tile, .btn, .check, .nav a, tr {
+  transition: background-color var(--dur-2) var(--ease-soft),
+              border-color     var(--dur-2) var(--ease-soft),
+              color            var(--dur-2) var(--ease-soft);
+}
+
+
+/* --- Números que contam ----------------------------------------------------
+   Tabular para o contador não tremer a cada segundo. Um dígito que dança
+   chama mais atenção que a contagem em si. */
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* --- Pulso de "ainda trabalhando" ------------------------------------------
+   Só no que está genuinamente pendente. Um ponto pulsando num estado final
+   seria mentira visual. */
+@keyframes breathe { 50% { opacity: .3; transform: scale(.72); } }
+.badge-pending .dot { animation: breathe 1.8s var(--ease-soft) infinite; }
+
+/* --- Varredura de checagem -------------------------------------------------
+   O momento em que o Deed consulta o DNS. É a única animação longa do
+   sistema, e existe porque é a única forma de dizer "acabei de olhar" sem
+   escrever mais uma linha de texto. Uma faixa clara atravessa a tabela. */
+@keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+.scanning { position: relative; overflow: hidden; }
+.scanning::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(100deg, transparent 38%,
+              color-mix(in srgb, var(--fg) 7%, transparent) 50%, transparent 62%);
+  animation: sweep var(--dur-4) var(--ease-soft);
+}
+
+/* --- Um resolver passou a enxergar o registro ------------------------------
+   Notícia real: uma célula virou de "—" para "✓". Ela pisca uma vez e assenta. */
+@keyframes land {
+  0%   { opacity: 0; transform: translateY(-4px) scale(.8); }
+  60%  { opacity: 1; transform: translateY(0) scale(1.14); }
+  100% { transform: scale(1); }
+}
+.just-seen { animation: land 420ms var(--ease-out) both; }
+
+
+/* --- O único momento celebratório ------------------------------------------
+   Verificação passou. Um brilho verde nasce no tile e se dissipa. Acontece
+   uma vez por ciclo de vida; se acontecesse toda hora, não significaria nada. */
+@keyframes bloom {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--green) 55%, transparent); }
+  70%  { box-shadow: 0 0 0 16px color-mix(in srgb, var(--green) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+.did-verify { animation: bloom 1.1s var(--ease-out); }
+
+/* --- Ênfase: a marca se desenha --------------------------------------------
+   O sublinhado cresce da esquerda em vez de simplesmente aparecer. Vale para
+   qualquer <mark>, não só num contexto de produto. */
+@keyframes underline { from { background-size: 0 2px; } to { background-size: 100% 2px; } }
+mark {
+  text-decoration: none;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 100% 2px;
+  animation: underline var(--dur-4) var(--ease-out) both;
+  padding-bottom: 1px;
+}
+
+/* --- Copiar ---------------------------------------------------------------- */
+.copy { transition: opacity var(--dur-1) var(--ease-soft), color var(--dur-1) var(--ease-soft); }
+.copy.done { color: var(--green); }
+
+/* --- Botão: resposta ao toque ---------------------------------------------- */
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn { transition: background-color var(--dur-1) var(--ease-soft),
+                   border-color var(--dur-1) var(--ease-soft),
+                   color var(--dur-1) var(--ease-soft),
+                   transform 80ms var(--ease-soft); }
+
+/* ---------------------------------------------------------------------------
+   Nada aqui é a única forma de saber de um estado — todo movimento tem um
+   equivalente estático em texto, cor ou ícone. Por isso desligar é seguro.
+   --------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+  .scanning::after { display: none; }
+}

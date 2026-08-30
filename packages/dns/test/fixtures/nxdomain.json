@@ -1,0 +1,75 @@
+{
+  "case": "nxdomain",
+  "host": "nonexistent-xyzzy-9f3a.iana.org",
+  "note": "The name does not exist.",
+  "capturedAt": "2026-08-29",
+  "responses": {
+    "cloudflare": {
+      "body": {
+        "Status": 3,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": true,
+        "CD": false,
+        "Question": [
+          {
+            "name": "nonexistent-xyzzy-9f3a.iana.org",
+            "type": 16
+          }
+        ],
+        "Authority": [
+          {
+            "name": "iana.org",
+            "type": 6,
+            "TTL": 3600,
+            "data": "sns.dns.icann.org. noc.dns.icann.org. 2026072743 7200 3600 1209600 3600"
+          }
+        ]
+      }
+    },
+    "google": {
+      "body": {
+        "Status": 3,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": true,
+        "CD": false,
+        "Question": [
+          {
+            "name": "nonexistent-xyzzy-9f3a.iana.org.",
+            "type": 16
+          }
+        ],
+        "Authority": [
+          {
+            "name": "iana.org.",
+            "type": 6,
+            "TTL": 1800,
+            "data": "sns.dns.icann.org. noc.dns.icann.org. 2026072743 7200 3600 1209600 3600"
+          }
+        ],
+        "Comment": "Response from 199.43.134.53."
+      }
+    },
+    "adguard": {
+      "body": {
+        "Question": [
+          {
+            "name": "nonexistent-xyzzy-9f3a.iana.org.",
+            "type": 16
+          }
+        ],
+        "Answer": null,
+        "Extra": null,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": false,
+        "CD": false,
+        "Status": 3
+      }
+    }
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "case": "multiple-records",
+  "host": "example.com",
+  "note": "Two TXT records at one host: ours has to be found among them, not alone.",
+  "capturedAt": "2026-08-29",
+  "responses": {
+    "cloudflare": {
+      "body": {
+        "Status": 0,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": true,
+        "CD": false,
+        "Question": [
+          {
+            "name": "example.com",
+            "type": 16
+          }
+        ],
+        "Answer": [
+          {
+            "name": "example.com",
+            "type": 16,
+            "TTL": 300,
+            "data": "\"v=spf1 -all\""
+          },
+          {
+            "name": "example.com",
+            "type": 16,
+            "TTL": 300,
+            "data": "\"_k2n1y4vw3qtb4skdx9e7dxt97qrmmq9\""
+          }
+        ]
+      }
+    },
+    "google": {
+      "body": {
+        "Status": 0,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": true,
+        "CD": false,
+        "Question": [
+          {
+            "name": "example.com.",
+            "type": 16
+          }
+        ],
+        "Answer": [
+          {
+            "name": "example.com.",
+            "type": 16,
+            "TTL": 300,
+            "data": "_k2n1y4vw3qtb4skdx9e7dxt97qrmmq9"
+          },
+          {
+            "name": "example.com.",
+            "type": 16,
+            "TTL": 300,
+            "data": "v=spf1 -all"
+          }
+        ],
+        "Comment": "Response from 172.64.32.162."
+      }
+    },
+    "adguard": {
+      "body": {
+        "Question": [
+          {
+            "name": "example.com.",
+            "type": 16
+          }
+        ],
+        "Answer": [
+          {
+            "name": "example.com.",
+            "data": "\"v=spf1 -all\"",
+            "TTL": 97,
+            "type": 16,
+            "class": 1
+          },
+          {
+            "name": "example.com.",
+            "data": "\"_k2n1y4vw3qtb4skdx9e7dxt97qrmmq9\"",
+            "TTL": 97,
+            "type": 16,
+            "class": 1
+          }
+        ],
+        "Extra": null,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": false,
+        "CD": false,
+        "Status": 0
+      }
+    }
+  }
+}

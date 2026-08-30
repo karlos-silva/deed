@@ -1,0 +1,10 @@
+@import '@deed/ui/tokens.css';
+@import '@deed/ui/components.css';
+@import '@deed/ui/motion.css';
+@import '@deed/ui/app.css';
+
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-sans); font-size: var(--text-base); line-height: var(--lh-base); -webkit-font-smoothing: antialiased; }
+h1, h2, h3, p, dl, dd, figure { margin: 0; }
+a { color: var(--fg); }
+:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-xs); }

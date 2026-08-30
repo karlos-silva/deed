@@ -1,0 +1,156 @@
+/* ============================================================================
+   Design tokens
+   ----------------------------------------------------------------------------
+   A dark, strictly NEUTRAL palette — R=G=B on every surface — for a developer
+   tool whose screens are mostly tables of strings. Colour is reserved for
+   state: green verified, blue informational, yellow waiting, red wrong, purple
+   partial.
+
+   Two rules hold the system together:
+   - Layers are separated by BORDERS, not by fill and not by shadow.
+   - Every semantic colour comes as a solid, a fill and a border, so a dot, a
+     badge and a banner can speak the same state at different volumes.
+   ========================================================================== */
+
+:root {
+  /* --- Canvas & surfaces -------------------------------------------------
+     Layers separate with BORDERS, not with fill. Canvas, sidebar and card
+     bodies all sit within #02–#0a; only the table header and the active nav
+     item carry a real fill. Do not invent a lighter card background. */
+  --bg:            #080808;  /* app canvas                          [sampled] */
+  --bg-sidebar:    #030303;  /* sidebar — a hair below canvas       [sampled] */
+  --surface-1:     #050505;  /* card / panel body                   [sampled] */
+  --surface-2:     #111111;  /* table header fill                   [sampled] */
+  --surface-3:     #1d1d1d;  /* active nav item, hover, badge base  [sampled] */
+
+  /* --- Borders ------------------------------------------------------------
+     Three weights, all neutral. The heavier #292929 is reserved for the rule
+     under a table header; cards use #202020; inner dividers #1b1b1b. */
+  --border-subtle: #1b1b1b;  /* dividers inside a panel             [sampled] */
+  --border:        #202020;  /* card / panel edge                   [sampled] */
+  --border-strong: #292929;  /* table header rule, focused edge     [sampled] */
+
+  /* --- Foreground ramp ----------------------------------------------------
+     #fdfdfd rather than pure white: on a near-black canvas #fff halates at
+     small sizes. It is also the fill of the mark's glyph. */
+  --fg:            #fdfdfd;  /* headings, table values, icon fill   [sampled] */
+  --fg-2:          #bdbdbd;  /* active nav label, secondary UI      [sampled] */
+  --fg-muted:      #9b9b9b;  /* CREATED / STATUS eyebrow labels     [sampled] */
+  --fg-subtle:     #6f6f6f;  /* table column headers, placeholders  [sampled] */
+  --fg-faint:      #454545;  /* disabled, faint meta                [sampled] */
+  --fg-inverse:    #000000;  /* text on a white button */
+
+  /* --- Semantic palette ---------------------------------------------------
+     Solid values are status dots; fill/border pairs are the status badges and
+     the "every record is verified" banner. Close to Radix dark scales, tuned
+     so each fill sits at the same perceived weight on this canvas. */
+  --green:         #3bd48a;  /* Delivered · Verified                [sampled] */
+  --green-fg:      #3cd98d;  /* badge label                         [sampled] */
+  --green-bg:      #0a2418;  /* badge fill                          [sampled] */
+  --green-border:  #1d4934;  /* success banner edge                 [sampled] */
+
+  --blue:          #56adff;  /* Sent · info                         [sampled] */
+  --blue-fg:       #56adff;
+  --blue-bg:       #152b40;  /*                                     [sampled] */
+  --blue-border:   #22496e;  /* derived: blue-bg lifted to match green pairing */
+
+  --red:           #ff6369;  /* Bounced · failed                    [sampled] */
+  --red-fg:        #ff6369;
+  --red-bg:        #331415;  /*                                     [sampled] */
+  --red-border:    #66282a;  /*                                     [sampled] */
+
+  --yellow:        #ffca16;  /* Complained · warning / pending      [sampled] */
+  --yellow-fg:     #ffca16;
+  --yellow-bg:     #2b2005;  /* derived to match the red/green fill weight */
+  --yellow-border: #5c4a0a;  /* derived */
+
+  --purple:        #baa7ff;  /* Opened · partial states             [sampled] */
+  --purple-bg:     #1f1a36;  /* derived */
+  --purple-border: #3d3470;  /* derived */
+
+  --gray:          #818181;  /* Unsubscribed · neutral dot          [sampled] */
+
+  /* --- Typography ---------------------------------------------------------
+     Inter for UI and body: OFL, drawn for screens, and unremarkable in the
+     best sense at 13px.
+
+     One deliberate choice: DNS record values are set in a monospace. For a
+     screen whose whole job is letting someone compare a string character by
+     character against their DNS provider, tabular alignment beats typographic
+     consistency. Flagged here so the choice is visible rather than accidental. */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  --text-xs:   11px;   --lh-xs:   16px;
+  --text-sm:   12px;   --lh-sm:   18px;
+  --text-base: 13px;   --lh-base: 20px;
+  --text-md:   14px;   --lh-md:   21px;
+  --text-lg:   16px;   --lh-lg:   24px;
+  --text-xl:   20px;   --lh-xl:   28px;
+  --text-2xl:  24px;   --lh-2xl:  32px;
+
+  --tracking-label:  0.06em;   /* CREATED / STATUS / REGION eyebrow */
+  --tracking-title: -0.015em;
+
+  --weight-regular: 400;
+  --weight-medium:  500;
+  --weight-semibold:600;
+
+  /* --- Radii --------------------------------------------------------------
+     Soft, not round: cards at 16px, nav items and inputs at 10px, badges at
+     6px. */
+  --radius-xs:   4px;
+  --radius-sm:   6px;   /* status badges */
+  --radius-md:   8px;   /* buttons */
+  --radius-lg:  10px;   /* inputs, nav items, table shell */
+  --radius-xl:  16px;   /* cards and panels */
+  --radius-pill: 9999px;
+
+  /* --- Space (4px base) --------------------------------------------------- */
+  --space-1:  4px;   --space-2:  8px;   --space-3: 12px;  --space-4: 16px;
+  --space-5: 20px;   --space-6: 24px;   --space-8: 32px;  --space-10: 40px;
+  --space-12: 48px;  --space-16: 64px;
+
+  /* --- Elevação -------------------------------------------------------------
+     Não há tokens de sombra. Nos screenshots oficiais o produto separa camadas
+     por BORDA, nunca por sombra — inventar uma escala de elevação aqui seria
+     contradizer o que a própria marca faz. */
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--fg-subtle);
+
+  /* --- Motion ------------------------------------------------------------- */
+  --ease: cubic-bezier(.2,.8,.2,1);
+  --dur-fast: 120ms;
+
+  /* --- Layout ------------------------------------------------------------- */
+  --content-max: 1120px;
+}
+
+/* Dark-only. This is a developer tool, read beside a terminal. */
+html { color-scheme: dark; background: var(--bg); }
+
+/* ============================================================================
+   Camada de movimento e fonte de display
+   ----------------------------------------------------------------------------
+   Inter é uma fonte de display pobre — humanista demais em tamanho de título,
+   onde se pede geometria. Geist (OFL, Vercel) é um neo-grotesco de produto de
+   desenvolvedor que combina bem com ela. Então: Geist em display, Inter em
+   corpo e UI.
+   ========================================================================== */
+:root {
+  --font-display: "Geist", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* --- Movimento ---------------------------------------------------------
+     Uma curva só, quatro durações. A regra da marca: movimento relata
+     mudança, não decora. Nada percorre mais de 8px. Nada passa de 400ms,
+     exceto a varredura de checagem, que é o único momento em que o produto
+     mostra que está trabalhando. */
+  --ease-out:  cubic-bezier(.16, 1, .3, 1);
+  --ease-soft: cubic-bezier(.4, 0, .2, 1);
+
+  --dur-1: 120ms;   /* hover, foco — imperceptível, só tira o corte seco */
+  --dur-2: 200ms;   /* troca de estado em um elemento */
+  --dur-3: 320ms;   /* entrada de um bloco */
+  --dur-4: 700ms;   /* a varredura de checagem */
+
+  --lift: 6px;      /* distância padrão de entrada */
+}

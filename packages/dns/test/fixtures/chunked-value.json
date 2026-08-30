@@ -1,0 +1,102 @@
+{
+  "case": "chunked-value",
+  "host": "protonmail._domainkey.proton.me",
+  "note": "A 2048-bit DKIM key: over 255 bytes, so it arrives as two character-strings.",
+  "capturedAt": "2026-08-29",
+  "responses": {
+    "cloudflare": {
+      "body": {
+        "Status": 0,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": true,
+        "CD": false,
+        "Question": [
+          {
+            "name": "protonmail._domainkey.proton.me",
+            "type": 16
+          }
+        ],
+        "Answer": [
+          {
+            "name": "protonmail._domainkey.proton.me",
+            "type": 5,
+            "TTL": 1200,
+            "data": "protonmail.domainkey.drfeyjwh4gwlal4e2rhajsytrp6auv2nhenecpzigu7muak6lw6ya.domains.proton.ch."
+          },
+          {
+            "name": "protonmail.domainkey.drfeyjwh4gwlal4e2rhajsytrp6auv2nhenecpzigu7muak6lw6ya.domains.proton.ch",
+            "type": 16,
+            "TTL": 1200,
+            "data": "\"v=DKIM1;k=rsa;p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn46zCm3zHBmS1zePKxA+RIXw41Nu6l91NpLLBnWnrcZ35H/843XNWPZEQ0OgGwx/yqTXETMLXIDjGEWlK1E1mpdguqu+3s7SuIHoo5+i6mgyxJguljkwc3dk8ojnJ6VVUPnDh5GJArkAhXxEb1aOK1BVGM0yDlmYdmaOfd48qcx5iODP/MFc8pivfxEXTIL+aUz\" \"7+X69lMiwUSHpWYL3/a5X3nLD0zEntxv08xs8J/rpuRg4v+OXEOhcNvhkeiRZqJBdpJTkoEZfGvdTct+U0YYC69NW0ClUcKio2uDPmxU1xvfvHbSTW2gHYk8RpYZaxLACULdMo+Vt4Na/oIR+swIDAQAB;\""
+          }
+        ]
+      }
+    },
+    "google": {
+      "body": {
+        "Status": 0,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": true,
+        "CD": false,
+        "Question": [
+          {
+            "name": "protonmail._domainkey.proton.me.",
+            "type": 16
+          }
+        ],
+        "Answer": [
+          {
+            "name": "protonmail._domainkey.proton.me.",
+            "type": 5,
+            "TTL": 1200,
+            "data": "protonmail.domainkey.drfeyjwh4gwlal4e2rhajsytrp6auv2nhenecpzigu7muak6lw6ya.domains.proton.ch."
+          },
+          {
+            "name": "protonmail.domainkey.drfeyjwh4gwlal4e2rhajsytrp6auv2nhenecpzigu7muak6lw6ya.domains.proton.ch.",
+            "type": 16,
+            "TTL": 1200,
+            "data": "v=DKIM1;k=rsa;p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn46zCm3zHBmS1zePKxA+RIXw41Nu6l91NpLLBnWnrcZ35H/843XNWPZEQ0OgGwx/yqTXETMLXIDjGEWlK1E1mpdguqu+3s7SuIHoo5+i6mgyxJguljkwc3dk8ojnJ6VVUPnDh5GJArkAhXxEb1aOK1BVGM0yDlmYdmaOfd48qcx5iODP/MFc8pivfxEXTIL+aUz7+X69lMiwUSHpWYL3/a5X3nLD0zEntxv08xs8J/rpuRg4v+OXEOhcNvhkeiRZqJBdpJTkoEZfGvdTct+U0YYC69NW0ClUcKio2uDPmxU1xvfvHbSTW2gHYk8RpYZaxLACULdMo+Vt4Na/oIR+swIDAQAB;"
+          }
+        ],
+        "Comment": "Response from 176.119.200.145."
+      }
+    },
+    "adguard": {
+      "body": {
+        "Question": [
+          {
+            "name": "protonmail._domainkey.proton.me.",
+            "type": 16
+          }
+        ],
+        "Answer": [
+          {
+            "name": "protonmail._domainkey.proton.me.",
+            "data": "protonmail.domainkey.drfeyjwh4gwlal4e2rhajsytrp6auv2nhenecpzigu7muak6lw6ya.domains.proton.ch.",
+            "TTL": 1015,
+            "type": 5,
+            "class": 1
+          },
+          {
+            "name": "protonmail.domainkey.drfeyjwh4gwlal4e2rhajsytrp6auv2nhenecpzigu7muak6lw6ya.domains.proton.ch.",
+            "data": "\"v=DKIM1;k=rsa;p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn46zCm3zHBmS1zePKxA+RIXw41Nu6l91NpLLBnWnrcZ35H/843XNWPZEQ0OgGwx/yqTXETMLXIDjGEWlK1E1mpdguqu+3s7SuIHoo5+i6mgyxJguljkwc3dk8ojnJ6VVUPnDh5GJArkAhXxEb1aOK1BVGM0yDlmYdmaOfd48qcx5iODP/MFc8pivfxEXTIL+aUz\" \"7+X69lMiwUSHpWYL3/a5X3nLD0zEntxv08xs8J/rpuRg4v+OXEOhcNvhkeiRZqJBdpJTkoEZfGvdTct+U0YYC69NW0ClUcKio2uDPmxU1xvfvHbSTW2gHYk8RpYZaxLACULdMo+Vt4Na/oIR+swIDAQAB;\"",
+            "TTL": 1015,
+            "type": 16,
+            "class": 1
+          }
+        ],
+        "Extra": null,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": false,
+        "CD": false,
+        "Status": 0
+      }
+    }
+  }
+}

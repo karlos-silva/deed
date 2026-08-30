@@ -1,0 +1,76 @@
+{
+  "case": "dnssec-failure",
+  "host": "dnssec-failed.org",
+  "note": "SERVFAIL carrying an EDE code: their zone, not our lookup.",
+  "capturedAt": "2026-08-29",
+  "responses": {
+    "cloudflare": {
+      "body": {
+        "Status": 2,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": false,
+        "CD": false,
+        "Question": [
+          {
+            "name": "dnssec-failed.org",
+            "type": 16
+          }
+        ],
+        "Comment": [
+          "EDE(9): DNSKEY Missing no SEP matching the DS found for dnssec-failed.org."
+        ]
+      }
+    },
+    "google": {
+      "body": {
+        "Status": 2,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": false,
+        "CD": false,
+        "Question": [
+          {
+            "name": "dnssec-failed.org.",
+            "type": 16
+          }
+        ],
+        "Comment": "DNSSEC validation failure. Check http://dnsviz.net/d/dnssec-failed.org/dnssec/ and http://dnssec-debugger.verisignlabs.com/dnssec-failed.org for errors",
+        "extended_dns_errors": [
+          {
+            "info_code": 9,
+            "extra_text": "No DNSKEY matches DS RRs of dnssec-failed.org"
+          }
+        ]
+      }
+    },
+    "adguard": {
+      "body": {
+        "Question": [
+          {
+            "name": "dnssec-failed.org.",
+            "type": 16
+          }
+        ],
+        "Answer": null,
+        "Extra": [
+          {
+            "name": ".",
+            "data": "\n;; OPT PSEUDOSECTION:\n; EDNS: version 0; flags: do; udp: 1232\n; EDE: 6 (DNSSEC Bogus): ()",
+            "TTL": 32768,
+            "type": 41,
+            "class": 1232
+          }
+        ],
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": false,
+        "CD": false,
+        "Status": 2
+      }
+    }
+  }
+}

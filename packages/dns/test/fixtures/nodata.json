@@ -1,0 +1,75 @@
+{
+  "case": "nodata",
+  "host": "www.example.com",
+  "note": "The name exists and holds no TXT.",
+  "capturedAt": "2026-08-29",
+  "responses": {
+    "cloudflare": {
+      "body": {
+        "Status": 0,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": true,
+        "CD": false,
+        "Question": [
+          {
+            "name": "www.example.com",
+            "type": 16
+          }
+        ],
+        "Authority": [
+          {
+            "name": "example.com",
+            "type": 6,
+            "TTL": 1800,
+            "data": "elliott.ns.cloudflare.com. dns.cloudflare.com. 2411783310 10000 2400 604800 1800"
+          }
+        ]
+      }
+    },
+    "google": {
+      "body": {
+        "Status": 0,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": true,
+        "CD": false,
+        "Question": [
+          {
+            "name": "www.example.com.",
+            "type": 16
+          }
+        ],
+        "Authority": [
+          {
+            "name": "example.com.",
+            "type": 6,
+            "TTL": 1800,
+            "data": "elliott.ns.cloudflare.com. dns.cloudflare.com. 2411783310 10000 2400 604800 1800"
+          }
+        ],
+        "Comment": "Response from 172.64.35.228."
+      }
+    },
+    "adguard": {
+      "body": {
+        "Question": [
+          {
+            "name": "www.example.com.",
+            "type": 16
+          }
+        ],
+        "Answer": null,
+        "Extra": null,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": false,
+        "CD": false,
+        "Status": 0
+      }
+    }
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "case": "cname-at-host",
+  "host": "selector1._domainkey.microsoft.com",
+  "note": "A CNAME at the host, which is why no TXT resolves there.",
+  "capturedAt": "2026-08-29",
+  "responses": {
+    "cloudflare": {
+      "body": {
+        "Status": 3,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": false,
+        "CD": false,
+        "Question": [
+          {
+            "name": "selector1._domainkey.microsoft.com",
+            "type": 16
+          }
+        ],
+        "Answer": [
+          {
+            "name": "selector1._domainkey.microsoft.com",
+            "type": 5,
+            "TTL": 3600,
+            "data": "selector1-microsoft-com._domainkey.microsoft.onmicrosoft.com."
+          }
+        ],
+        "Authority": [
+          {
+            "name": "onmicrosoft.com",
+            "type": 6,
+            "TTL": 300,
+            "data": "ns1-208.azure-dns.com. azuredns-hostmaster.microsoft.com. 1 3600 300 2419200 300"
+          }
+        ]
+      }
+    },
+    "google": {
+      "body": {
+        "Status": 3,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": false,
+        "CD": false,
+        "Question": [
+          {
+            "name": "selector1._domainkey.microsoft.com.",
+            "type": 16
+          }
+        ],
+        "Answer": [
+          {
+            "name": "selector1._domainkey.microsoft.com.",
+            "type": 5,
+            "TTL": 3483,
+            "data": "selector1-microsoft-com._domainkey.microsoft.onmicrosoft.com."
+          }
+        ],
+        "Authority": [
+          {
+            "name": "onmicrosoft.com.",
+            "type": 6,
+            "TTL": 183,
+            "data": "ns1-208.azure-dns.com. azuredns-hostmaster.microsoft.com. 1 3600 300 2419200 300"
+          }
+        ]
+      }
+    },
+    "adguard": {
+      "body": {
+        "Question": [
+          {
+            "name": "selector1._domainkey.microsoft.com.",
+            "type": 16
+          }
+        ],
+        "Answer": [
+          {
+            "name": "selector1._domainkey.microsoft.com.",
+            "data": "selector1-microsoft-com._domainkey.microsoft.onmicrosoft.com.",
+            "TTL": 3483,
+            "type": 5,
+            "class": 1
+          }
+        ],
+        "Extra": null,
+        "TC": false,
+        "RD": true,
+        "RA": true,
+        "AD": false,
+        "CD": false,
+        "Status": 3
+      }
+    }
+  }
+}
