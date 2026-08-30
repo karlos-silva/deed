@@ -1,0 +1,124 @@
+/* Atmosphere: grain, texture and depth.
+
+   tokens.css says the interface separates layers with borders, never shadows,
+   and the grain layer says the black should read as a material rather than as
+   digital emptiness. Both were documented and neither was implemented, which is
+   most of why the interface reads as flat. */
+
+:root {
+  --dot-grid: radial-gradient(circle at 1px 1px, rgb(255 255 255 / 5.5%) 1px, transparent 0);
+  --dot-grid-size: 13px 13px;
+
+  /* Depth without shadows: a hairline highlight on the top edge, the way a
+     physical panel catches light. */
+  --edge-lit: inset 0 1px 0 rgb(255 255 255 / 4%);
+  --edge-lit-strong: inset 0 1px 0 rgb(255 255 255 / 7%);
+}
+
+.textured {
+  background-image: var(--dot-grid);
+  background-size: var(--dot-grid-size);
+}
+
+.lit { box-shadow: var(--edge-lit); }
+
+/* --------------------------------------------------------------- sign-in -- */
+
+/* The render: rings of dots spreading from beyond the upper-left corner, the
+   way an answer spreads from cache to cache, with the right half almost empty.
+   The composition exploits that emptiness rather than centring a card on top
+   of the subject. */
+.signin-stage {
+  position: relative;
+  min-height: 100dvh;
+  display: grid;
+  align-items: center;
+  justify-items: end;
+  padding: var(--space-8) clamp(var(--space-6), 8vw, var(--space-16));
+  overflow: hidden;
+  background-color: var(--bg);
+}
+
+.signin-stage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: image-set(url('/signin-bg-small.jpg') 1x, url('/signin-bg.jpg') 2x);
+  background-size: cover;
+  background-position: 18% center;
+  transform: scale(1.04);
+}
+
+/* The rings must not fight the text. A wash from the right keeps the card
+   side near-black while leaving the subject legible on the left. */
+.signin-stage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(100deg, rgb(8 8 8 / 20%) 0%, rgb(8 8 8 / 55%) 42%, rgb(8 8 8 / 92%) 72%, var(--bg) 100%),
+    radial-gradient(120% 90% at 12% 30%, transparent 0%, rgb(8 8 8 / 65%) 100%);
+}
+
+.signin-panel {
+  position: relative;
+  z-index: 1;
+  width: min(400px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.signin-panel .tile-mark {
+  width: 92px;
+  height: 92px;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: var(--edge-lit-strong);
+}
+.signin-panel .tile-mark img { display: block; width: 100%; height: auto; }
+
+.signin-title {
+  font-family: var(--font-display);
+  font-size: clamp(var(--text-2xl), 5vw, 34px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+}
+
+.signin-lede {
+  color: var(--fg-2);
+  font-size: var(--text-lg);
+  line-height: var(--lh-lg);
+  max-width: 34ch;
+}
+
+.signin-actions { display: flex; flex-direction: column; gap: var(--space-2); }
+.signin-actions .btn { width: 100%; justify-content: center; height: 42px; }
+
+.signin-note {
+  color: var(--fg-muted);
+  font-size: var(--text-xs);
+  line-height: var(--lh-xs);
+  max-width: 42ch;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: var(--space-4);
+}
+
+/* On a phone the subject and the card cannot share the width, so the image
+   becomes a header the panel sits below. */
+@media (max-width: 720px) {
+  .signin-stage {
+    justify-items: stretch;
+    align-content: end;
+    padding-bottom: var(--space-10);
+  }
+  .signin-stage::before { background-position: 30% 22%; }
+  .signin-stage::after {
+    background:
+      linear-gradient(180deg, rgb(8 8 8 / 10%) 0%, rgb(8 8 8 / 70%) 44%, var(--bg) 78%);
+  }
+  .signin-panel { width: 100%; }
+}
+

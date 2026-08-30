@@ -13,13 +13,6 @@ const OUTAGES = [
   { value: 'throttled', label: 'Our lookup is rate limited' },
 ] as const
 
-/**
- * The visitor's instrument, not a hidden debug tool (D2).
- *
- * You are the DNS admin here. Every edit drives the same engine a real domain
- * does — the same port, the same reducer, the same copy — so every row of the
- * failure taxonomy is reachable without owning a domain or breaking one.
- */
 export function SandboxZonePanel({
   domain,
   zone,

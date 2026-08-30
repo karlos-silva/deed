@@ -9,7 +9,6 @@ export type Session = {
   readonly provider: string | null
 }
 
-/** The signed-in account, or null. Sign-in is always a real identity (D1). */
 export async function session(): Promise<Session | null> {
   const db = await requestDb()
   const { data, error } = await db.auth.getUser()

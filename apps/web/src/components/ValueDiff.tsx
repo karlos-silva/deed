@@ -1,11 +1,5 @@
 import { collapse, diffValues, type DiffRun } from '@deed/core'
 
-/**
- * Character-level, so a pair of quotes is marked as two characters rather than
- * as "the whole value is wrong" (D8). Truncation is mid-string, head and tail:
- * cutting only the end would hide half the defects — a quote shows up at the
- * start, whitespace and an appended apex at the end.
- */
 export function ValueDiff({ expected, observed }: { expected: string; observed: string }) {
   const diff = diffValues(expected, observed)
 
@@ -52,10 +46,7 @@ function Runs({ runs }: { runs: DiffRun[] }) {
   )
 }
 
-/**
- * A defect nobody can see is a defect nobody can fix. Whitespace and zero-width
- * characters get a printable stand-in inside the diff, and only there.
- */
+// Whitespace and zero-width characters get a printable stand-in — inside the diff only.
 const INVISIBLE = /\u200b|\u200c|\u200d|\u2060|\ufeff/g
 
 const visible = (text: string): string =>

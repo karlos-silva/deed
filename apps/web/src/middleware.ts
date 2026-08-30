@@ -1,18 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
-/**
- * Refreshes the auth cookies on every navigation. Server Components cannot write
- * cookies, so without this a session would silently expire mid-visit and the
- * user would be signed out by a page load.
- *
- * Nothing in here may take the site down. Middleware runs before every route, so
- * anything it throws becomes an opaque platform-level 500 on *every* URL, with
- * no page rendered and no way for the app to explain itself — including
- * `/api/health`, the one endpoint whose whole job is saying what is wrong. A
- * session that failed to refresh is a request that carries on unauthenticated,
- * which every route already handles.
- */
+// Refreshes the auth cookies on every navigation; Server Components cannot write them.
+// Nothing here may throw: middleware runs before every route, so a throw 500s every URL — /api/health included.
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   try {
     return await refreshSession(request)

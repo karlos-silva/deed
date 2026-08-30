@@ -21,11 +21,7 @@ import {
   toJson,
 } from './types'
 
-/**
- * The domain, plus the version it was read at. Every write carries the version
- * back so a sweep and a "check now" racing on one domain cannot both win
- * (state-model §4, invariant 8).
- */
+/** The domain and the version it was read at; writes carry it back (state-model §4, invariant 8). */
 export type StoredDomain = { readonly domain: Domain; readonly version: number }
 
 const stamp = (iso: string): Timestamp => at(Date.parse(iso))
@@ -88,14 +84,7 @@ export type NewClaim = {
   readonly nextCheckAt: Timestamp
 }
 
-/**
- * The claim and its first audit event, in one transaction.
- *
- * It goes through a SECURITY DEFINER function because `audit_events` has no
- * INSERT policy on purpose: a log the client can write is not evidence. Doing it
- * as two client-side writes also left a window where the domain existed with no
- * record of being created — which is how the first real claim was lost.
- */
+/** Goes through an RPC because `audit_events` has no INSERT policy: the log is not client-writable. */
 export async function createClaim(db: Db, claim: NewClaim): Promise<StoredDomain> {
   const { data, error } = await db.rpc('create_claim', {
     p_name: claim.name,
@@ -108,11 +97,7 @@ export async function createClaim(db: Db, claim: NewClaim): Promise<StoredDomain
   return toDomain(asDomainRow(data))
 }
 
-/**
- * The one write path for a state transition. Takes the per-domain lock, commits
- * the state change and its audit events together, and revokes competing pending
- * claims when this one verifies (state-model §4, invariant 8; prd §8).
- */
+/** The one write path for a state transition (state-model §4, invariant 8; prd §8). */
 export async function applyTransition(
   db: Db,
   read: StoredDomain,
@@ -146,19 +131,11 @@ export async function applyTransition(
   return asTransitionResult(data)
 }
 
-/**
- * A keyset cursor over the same tuple the rows are ordered by. Keying on `id`
- * alone would be wrong the moment an event's timestamp and its id disagree —
- * which is not hypothetical: backfilling a missing `claim_created` gives an old
- * `at` a new `id`, and a page would then skip or repeat rows around it.
- */
+// Keyed on `(at, id)`, not `id` alone: a backfilled event pairs an old `at` with
+// a new `id`, and a page would then skip or repeat rows around it.
 export type AuditCursor = { readonly at: string; readonly id: number }
 export type AuditPage = { readonly events: AuditRow[]; readonly nextCursor: AuditCursor | null }
 
-/**
- * Newest first and paginated: a domain checked every six hours for a month is a
- * page, not a download (S6).
- */
 export async function listAudit(
   db: Db,
   id: DomainId,
@@ -189,8 +166,6 @@ export async function listAudit(
   }
 }
 
-/* ------------------------------- rate limits ------------------------------ */
-
 export async function recordLookup(
   db: Db,
   owner: UserId,
@@ -211,7 +186,6 @@ export async function countLookups(db: Db, owner: UserId, since: Timestamp): Pro
   return count ?? 0
 }
 
-/** When this domain was last checked on the user's own instruction. */
 export async function lastManualCheck(db: Db, id: DomainId): Promise<Timestamp | null> {
   const { data, error } = await db
     .from('lookups')
@@ -224,8 +198,6 @@ export async function lastManualCheck(db: Db, id: DomainId): Promise<Timestamp |
   if (error) throw new Error(error.message)
   return data === null ? null : stamp(data.at)
 }
-
-/* ------------------------------- the sandbox ------------------------------ */
 
 export async function loadZone(db: Db, id: DomainId): Promise<unknown> {
   const { data, error } = await db
@@ -248,8 +220,6 @@ export async function saveZone(
     .upsert({ domain_id: id, owner_id: owner, zone: toJson(zone) }, { onConflict: 'domain_id' })
   if (error) throw new Error(error.message)
 }
-
-/* -------------------------------- the sweep ------------------------------- */
 
 export async function claimsDue(db: Db, now: Timestamp, limit = 25): Promise<StoredDomain[]> {
   const { data, error } = await db.rpc('claims_due', { p_now: iso(now), p_limit: limit })

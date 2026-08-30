@@ -1,12 +1,8 @@
-/**
- * Time, as data. `now` is always a parameter (state-model §4, invariant 9) —
- * that is what makes a seven-day window testable in microseconds.
- */
+/** `now` is always a parameter (state-model §4, invariant 9). */
 
 /** Milliseconds since the Unix epoch. */
 export type Timestamp = number & { readonly __brand: 'Timestamp' }
 
-/** A duration in milliseconds. */
 export type Duration = number & { readonly __brand: 'Duration' }
 
 export const at = (ms: number): Timestamp => ms as Timestamp

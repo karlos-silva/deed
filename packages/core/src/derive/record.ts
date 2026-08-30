@@ -16,13 +16,8 @@ import { QUORUM } from '../time'
 import { classifyValue, type Expectation } from './classify'
 
 /**
- * The precedence table of state-model §3, evaluated top to bottom, stopping at
- * the first match. The table is normative; the rule numbers below are its
- * numbering, kept so the code and the spec are read side by side.
- *
- * Rule 1 outranks rules 2–3 deliberately: a wrong value at *one* resolver fails
- * the record even if two others already match. The moment we have evidence that
- * waiting will not help, we stop the clock.
+ * The precedence table of state-model §3, first match wins; the numbers below are the spec's.
+ * Rule 1 outranks 2–3 deliberately: one wrong resolver fails the record even if two others match.
  */
 export function deriveRecord(
   observation: Observation,
@@ -31,7 +26,7 @@ export function deriveRecord(
 ): RecordState {
   const { answers } = observation
 
-  // 0 — no check has completed.
+  // 0
   if (answers.length === 0) return { status: 'unchecked' }
 
   const wildcardServed = probedValues(observation.probe)
@@ -76,7 +71,7 @@ export function deriveRecord(
   const wildcard = resolversHolding(observed, 'wildcard_served')
   const unknown = observed.filter((o) => o.kind === 'unknown')
 
-  // 1 — any resolver holds an unknown value.
+  // 1
   if (unknown.length > 0) {
     return {
       status: 'mismatch',
@@ -86,10 +81,10 @@ export function deriveRecord(
     }
   }
 
-  // 2 — resolvers holding the current value ≥ QUORUM.
+  // 2
   if (current.length >= QUORUM) return { status: 'verified', seenBy: current, ttl }
 
-  // 3 — resolvers holding the current value ≥ 1.
+  // 3
   if (current.length >= 1) {
     return {
       status: 'propagating',
@@ -100,26 +95,24 @@ export function deriveRecord(
     }
   }
 
-  // 4 — some hold a superseded value, none the current one. Rotation in flight:
-  //     the fix is arriving, and this is exactly what waiting cures.
+  // 4 — superseded only: rotation in flight, which is what waiting cures.
   if (superseded.length > 0) {
     return { status: 'propagating', direction: 'arriving', seenBy: [], staleAt: superseded, ttl }
   }
 
-  // 5 — a wildcard is all that answers, so the record itself does not exist.
+  // 5 — only a wildcard answers, so the record itself does not exist.
   if (wildcard.length > 0) {
     return { status: 'mismatch', observed, cause: 'wildcard_shadow', correcting: null }
   }
 
-  // 6/7 — every lookup failed. Their zone failing to answer is a real problem
-  //       they must be told about; our own timeout concludes nothing.
+  // 6/7 — their zone failing is a real problem; our own timeout concludes nothing.
   if (errors.length === answers.length) {
     return errors.some((e) => e.side === 'zone')
       ? { status: 'zone_error', errors }
       : { status: 'check_failed', errors }
   }
 
-  // 8 — otherwise.
+  // 8
   const kind: AbsentKind = sawNodata ? 'nodata' : 'nxdomain'
   return cname === undefined ? { status: 'absent', kind } : { status: 'absent', kind, cname }
 }
@@ -137,11 +130,7 @@ const resolversHolding = (
   kind: ObservedValue['kind'],
 ): ResolverId[] => [...new Set(observed.filter((o) => o.kind === kind).map((o) => o.resolver))]
 
-/**
- * Direction is not derivable from one observation; it comes from the previous
- * state (state-model §3). Coverage that dropped is receding, coverage that
- * climbed is arriving, and coverage that held keeps whatever it was doing.
- */
+/** Not derivable from one observation: direction comes from the previous state (state-model §3). */
 function directionOf(previous: RecordState, coverage: number): Direction {
   switch (previous.status) {
     case 'verified':
@@ -159,14 +148,7 @@ function directionOf(previous: RecordState, coverage: number): Direction {
   }
 }
 
-/**
- * "Current value gaining resolvers, one stale wrong value receding" is what a
- * *corrected* mistake looks like from the outside — the mirror image of "user
- * just broke it". The status stays `mismatch` either way, because an unknown
- * value must surface; but when the prior observation shows the same offending
- * value at a shrinking set of resolvers while the current token spreads, the
- * copy hedges (state-model §3).
- */
+/** The same offending value at fewer resolvers while the current token spreads: a mistake being corrected (§3). */
 function correctionInProgress(
   previous: RecordState,
   observed: readonly ObservedValue[],

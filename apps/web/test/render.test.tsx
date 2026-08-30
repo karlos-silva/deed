@@ -95,9 +95,16 @@ describe('the detail page renders every state', () => {
 
   it('draws the audit log from the rows the database returns', () => {
     const html = renderToStaticMarkup(<AuditLog events={events} now={Date.parse(events[0]!.at)} />)
-    expect(html).toContain('Claim created')
-    expect(html).toContain('not looked yet')
+    expect(html).toContain('You claimed this domain')
+    expect(html).toContain('not looked at yet')
     expect(html).not.toContain('Invalid Date')
+
+    // The actor enum never reaches the page.
+    expect(html).not.toMatch(/SWEEP|>sweep<|>system</)
+
+    // A transition carries a tone; a routine check does not pretend to be one.
+    expect(html).toMatch(/log-moment" data-state="/)
+    expect(html).toContain('log-watch')
   })
 
   it('draws an empty log without pretending something happened', () => {

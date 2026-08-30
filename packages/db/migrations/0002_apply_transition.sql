@@ -1,13 +1,5 @@
--- The one invariant the pure core cannot hold on its own.
---
--- state-model §4.8: "A background sweep and a user's Check now firing together
--- would both read the same prior state and both write a transition — two audit
--- events for one change, breaking invariant 5, and a lost update if the second
--- overwrites the first. Writes take a per-domain lock, and the state change and
--- its audit event commit in one transaction."
---
--- `reduce` stays pure and is safe to run concurrently. This is where its result
--- is allowed to land.
+-- The one write path for a state transition: per-domain lock, with the state
+-- change and its audit events in one transaction (state-model §4.8).
 
 create or replace function public.apply_transition(
   p_domain_id       uuid,
@@ -33,9 +25,7 @@ declare
   v_became_verified boolean;
   v_revoked integer := 0;
 begin
-  -- The per-domain lock. A second writer waits here, then finds its version
-  -- stale and discards its observation rather than applying it to state it
-  -- never read.
+  -- The per-domain lock. A second writer waits here, then finds its version stale.
   select * into v_domain from public.domains where id = p_domain_id for update;
 
   if not found then
@@ -79,9 +69,7 @@ begin
          e -> 'evidence'
     from jsonb_array_elements(coalesce(p_events, '[]'::jsonb)) as e;
 
-  -- The moment one claim verifies, every competing pending claim on the name is
-  -- revoked with an explanation (prd §8, D6). It is the one revocation that does
-  -- not return the name to the pool, because the name is now held.
+  -- When one claim verifies, competing pending claims on the name are revoked (prd §8, D6).
   if v_became_verified then
     with losers as (
       update public.domains d
@@ -114,8 +102,7 @@ $$;
 revoke all on function public.apply_transition from public, anon;
 grant execute on function public.apply_transition to authenticated, service_role;
 
--- Every claim that is due a check, for the sweep (D5). Ordered oldest-first so a
--- backlog drains fairly rather than starving the domain nobody is watching.
+-- Oldest first, so a backlog drains fairly rather than starving one domain (D5).
 create or replace function public.claims_due(p_now timestamptz, p_limit integer default 50)
 returns setof public.domains
 language sql

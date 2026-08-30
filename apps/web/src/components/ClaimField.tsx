@@ -8,17 +8,7 @@ type Preflight =
   | { ok: true; provider: Provider | null; warnings: PreflightWarning[]; unicode: string | null }
   | { ok: false; reason: string }
 
-/**
- * Pre-flight runs as they type — debounced to pauses on a plausible name, never
- * per keystroke, and never twice for the same name (state-model §5). Every call
- * is a real lookup against shared public resolvers, so the restraint is the
- * point, not politeness.
- *
- * Deliberately *not* using `parseClaim` here: it carries the Public Suffix List,
- * and shipping 140KB of it to the browser to decide whether to debounce would
- * cost more than the feature saves. A cheap shape check is enough to decide
- * whether asking the server is worth it; the server does the real parsing.
- */
+// Not `parseClaim`: it carries the 140KB Public Suffix List. A shape check decides whether to ask the server.
 const PLAUSIBLE = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i
 
 export function ClaimField() {
@@ -34,8 +24,7 @@ export function ClaimField() {
       return
     }
 
-    // At most once per minute per distinct name: retyping the same domain must
-    // not re-ask, and neither must a re-render.
+    // At most once per minute per name: every call is a real lookup against shared public resolvers.
     const lastAsked = asked.current.get(name)
     if (lastAsked !== undefined && Date.now() - lastAsked < 60_000) return
 
@@ -46,8 +35,6 @@ export function ClaimField() {
         .then((response) => response.json() as Promise<Preflight>)
         .then(setFound)
         .catch(() => {
-          // A failed pre-flight is not a verdict about their zone, and must not
-          // be shown as one.
           setFound(null)
         })
         .finally(() => {
@@ -118,8 +105,6 @@ export function ClaimField() {
         ))}
 
         {rendered.length > 0 && (
-          // Pre-flight never blocks. It tells you what it saw; claiming is
-          // still yours to do (S5).
           <p className="t-small subtle" style={{ marginTop: 'var(--space-2)' }}>
             None of this stops you claiming the domain.
           </p>

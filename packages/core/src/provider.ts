@@ -1,18 +1,6 @@
 import type { MismatchCause } from './model/record'
 
-/**
- * Who runs this zone, and what their panel calls things.
- *
- * "Diagnose before the user can make the mistake" (prd §3.2): we can read their
- * NS records the moment they type the domain, so the instructions can use the
- * field names they are actually looking at, and the warning about the quirk that
- * panel is known for can arrive *before* the token is issued rather than after
- * it has already been mangled.
- *
- * Field labels are what the panel calls the fields. Getting one wrong sends
- * somebody hunting for a control that does not exist, so an unrecognised
- * provider gets generic labels rather than a guess.
- */
+/** Who runs this zone, and what their panel calls things — read from NS records before a token is issued (prd §3.2). */
 export type ProviderId =
   | 'cloudflare'
   | 'route53'
@@ -28,17 +16,11 @@ export type ProviderId =
 export type Provider = {
   readonly id: ProviderId
   readonly name: string
-  /** What this panel calls the field holding the record's name. */
   readonly hostLabel: string
-  /** What it calls the field holding the record's data. */
   readonly valueLabel: string
   /** Whether the panel wants the host relative to the zone rather than absolute. */
   readonly relativeHost: boolean
-  /**
-   * What this panel is known to do to a value. Only behaviours we are prepared
-   * to name in front of the user — a warning about a quirk a provider does not
-   * have is worse than no warning at all.
-   */
+  /** Only quirks we will name in front of the user: a warning about a quirk a provider lacks is worse than none. */
   readonly quirks: readonly MismatchCause[]
 }
 
@@ -75,8 +57,7 @@ const PROVIDERS: readonly Signature[] = [
       hostLabel: 'DNS name',
       valueLabel: 'TXT data',
       relativeHost: false,
-      // Cloud DNS stores TXT data as quoted character-strings, so a value
-      // pasted with its own quotes ends up quoted twice.
+      // Cloud DNS stores TXT as quoted character-strings, so a value pasted with quotes ends up quoted twice.
       quirks: ['quoted_value'],
     },
   },
@@ -159,7 +140,7 @@ const PROVIDERS: readonly Signature[] = [
   },
 ]
 
-/** Generic labels, for a zone we do not recognise. Never a guess. */
+/** Generic labels for an unrecognised zone — never a guess. */
 export const UNKNOWN_PROVIDER = {
   hostLabel: 'Host',
   valueLabel: 'Value',
@@ -174,11 +155,7 @@ export function providerFromNameservers(nameservers: readonly string[]): Provide
   return null
 }
 
-/**
- * What pre-flight found worth saying before a token is issued. Every one is a
- * warning: pre-flight never blocks a claim (S5). We can be wrong about a zone;
- * the user cannot be wrong about owning it.
- */
+/** Every finding is a warning: pre-flight never blocks a claim (S5). */
 export type PreflightWarning =
   | { readonly kind: 'provider_quirk'; readonly provider: Provider; readonly cause: MismatchCause }
   | { readonly kind: 'wildcard'; readonly value: string }
@@ -195,7 +172,6 @@ export type PreflightFindings = {
   readonly zoneFailing: boolean
 }
 
-/** The findings, turned into the things worth telling somebody. Pure. */
 export function preflightWarnings(findings: PreflightFindings): PreflightWarning[] {
   const warnings: PreflightWarning[] = []
 

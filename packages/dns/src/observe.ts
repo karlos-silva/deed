@@ -6,18 +6,11 @@ import {
 } from '@deed/core'
 import type { DnsPort } from './port'
 
-/**
- * One completed check: the challenge host, plus a control probe at a random
- * unguessable *sibling* label under the claimed name.
- *
- * A sibling, not a child: DNS's closest-encloser rule means a wildcard one level
- * up may not even match the challenge host, so probing anywhere else would
- * answer a different question than the one being asked (state-model §3).
- */
+/** The probe is a random *sibling* label: a wildcard one level up need not match the challenge host (state-model §3). */
 export type ObserveOptions = {
   readonly now: Timestamp
   readonly actor: AuditActor
-  /** The random label. Supplied by the caller, because the core has no randomness. */
+  /** Supplied by the caller: the core holds no randomness. */
   readonly probeLabel: string
   readonly timeoutMs?: number
 }
@@ -42,7 +35,6 @@ export async function observe(
 
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789'
 
-/** 20 characters of unguessable label — a wildcard is the only thing that can answer it. */
 export function randomProbeLabel(length = 20): string {
   const bytes = new Uint8Array(length)
   crypto.getRandomValues(bytes)

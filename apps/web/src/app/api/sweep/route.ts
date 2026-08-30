@@ -5,16 +5,7 @@ import { runCheck } from '@/lib/verification'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
-/**
- * The sweep (D5, mechanism 2). `pg_cron` posts here every minute; this reads
- * every claim whose next check is due under the cadence table (state-model §5)
- * and runs it.
- *
- * It exists so verification keeps happening with nobody watching — which is the
- * difference between a product that claims continuous verification and one that
- * performs it. It also writes a real row every run, so the free project keeps
- * seeing genuine database activity (D5, D10).
- */
+// `pg_cron` posts here every minute; runs every claim due under the cadence table (state-model §5).
 export async function POST(request: Request): Promise<Response> {
   const secret = process.env['SWEEP_SECRET']
   const offered = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ?? ''
@@ -30,9 +21,7 @@ export async function POST(request: Request): Promise<Response> {
   let failed = 0
   const problems: string[] = []
 
-  // Sequential on purpose: a burst of parallel DoH queries is the fastest way
-  // to get rate limited by the resolvers we depend on, and a throttled lookup
-  // is our failure — it would conclude nothing and waste the sweep.
+  // Sequential on purpose: a burst of parallel DoH queries gets us rate limited, and a throttled lookup concludes nothing.
   for (const stored of due) {
     try {
       await runCheck(db, stored, 'sweep', at(Date.now()))

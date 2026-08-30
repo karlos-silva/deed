@@ -1,17 +1,9 @@
 import type { MismatchCause, ObservedValue } from '../model/record'
 import { isWellFormedValue } from '../recordSpec'
 
-/**
- * Name the *cause*, not the symptom (prd §7). Every diagnosis has to answer
- * *does waiting help?* and *what exactly do I do?* — "invalid value" answers
- * neither, and reads as an accusation besides (prd §3).
- */
+/** Name the *cause*, not the symptom (prd §7): every diagnosis answers *does waiting help?* */
 
-/**
- * Zero-width and non-breaking characters that survive a paste unseen, plus
- * ordinary leading and trailing space. Written as escapes on purpose: these are
- * exactly the characters nobody can see in a source file either.
- */
+/** Zero-width and non-breaking characters that survive a paste unseen. Escapes on purpose — invisible in source too. */
 const INVISIBLE = /\s|\u00a0|\u200b|\u200c|\u200d|\u2060|\ufeff/g
 
 const unquote = (value: string): string => {
@@ -31,11 +23,7 @@ const stripApex = (value: string, domain: string): string => {
   return value
 }
 
-/**
- * Which single quirk explains the difference between what we asked for and what
- * the zone serves. Ordered most-specific first: each step asks "does undoing
- * exactly this one provider behaviour recover the expected value?"
- */
+/** Ordered most-specific first: each step undoes exactly one provider behaviour and asks whether that recovers the value. */
 export function diagnoseValue(observed: string, expected: string, domain: string): MismatchCause {
   if (observed === expected) return 'unknown_value' // not a mismatch; caller should not ask
   if (unquote(observed) === expected) return 'quoted_value'
@@ -46,10 +34,7 @@ export function diagnoseValue(observed: string, expected: string, domain: string
   return 'unknown_value'
 }
 
-/**
- * Specificity order, used when resolvers disagree about *how* the value is
- * wrong. A named provider quirk always beats "no known quirk explains it".
- */
+/** Specificity order, for when resolvers disagree about *how* the value is wrong. */
 const SPECIFICITY: readonly MismatchCause[] = [
   'quoted_value',
   'whitespace',
@@ -60,7 +45,6 @@ const SPECIFICITY: readonly MismatchCause[] = [
   'unknown_value',
 ]
 
-/** The cause a `mismatch` record carries, given every offending value seen. */
 export function diagnose(
   offending: readonly ObservedValue[],
   expected: string,
@@ -79,7 +63,7 @@ export function diagnose(
   return best
 }
 
-/** Does waiting help? (prd §7). The whole taxonomy exists to answer this. */
+/** prd §7. Exhaustive, so a new cause has to answer this question. */
 export function waitingHelps(cause: MismatchCause): boolean {
   switch (cause) {
     case 'quoted_value':

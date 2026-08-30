@@ -1,12 +1,6 @@
 import { TOKEN_LENGTH, type Token, token } from '@deed/core'
 
-/**
- * 32 random bytes, base32-encoded lowercase without padding — 52 characters,
- * safe in any DNS panel (prd §4).
- *
- * Randomness is I/O-shaped, so it lives here rather than in the core. The core
- * only ever *validates* a token's shape.
- */
+// 32 random bytes, base32 lowercase without padding — 52 characters, safe in any DNS panel (prd §4).
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz234567'
 
 export function mintToken(): Token {

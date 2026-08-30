@@ -1,11 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requestDb } from '@/lib/db'
 
-/**
- * The OAuth landing. Exchanging the code here — rather than in a client
- * component — keeps the session in httpOnly cookies, which is the whole reason
- * to use the SSR client (D1).
- */
+// Exchanging the code here rather than in a client component keeps the session in httpOnly cookies (D1).
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url)
   const code = url.searchParams.get('code')

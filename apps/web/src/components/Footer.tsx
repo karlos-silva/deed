@@ -1,9 +1,4 @@
-/**
- * D9's one constraint, and it is small. This app asks visitors to paste records
- * into their own DNS; a public page that does that without saying who is asking
- * is phishing-shaped regardless of intent. So it says what it is, permanently
- * and quietly.
- */
+// D9: a page that asks strangers to edit their DNS must say, permanently, who is asking.
 export function Footer() {
   return (
     <footer className="footer">

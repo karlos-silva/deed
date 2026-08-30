@@ -41,8 +41,6 @@ export default async function DomainPage({
   const found = await getDomain(current.db, asDomainId(id))
   if (found === null) notFound()
 
-  // Lazy revalidation on read (D5): an open page is never staler than the
-  // cadence promises, and the sweep covers the pages nobody has open.
   const { domain } = await revalidateIfDue(current.db, found)
   const clock = at(Date.now())
 
@@ -62,8 +60,7 @@ export default async function DomainPage({
   const parsedName = parseClaim(domain.name)
   const unicode = parsedName.ok ? parsedName.value.unicode : null
 
-  // Only while a claim is still pending: this is when instructions are read, and
-  // it is the only moment their field names are worth nine extra lookups.
+  // Only while a claim is pending: this is when instructions are read, and it costs nine extra lookups.
   const zoneInfo =
     domain.ownership.status === 'pending'
       ? await preflight(await router(current.db)(domain.name), domain.name, {
@@ -138,7 +135,6 @@ export default async function DomainPage({
           </section>
         )}
 
-        {/* ---------------------------------------------------- the verdict */}
         <section className="card">
           <div className="card-header row-between">
             <h2 className="t-section">What your DNS says</h2>
@@ -166,7 +162,6 @@ export default async function DomainPage({
           </div>
         </section>
 
-        {/* ----------------------------------------------------- the record */}
         {value !== null && (
           <section className="card">
             <div className="card-header row-between">
@@ -229,7 +224,6 @@ export default async function DomainPage({
 
         {zone !== null && <SandboxZonePanel domain={domain} zone={zone} expected={value} />}
 
-        {/* ------------------------------------------------------- the log */}
         <section className="card">
           <div className="card-header row-between">
             <h2 className="t-section">Everything we did</h2>
@@ -240,7 +234,6 @@ export default async function DomainPage({
           </div>
         </section>
 
-        {/* ------------------------------------------------------ recovery */}
         {token !== null && (
           <section className="card">
             <div className="card-header">

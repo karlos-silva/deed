@@ -2,18 +2,7 @@ import { serviceDb } from '@deed/db'
 
 export const dynamic = 'force-dynamic'
 
-/**
- * Which configuration is present, and whether Postgres answers.
- *
- * It reports presence only — never a value — so it is safe to leave reachable,
- * and it turns "the deployment 500s" into a sentence naming the variable that is
- * missing. A product whose whole subject is diagnosing misconfiguration should
- * be able to diagnose its own.
- *
- * It also doubles as the uptime probe D10 asks for: the `select` is real, so a
- * pinger hitting this keeps a free Supabase project genuinely active rather than
- * just warming a static page.
- */
+// Reports which configuration is present — never a value — and whether Postgres answers. Also the uptime probe (D10).
 export async function GET(): Promise<Response> {
   const present = (name: string): boolean => {
     const value = process.env[name]
@@ -32,9 +21,7 @@ export async function GET(): Promise<Response> {
     .filter(([, ok]) => !ok)
     .map(([name]) => name)
 
-  // Presence is not correctness. A value pasted with a trailing newline, or
-  // without its scheme, is present and still unusable — and it used to take the
-  // whole site down before anything could say so.
+  // Presence is not correctness: a value with a trailing newline or a missing scheme is present and unusable.
   const supabaseUrl = process.env['NEXT_PUBLIC_SUPABASE_URL']
   const urlParses =
     supabaseUrl === undefined ? false : URL.canParse(supabaseUrl.trim()) && supabaseUrl === supabaseUrl.trim()
@@ -47,8 +34,7 @@ export async function GET(): Promise<Response> {
     database = `unreachable: ${error instanceof Error ? error.message : 'unknown'}`
   }
 
-  // `NEXT_PUBLIC_SITE_URL` is optional — the app falls back to the request's own
-  // host — so its absence is reported without failing the check.
+  // `NEXT_PUBLIC_SITE_URL` is optional — the app falls back to the request host — so it does not fail the check.
   const required = missing.filter((name) => name !== 'NEXT_PUBLIC_SITE_URL')
   const ok = required.length === 0 && urlParses && database === 'ok'
 

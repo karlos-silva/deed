@@ -1,17 +1,6 @@
-// Two deliberate exceptions, both local to this file:
-//   - the LCS walk indexes a table it just sized, so every access is in range by
-//     construction and `?? 0` would hide a real bug rather than prevent one;
-//   - spreading a string yields code points, which is precisely what a diff
-//     shown to a human should treat as one cell.
-/* eslint-disable @typescript-eslint/no-non-null-assertion, @typescript-eslint/no-misused-spread */
+/* eslint-disable @typescript-eslint/no-non-null-assertion, @typescript-eslint/no-misused-spread -- the LCS walk indexes a table it just sized; spreading a string yields code points, the right unit for a diff shown to a human. */
 
-/**
- * Character-level diff, ported from the prototype (D8).
- *
- * The naive diff — strip the common prefix and suffix — marks the whole string
- * when the defect is at the first character, which is precisely the most common
- * case here: a provider wrapping the value in quotes.
- */
+/** Character-level diff (D8). Affix-only diffing marks the whole string when a provider prepends a quote. */
 
 export type Marked = { readonly char: string; readonly changed: boolean }
 
@@ -84,14 +73,9 @@ function affixDiff(a: readonly string[], b: readonly string[]): ValueDiff {
 export type DiffRun =
   | { readonly kind: 'same'; readonly text: string }
   | { readonly kind: 'changed'; readonly text: string }
-  /** A long unchanged stretch, kept head-and-tail so both lines stay aligned. */
   | { readonly kind: 'elided'; readonly head: string; readonly tail: string; readonly hidden: number }
 
-/**
- * Truncate in the *middle*, with head and tail. Cutting only the end would hide
- * half the defects — a quote shows up at the start, whitespace and an appended
- * apex at the end (D8).
- */
+/** Truncate in the *middle*: a quote shows at the start, whitespace and an appended apex at the end (D8). */
 export function collapse(marked: readonly Marked[], threshold = 28, keep = 12): DiffRun[] {
   const runs: { changed: boolean; text: string }[] = []
   for (const { char, changed } of marked) {

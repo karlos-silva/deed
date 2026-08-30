@@ -1,9 +1,4 @@
-/**
- * `packages/core` — the state machine, diagnosis, and diff. Zero I/O.
- *
- * The normative specification is docs/state-model.md. Where a comment cites a
- * section, that section is the contract and this is its implementation.
- */
+/** Zero I/O. Section references throughout cite docs/state-model.md, which is normative. */
 
 export * from './time'
 export * from './recordSpec'

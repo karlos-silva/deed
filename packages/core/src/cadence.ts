@@ -9,16 +9,10 @@ import {
   since,
 } from './time'
 
-/**
- * Check cadence — backoff, not a fixed interval (state-model §5).
- *
- * The prototype checked every 60s forever. Real DNS does not reward that, and
- * it burns rate limit on shared DoH endpoints.
- */
+/** Backoff, not a fixed interval (state-model §5) — a fixed one burns rate limit on shared DoH endpoints. */
 export function checkInterval(domain: Domain, now: Timestamp): Duration | null {
   switch (domain.ownership.status) {
-    // Degraded checks *accelerate*: that is the window where the user is
-    // actively fixing something and wants immediate feedback.
+    // Degraded *accelerates*: this is the window where the user is actively fixing something.
     case 'degraded':
       return minutes(5)
     case 'expired':

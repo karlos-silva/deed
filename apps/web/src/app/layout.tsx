@@ -7,8 +7,6 @@ const geist = Geist({ subsets: ['latin'], variable: '--font-geist', display: 'sw
 const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono', display: 'swap' })
 
 export const metadata: Metadata = {
-  // An honest title, per D9: this app is unambiguous about its own identity,
-  // which is the property it is built to demonstrate.
   title: 'Deed — prove you own a domain',
   description:
     'Claim a domain, publish one TXT record, and see exactly what every resolver answers. An independent study in domain verification.',

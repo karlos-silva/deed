@@ -1,86 +1,91 @@
 import { RESOLVERS, type Domain, type ResolverId } from '@deed/core'
 import { RESOLVER_NAMES, humanTtl } from '@/lib/copy'
 
-type Verdict = {
+type Answer = {
   readonly label: string
-  readonly dot: string
+  readonly state: 'ok' | 'progress' | 'problem' | 'idle'
   readonly ttl: number | null
 }
 
 /**
- * Show your work (prd §3.4): which resolvers we asked, what each returned, and
- * what we concluded. This is the difference between a verdict the user has to
- * trust and one they can audit.
- *
- * It is derived entirely from `record`, so it can never claim something the
- * state model does not say.
+ * Which resolvers we asked, what each returned, and what we concluded (prd §3.4).
+ * A table, because that is what it is: three independent caches answering the
+ * same question, and the point is comparing them.
  */
-export function ResolverMatrix({ domain }: { domain: Domain }) {
-  const verdicts = verdictsFor(domain)
+export function ResolverMatrix({ domain, checking }: { domain: Domain; checking?: boolean }) {
+  const answers = answersFor(domain)
 
   return (
-    <div className="matrix" role="table" aria-label="What each resolver answered">
-      {RESOLVERS.map((resolver) => {
-        const verdict = verdicts[resolver]
-        return (
-          <div className="matrix-row" role="row" key={resolver}>
-            <span className="who" role="cell">
-              <span className={`mdot ${verdict.dot}`} aria-hidden="true" />
-              {RESOLVER_NAMES[resolver]}
-            </span>
-            <span className="ttl" role="cell">
-              {verdict.ttl === null ? '' : `TTL ${humanTtl(verdict.ttl)}`}
-            </span>
-            <span className="verdict subtle" role="cell">
-              {verdict.label}
-            </span>
-          </div>
-        )
-      })}
-    </div>
+    <table className={`matrix${checking === true ? ' scanning' : ''}`}>
+      <caption className="sr-only">What each resolver answered</caption>
+      <thead>
+        <tr>
+          <th scope="col">Resolver</th>
+          <th scope="col">Answer</th>
+          <th scope="col" className="num">
+            Cached for
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {RESOLVERS.map((resolver) => {
+          const answer = answers[resolver]
+          return (
+            <tr key={resolver} data-state={answer.state === 'idle' ? undefined : answer.state}>
+              <th scope="row">
+                <span className="mdot" aria-hidden="true" />
+                {RESOLVER_NAMES[resolver]}
+              </th>
+              <td className="said">{answer.label}</td>
+              <td className="num">{answer.ttl === null ? '—' : humanTtl(answer.ttl)}</td>
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
   )
 }
 
-function verdictsFor(domain: Domain): Record<ResolverId, Verdict> {
+function answersFor(domain: Domain): Record<ResolverId, Answer> {
   const record = domain.record
-  const blank = (label: string, dot = 'mdot-gray'): Verdict => ({ label, dot, ttl: null })
-  const all = (verdict: Verdict): Record<ResolverId, Verdict> => ({
-    cloudflare: verdict,
-    google: verdict,
-    adguard: verdict,
+  const idle = (label: string): Answer => ({ label, state: 'idle', ttl: null })
+  const all = (answer: Answer): Record<ResolverId, Answer> => ({
+    cloudflare: answer,
+    google: answer,
+    adguard: answer,
   })
 
   switch (record.status) {
     case 'unchecked':
-      return all(blank('not looked yet'))
+      return all(idle('not asked yet'))
 
     case 'absent':
-      return all(blank('no record'))
+      return all(idle('no such record'))
 
     case 'zone_error':
     case 'check_failed': {
-      const out = all(blank('—'))
+      const out = all(idle('—'))
       for (const error of record.errors) {
-        out[error.resolver] = blank(
-          error.side === 'zone' ? `their zone: ${error.detail}` : `our lookup: ${error.detail}`,
-          error.side === 'zone' ? 'mdot-red' : 'mdot-gray',
-        )
+        out[error.resolver] =
+          error.side === 'zone'
+            ? { label: `their zone: ${error.detail}`, state: 'problem', ttl: null }
+            : { label: `our lookup: ${error.detail}`, state: 'idle', ttl: null }
       }
       return out
     }
 
     case 'verified':
     case 'propagating': {
-      const out = all(blank(record.status === 'verified' ? 'no answer' : 'not yet'))
+      const out = all(idle(record.status === 'verified' ? 'no answer' : 'not yet'))
       const ttls = new Map(record.ttl.perResolver.map((t) => [t.resolver, t.ttl]))
       for (const resolver of record.seenBy) {
-        out[resolver] = { label: 'has your token', dot: 'mdot-green', ttl: ttls.get(resolver) ?? null }
+        out[resolver] = { label: 'has your token', state: 'ok', ttl: ttls.get(resolver) ?? null }
       }
       if (record.status === 'propagating') {
         for (const resolver of record.staleAt) {
           out[resolver] = {
-            label: 'previous token, still cached',
-            dot: 'mdot-yellow',
+            label: 'your previous token',
+            state: 'progress',
             ttl: ttls.get(resolver) ?? null,
           }
         }
@@ -89,25 +94,16 @@ function verdictsFor(domain: Domain): Record<ResolverId, Verdict> {
     }
 
     case 'mismatch': {
-      const out = all(blank('no answer'))
+      const out = all(idle('no answer'))
       for (const observed of record.observed) {
-        out[observed.resolver] = {
-          label:
-            observed.kind === 'current'
-              ? 'has your token'
-              : observed.kind === 'superseded'
-                ? 'previous token, still cached'
-                : observed.kind === 'wildcard_served'
-                  ? 'answered by a wildcard'
-                  : 'a different value',
-          dot:
-            observed.kind === 'current'
-              ? 'mdot-green'
-              : observed.kind === 'unknown'
-                ? 'mdot-red'
-                : 'mdot-yellow',
-          ttl: null,
-        }
+        out[observed.resolver] =
+          observed.kind === 'current'
+            ? { label: 'has your token', state: 'ok', ttl: null }
+            : observed.kind === 'superseded'
+              ? { label: 'your previous token', state: 'progress', ttl: null }
+              : observed.kind === 'wildcard_served'
+                ? { label: 'a wildcard answered', state: 'progress', ttl: null }
+                : { label: 'a different value', state: 'problem', ttl: null }
       }
       return out
     }

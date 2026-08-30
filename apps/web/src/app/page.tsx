@@ -3,16 +3,10 @@ import { redirect } from 'next/navigation'
 import { requestDb } from '@/lib/db'
 import { origin } from '@/lib/origin'
 import { session } from '@/lib/session'
-import { Footer } from '@/components/Footer'
 
 export const dynamic = 'force-dynamic'
 
-/**
- * One screen, no marketing: the tile, the product name, and two buttons
- * (prd §6.0, D1). Explaining the product to logged-out visitors is the README's
- * job — a visitor must grant OAuth to see anything, and that cost is
- * accepted rather than worked around.
- */
+// prd §6.0 / D1: one screen, no marketing, no landing page.
 export default async function SignInPage({
   searchParams,
 }: {
@@ -34,29 +28,26 @@ export default async function SignInPage({
     if (failure !== null) {
       redirect(`/?error=${encodeURIComponent(failure.message)}`)
     }
-    // The provider's authorisation URL is external, so it is not one of the
-    // app's typed routes.
+    // The provider's authorisation URL is external, so it is not a typed route.
     redirect(data.url as Parameters<typeof redirect>[0])
   }
 
   return (
-    <div className="signin">
-      <div className="signin-card enter">
-        <Image
-          src="/domains-tile.png"
-          alt=""
-          width={740}
-          height={740}
-          priority
-          style={{ width: 140, height: 'auto' }}
-        />
-
-        <div className="stack-2">
-          <h1>Deed</h1>
-          <p className="t-body muted">Prove you own a domain.</p>
+    <div className="signin-stage">
+      <div className="signin-panel enter">
+        <div className="tile-mark">
+          <Image src="/domains-tile.png" alt="" width={740} height={740} priority />
         </div>
 
-        <form className="buttons" action={signIn}>
+        <div className="stack-2">
+          <h1 className="signin-title">Prove you own a domain.</h1>
+          <p className="signin-lede">
+            Publish one TXT record. We read it back from three independent resolvers, tell you what
+            each one answered, and keep checking.
+          </p>
+        </div>
+
+        <form className="signin-actions" action={signIn}>
           <button className="btn btn-primary" name="provider" value="github" type="submit">
             Continue with GitHub
           </button>
@@ -71,7 +62,10 @@ export default async function SignInPage({
           </div>
         )}
 
-        <Footer />
+        <p className="signin-note">
+          <strong>Deed</strong> — an independent study in domain-ownership verification.
+          It only ever reads your DNS; it never writes to it.
+        </p>
       </div>
     </div>
   )

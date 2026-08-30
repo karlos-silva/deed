@@ -42,7 +42,6 @@ import { mintToken } from '@/lib/token'
 import { now, runCheck } from '@/lib/verification'
 import { refusalMessage } from '@/lib/refusal'
 
-/** `FormData.get` yields `string | File | null`; only the first is ever a field here. */
 const text = (form: FormData, key: string, fallback = ''): string => {
   const value = form.get(key)
   return typeof value === 'string' ? value : fallback
@@ -52,8 +51,6 @@ const back: (id: DomainId, notice?: string) => never = (id, notice) => {
   revalidatePath(`/domains/${id}`)
   redirect(notice === undefined ? `/domains/${id}` : `/domains/${id}?notice=${encodeURIComponent(notice)}`)
 }
-
-/* --------------------------------------------------------------- claim --- */
 
 export async function claimDomain(formData: FormData): Promise<void> {
   const { db, userId } = await requireSession()
@@ -79,7 +76,6 @@ export async function claimDomain(formData: FormData): Promise<void> {
     isSandbox: parsed.value.isSandbox,
     ownership: { status: 'pending', token: mintToken(), claimedAt: at, expiresAt: plus(at, CLAIM_TTL) },
     now: at,
-    // The first check is due immediately; the cadence takes over after it.
     nextCheckAt: at,
   })
 
@@ -91,15 +87,12 @@ export async function claimDomain(formData: FormData): Promise<void> {
   redirect(`/domains/${stored.domain.id}`)
 }
 
-/* ----------------------------------------------------------- check now --- */
-
 export async function checkNow(formData: FormData): Promise<void> {
   const { db, userId } = await requireSession()
   const id = asDomainId(text(formData, 'id', ''))
 
   const stored = await getDomain(db, id)
-  // RLS already hid anyone else's domain. Saying no more than this is the
-  // point: the refusal must not disclose whether the domain exists (S4).
+  // RLS already hid anyone else's domain; the refusal must not disclose whether it exists (S4).
   if (stored === null) redirect('/domains?error=Not+found')
 
   const at = now()
@@ -127,8 +120,6 @@ export async function checkNow(formData: FormData): Promise<void> {
   )
 }
 
-/* ------------------------------------------------------------ rotation --- */
-
 export async function rotateToken(formData: FormData): Promise<void> {
   const { db, userId } = await requireSession()
   const id = asDomainId(text(formData, 'id', ''))
@@ -151,9 +142,7 @@ export async function rotateToken(formData: FormData): Promise<void> {
         : claim.status === 'verified'
           ? { ...claim, token }
           : { ...claim, token },
-    // Honoured for max(observed TTL, 24h), then it becomes an ordinary unknown
-    // value — a token that outlives its claim is what rotation exists to
-    // prevent (state-model §3).
+    // Honoured for max(observed TTL, 24h) so a rotated token cannot outlive its claim (state-model §3).
     supersession: {
       previousToken: claim.token,
       rotatedAt: at,
@@ -176,8 +165,6 @@ export async function rotateToken(formData: FormData): Promise<void> {
   back(id, 'A new token is issued. The previous one stops being accepted once its cache clears.')
 }
 
-/* ------------------------------------------------------------- release --- */
-
 export async function releaseDomain(formData: FormData): Promise<void> {
   const { db, userId } = await requireSession()
   const id = asDomainId(text(formData, 'id', ''))
@@ -193,9 +180,6 @@ export async function releaseDomain(formData: FormData): Promise<void> {
     lastChangedAt: at,
   }
 
-  // The history survives: the log records what *they* did and saw, and taking
-  // it away at release would punish exactly the person trying to understand
-  // what happened (prd §10).
   const result = await applyTransition(
     db,
     stored,
@@ -221,8 +205,6 @@ export async function releaseDomain(formData: FormData): Promise<void> {
   back(id, 'Released. The name is free for anyone to claim again.')
 }
 
-/* -------------------------------------------------------- the sandbox --- */
-
 async function withZone(id: DomainId, edit: (zone: SandboxZone) => SandboxZone): Promise<void> {
   const { db, userId } = await requireSession()
   const stored = await getDomain(db, id)
@@ -231,10 +213,6 @@ async function withZone(id: DomainId, edit: (zone: SandboxZone) => SandboxZone):
   const loaded = (await loadZone(db, id)) as SandboxZone | null
   const zone = loaded ?? emptyZone(stored.domain.name)
   await saveZone(db, id, userId, edit(zone))
-
-  // The zone changed, so the verdict may have too. Checking immediately is what
-  // makes the sandbox an instrument rather than a screenshot — and the check
-  // writes its own audit event, through the one path allowed to.
   await runCheck(db, stored, 'user', now())
 }
 
@@ -267,8 +245,6 @@ export async function setZoneOutage(formData: FormData): Promise<void> {
   await withZone(id, (zone) => setOutage(zone, outage))
   back(id)
 }
-
-/* ---------------------------------------------------------------------- */
 
 const observedTtl = (domain: Domain): number => {
   const record = domain.record

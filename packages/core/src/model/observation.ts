@@ -5,7 +5,6 @@ import type { Timestamp } from '../time'
 /** One completed multi-resolver check (state-model §6). */
 export type Observation = {
   readonly startedAt: Timestamp
-  /** Who triggered it — the audit event it produces is stamped with this (D14). */
   readonly actor: AuditActor
   /** The challenge host — one entry per resolver. */
   readonly answers: readonly ResolverAnswer[]
@@ -36,7 +35,6 @@ export type ResolverAnswer =
 
 export type AnswerOutcome = ResolverAnswer['outcome']
 
-/** Values the control probe returned — anything here is served by a wildcard. */
 export const probedValues = (probe: readonly ResolverAnswer[]): ReadonlySet<string> => {
   const values = new Set<string>()
   for (const answer of probe) {

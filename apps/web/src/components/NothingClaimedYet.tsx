@@ -1,10 +1,5 @@
 import { CHALLENGE_LABEL } from '@deed/core'
 
-/**
- * A first-time account needs somewhere to start, and an empty table under a
- * heading is not it (S3). This says what claiming does, what it will need, and
- * — because the product reads other people's DNS — what it will not do.
- */
 export function NothingClaimedYet() {
   return (
     <section className="empty" style={{ marginTop: 'var(--space-6)' }}>

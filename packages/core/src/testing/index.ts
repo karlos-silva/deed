@@ -1,7 +1,4 @@
-/**
- * Builders for tests. Kept in the package so `packages/dns` and `apps/web` can
- * stage the same states without redefining them.
- */
+/** Builders for tests, shared so `packages/dns` and `apps/web` stage the same states. */
 import type { AuditActor } from '../model/audit'
 import type { Domain, OwnershipState } from '../model/domain'
 import { type DomainId, type ResolverId, type Token, type UserId, domainId, token, userId } from '../model/ids'
@@ -53,7 +50,6 @@ export const observation = (
   probe: options.probe ?? [],
 })
 
-/** A probe that answers `value` everywhere — i.e. a wildcard is in the zone. */
 export const wildcardProbe = (value: string, ttl = 300): ResolverAnswer[] => [
   answered('cloudflare', [value], ttl),
   answered('google', [value], ttl),

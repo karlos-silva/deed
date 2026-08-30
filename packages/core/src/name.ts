@@ -1,26 +1,14 @@
 import { PUBLIC_SUFFIX_RULES } from './data/publicSuffixList'
 
-/**
- * What may be claimed, and what may not.
- *
- * The lookup endpoint takes user input and must be hardened (prd §8): DNS reads
- * only, never an HTTP fetch to the user's domain, and no claims on names that
- * are not public domains. Every refusal here happens before a single lookup is
- * attempted.
- */
+/** Hardened per prd §8: DNS reads only, never an HTTP fetch to the user's domain. Every refusal happens before any lookup. */
 
 export type ClaimName = {
   /** Punycode, lowercased, no trailing dot — the stored form. */
   readonly name: string
-  /**
-   * The Unicode form, only where it differs. Names display as punycode first: a
-   * product about proving identity does not let `аcme.com` read as `acme.com`
-   * (prd §8).
-   */
+  /** Only where it differs; display punycode first so `аcme.com` cannot read as `acme.com` (prd §8). */
   readonly unicode: string | null
   /** `.test` routes to the simulated zone and never to real DNS (D2, D10). */
   readonly isSandbox: boolean
-  /** The public suffix this name sits under, e.g. `co.uk` for `shop.acme.co.uk`. */
   readonly publicSuffix: string
 }
 
@@ -46,11 +34,7 @@ const SANDBOX_TLD = 'test'
 const MAX_LABEL_BYTES = 63
 const MAX_NAME_BYTES = 253
 
-/**
- * Accepts a pasted URL, a trailing dot, uppercase, or an IDN, and normalises
- * silently (prd §6). The user pasted something reasonable; complaining about
- * the shape of it is not the product's job.
- */
+/** Accepts a pasted URL, trailing dot, uppercase, or IDN and normalises silently (prd §6). */
 export function parseClaim(input: string): ClaimParse {
   const trimmed = input.trim()
   if (trimmed === '') return refuse({ reason: 'empty' })
@@ -58,7 +42,6 @@ export function parseClaim(input: string): ClaimParse {
   const host = extractHost(trimmed)
   if (host === null) return refuse({ reason: 'malformed', detail: 'unparseable' })
 
-  // An IP literal is not a domain, and asking DNS about one is meaningless.
   if (isIpLiteral(host)) return refuse({ reason: 'not_a_public_domain', detail: 'ip_literal' })
 
   const name = host.replace(/\.$/, '').toLowerCase()
@@ -88,13 +71,9 @@ export function parseClaim(input: string): ClaimParse {
     return refuse({ reason: 'not_a_public_domain', detail: 'reserved_tld' })
   }
 
-  // `.test` is the single reserved-suffix exception, and it routes to the
-  // sandbox, never to real DNS (D2, D10).
   const isSandbox = tld === SANDBOX_TLD
   const suffix = publicSuffixOf(name)
 
-  // A sandbox name still needs at least one label of its own; `test` itself is
-  // the suffix, not a domain.
   if (name === suffix) return refuse({ reason: 'public_suffix', suffix })
   if (labels.length < 2) return refuse({ reason: 'malformed', detail: 'no_dot' })
 
@@ -105,12 +84,7 @@ export function parseClaim(input: string): ClaimParse {
   }
 }
 
-/**
- * Rules bucketed by their rightmost label. Every rule ends in a concrete TLD —
- * the wildcard is always leftmost — so a name only ever has to consider the
- * handful of rules under its own TLD instead of all ten thousand. This runs on
- * every claim and every pre-flight keystroke pause, so it is worth the map.
- */
+/** Bucketed by rightmost label: every rule ends in a concrete TLD, so a name only considers its own TLD's rules. */
 let byTld: Map<string, string[]> | null = null
 
 function rulesFor(tld: string): readonly string[] {
@@ -126,11 +100,7 @@ function rulesFor(tld: string): readonly string[] {
   return byTld.get(tld) ?? []
 }
 
-/**
- * The Public Suffix List algorithm, as the list itself specifies it: the
- * prevailing rule is the exception rule if one matches, otherwise the longest
- * matching rule; a name matching nothing falls back to the implicit `*`.
- */
+/** The Public Suffix List algorithm: the exception rule if one matches, otherwise the longest match. */
 export function publicSuffixOf(name: string): string {
   const labels = name.split('.')
   let prevailing: string[] | null = null
@@ -145,10 +115,8 @@ export function publicSuffixOf(name: string): string {
     const matches = parts.every((part, i) => part === '*' || part === tail[i])
     if (!matches) continue
 
-    // An exception rule wins outright; among the rest, the longest wins.
     if (isException) {
-      // The exception's own leftmost label becomes part of the domain, so the
-      // public suffix is one label shorter than the rule.
+      // The exception's leftmost label belongs to the domain, so the suffix is one label shorter.
       prevailing = parts.slice(1)
       exception = true
       break
@@ -158,7 +126,6 @@ export function publicSuffixOf(name: string): string {
 
   if (prevailing === null) return labels.at(-1) ?? name
   if (!exception && prevailing.includes('*')) {
-    // A wildcard rule matches whatever label sat in its place.
     return labels.slice(labels.length - prevailing.length).join('.')
   }
   return prevailing.join('.')
@@ -166,17 +133,11 @@ export function publicSuffixOf(name: string): string {
 
 export const isPublicSuffix = (name: string): boolean => publicSuffixOf(name) === name
 
-/* --------------------------------- details -------------------------------- */
-
 const refuse = (error: ClaimRefusal): ClaimParse => ({ ok: false, error })
 
 const byteLength = (value: string): number => new TextEncoder().encode(value).length
 
-/**
- * `HTTPS://Updates.ACME.com/path/` is a domain the user pasted from their
- * browser bar. `URL` also does the IDN → punycode conversion, so an IDN arrives
- * already in its stored form.
- */
+/** `URL` accepts a pasted browser-bar string and does IDN → punycode, so a name arrives in its stored form. */
 function extractHost(input: string): string | null {
   const candidate = /^[a-z][a-z0-9+.-]*:\/\//i.test(input) ? input : `https://${input}`
   try {
@@ -190,11 +151,9 @@ function extractHost(input: string): string | null {
 const isIpLiteral = (host: string): boolean =>
   host.startsWith('[') || /^\d{1,3}(\.\d{1,3}){3}$/.test(host) || /^[0-9a-f]*:[0-9a-f:.]*$/i.test(host)
 
-/** The Unicode form of a punycode name, for display alongside — never instead. */
 function toUnicode(name: string): string {
   if (!name.includes('xn--')) return name
   try {
-    // `Intl.DisplayNames` is not a decoder; the URL parser round-trips instead.
     return name
       .split('.')
       .map((label) => (label.startsWith('xn--') ? decodePunycode(label.slice(4)) ?? label : label))

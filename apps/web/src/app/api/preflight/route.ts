@@ -13,20 +13,13 @@ import { router } from '@/lib/verification'
 
 export const dynamic = 'force-dynamic'
 
-/**
- * What we can tell the user about their zone before they have a token to get
- * wrong (prd §3.2). The client debounces to typing pauses; this endpoint is
- * what makes that safe to do — every call is a real lookup against shared
- * public resolvers, so it is charged to the same hourly budget as a manual
- * check (state-model §5).
- */
+// Every call is a real lookup against shared public resolvers, so it is charged to the hourly budget (state-model §5).
 export async function GET(request: Request): Promise<Response> {
   const current = await session()
   if (current === null) return new Response(null, { status: 401 })
 
   const name = new URL(request.url).searchParams.get('name') ?? ''
   const parsed = parseClaim(name)
-  // A refusal here is about the name, not the zone: there is nothing to look up.
   if (!parsed.ok) {
     return Response.json({ ok: false, reason: refusalMessage(parsed.error, name) })
   }
@@ -34,7 +27,6 @@ export async function GET(request: Request): Promise<Response> {
   const now = at(Date.now())
   const spent = await countLookups(current.db, current.userId, budgetWindowStart(now))
   if (spent >= USER_LOOKUP_BUDGET) {
-    // Out of budget is not a verdict about the zone, and must not read as one.
     return Response.json({ ok: false, reason: 'skipped', budget: USER_LOOKUP_BUDGET })
   }
   await recordLookup(current.db, current.userId, 'preflight', null)

@@ -1,10 +1,6 @@
 import { headers } from 'next/headers'
 
-/**
- * The origin this request actually arrived on. OAuth redirect URIs have to match
- * exactly, and hardcoding one breaks either local development or the deploy —
- * usually whichever you test last (S0).
- */
+// OAuth redirect URIs must match exactly, and a hardcoded one breaks either local development or the deploy (S0).
 export async function origin(): Promise<string> {
   const h = await headers()
   const explicit = process.env['NEXT_PUBLIC_SITE_URL']

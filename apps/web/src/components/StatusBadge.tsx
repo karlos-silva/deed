@@ -1,9 +1,5 @@
 import type { OwnershipState, RecordState } from '@deed/core'
 
-/**
- * Every badge answers the same question the state does: *does waiting help?*
- * Nothing here invents a status the state model does not define.
- */
 export function ClaimBadge({ ownership }: { ownership: OwnershipState }) {
   switch (ownership.status) {
     case 'pending':

@@ -1,3 +1,4 @@
+// Types only: a value import reaches core's barrel and ships the 140KB Public Suffix List to the browser.
 import type {
   Domain,
   MismatchCause,
@@ -8,28 +9,11 @@ import type {
   ResolverId,
 } from '@deed/core'
 
-/**
- * Every message in the product comes from here.
- *
- * Core is imported for *types only*, deliberately: this module is pulled into a
- * client component, and a value import would reach the core barrel, which
- * re-exports the Public Suffix List. Shipping 140KB of it to the browser to
- * render a sentence is not a trade worth making.
- *
- * Three rules, from prd §3, made mechanical:
- *   — never conflate "not yet" with "wrong": every state answers *does waiting
- *     help?*, and when the answer is no there is no countdown anywhere;
- *   — blame the mechanism, never the user;
- *   — no fabricated stakes (D8): consequences are capabilities lost, never an
- *     invented volume of traffic.
- */
-
 export type Guidance = {
   readonly headline: string
   readonly body: string
   /** `null` where the honest answer is "we cannot tell yet". */
   readonly waitingHelps: boolean | null
-  /** The specific correction, where there is one. */
   readonly fix?: string
   readonly tone: 'ok' | 'progress' | 'problem' | 'unknown'
 }
@@ -129,8 +113,7 @@ export function recordGuidance(domain: Domain): Guidance {
 }
 
 function mismatchGuidance(domain: Domain, record: Extract<RecordState, { status: 'mismatch' }>): Guidance {
-  // A corrected mistake still clearing caches reads differently from one just
-  // made, and the previous observation is what tells them apart (state-model §3).
+  // A corrected mistake still clearing caches reads differently from a fresh one (state-model §3).
   if (record.correcting !== null) {
     return {
       headline: 'Your correction is on its way',
@@ -206,7 +189,6 @@ function mismatchGuidance(domain: Domain, record: Extract<RecordState, { status:
   }
 }
 
-/** What the claim, rather than the record, is worth saying about. */
 export function claimGuidance(ownership: OwnershipState): Guidance | null {
   switch (ownership.status) {
     case 'pending':
@@ -263,7 +245,6 @@ const revokedBody = (reason: Extract<OwnershipState, { status: 'revoked' }>['rea
   }
 }
 
-/** Does waiting help? — the question every diagnosis has to answer (prd §7). */
 export const causeWaitingHelps = (cause: MismatchCause): boolean => {
   switch (cause) {
     case 'quoted_value':
@@ -279,13 +260,6 @@ export const causeWaitingHelps = (cause: MismatchCause): boolean => {
 
 export const challengeHostOf = (domain: Domain): string => `_deed-challenge.${domain.name}`
 
-/* ------------------------------- pre-flight ------------------------------- */
-
-/**
- * The field names the user is actually looking at. Getting one wrong sends
- * somebody hunting for a control that does not exist, so an unrecognised zone
- * gets generic labels rather than a guess.
- */
 export const fieldLabels = (provider: Provider | null) => ({
   host: provider?.hostLabel ?? 'Host',
   value: provider?.valueLabel ?? 'Value',
@@ -293,10 +267,6 @@ export const fieldLabels = (provider: Provider | null) => ({
   name: provider?.name ?? null,
 })
 
-/**
- * A warning is not a refusal. Each of these is something we noticed about the
- * zone before a token existed; none of them stops anybody claiming anything.
- */
 export function warningCopy(warning: PreflightWarning): Guidance {
   switch (warning.kind) {
     case 'provider_quirk':

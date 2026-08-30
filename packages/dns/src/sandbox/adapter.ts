@@ -3,13 +3,6 @@ import { classifyLookup, ourFailure } from '../classify'
 import { RCODE, type DnsPort, type RawRecord, type RecordType } from '../port'
 import { type SandboxZone, answersFor, labelOf, visibleTo } from './zone'
 
-/**
- * The sandbox resolver. It answers through the same classifier as DoH, so a
- * simulated SERVFAIL and a real one arrive at the engine identically (D2).
- *
- * Nothing here touches the network. That is asserted, not assumed: `.test`
- * routing is total, and a network mock records zero outbound requests.
- */
 export function createSandboxPort(zone: SandboxZone): DnsPort {
   return {
     lookup(host, type, context) {
@@ -52,15 +45,13 @@ function answer(
     return classifyLookup({ resolver, rcode: RCODE.nxdomain, records: [] }, type)
   }
 
-  // A CNAME cannot coexist with other data at the same name, and it is *why*
-  // the TXT cannot resolve (prd §7, `cname_at_host`).
+  // A CNAME cannot coexist with other data at the same name (prd §7, `cname_at_host`).
   const cname = matched.find((r) => r.type === 'CNAME')
   const records: RawRecord[] =
     cname !== undefined && type !== 'CNAME'
       ? [{ type: 'CNAME', ttl: cname.ttl, value: cname.value }]
       : matched.map((r) => ({ type: r.type, ttl: r.ttl, value: r.value }))
 
-  // The name exists and holds no record of the type asked for: nodata, never
-  // nxdomain — the difference between "does not exist" and "exists, wrong type".
+  // NOERROR with records of another type classifies as nodata, never nxdomain.
   return classifyLookup({ resolver, rcode: RCODE.noerror, records }, type)
 }

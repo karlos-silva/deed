@@ -8,18 +8,7 @@ import {
 } from '@deed/core'
 import type { DnsPort, LookupContext } from './port'
 
-/**
- * Everything worth knowing about a zone *before* a token is issued (prd §3.2).
- *
- * Four questions, asked at once: does the name resolve at all, whose panel is
- * the user about to open, does a wildcard answer here, and is the challenge host
- * already occupied by a CNAME. Each of them prevents a failure rather than
- * explaining one afterwards.
- *
- * It never blocks. We can be wrong about a zone — a resolver can time out, an NS
- * set can be unrecognised — and the user cannot be wrong about owning their own
- * domain. Everything here is a warning.
- */
+/** What is known about a zone before a token is issued (prd §3.2). It never blocks — everything here is a warning. */
 export type Preflight = {
   readonly name: string
   readonly registered: boolean
@@ -33,7 +22,6 @@ export type Preflight = {
 
 export type PreflightOptions = {
   readonly now: Timestamp
-  /** The same unguessable sibling label the check uses (state-model §3). */
   readonly probeLabel: string
   readonly timeoutMs?: number
 }
@@ -55,15 +43,12 @@ export async function preflight(
     port.lookup(host, 'CNAME', context),
   ])
 
-  // A name with no NS anywhere is a name nobody has delegated — which at check
-  // time is indistinguishable from a missing record, and right now is not
-  // (state-model §3, `domain_unregistered`).
+  // No NS anywhere means nobody delegated the name; NODATA still counts as registered (state-model §3).
   const nameservers = [...new Set(ns.flatMap((a) => (a.outcome === 'answered' ? a.values : [])))]
   const registered = nameservers.length > 0 || ns.some((a) => a.outcome === 'nodata')
   const zoneFailing = ns.length > 0 && ns.every((a) => a.outcome === 'zone_error')
 
-  // Anything the probe returns is being served by a wildcard: nobody created a
-  // record at a random label.
+  // Nobody creates a record at a random label: an answer here is a wildcard.
   const wildcard =
     probe.flatMap((a) => (a.outcome === 'answered' ? a.values : []))[0] ?? null
 

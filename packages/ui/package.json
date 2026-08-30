@@ -7,6 +7,7 @@
     "./tokens.css": "./src/tokens.css",
     "./components.css": "./src/components.css",
     "./motion.css": "./src/motion.css",
-    "./app.css": "./src/app.css"
+    "./app.css": "./src/app.css",
+    "./atmosphere.css": "./src/atmosphere.css"
   }
 }

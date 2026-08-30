@@ -2,10 +2,6 @@
 
 import Link from 'next/link'
 
-/**
- * An error boundary that offers a way back, rather than a blank page (S8).
- * A product about explaining failure has no business failing silently.
- */
 export default function ErrorBoundary({ reset }: { error: Error; reset: () => void }) {
   return (
     <div className="signin">

@@ -1,10 +1,5 @@
 import type { ClaimRefusal } from '@deed/core'
 
-/**
- * Why a name was refused, in a sentence the user can act on. Blame the
- * mechanism, never the user (prd §3) — "invalid domain" is true, useless, and
- * reads as an accusation.
- */
 export function refusalMessage(refusal: ClaimRefusal, input: string): string {
   switch (refusal.reason) {
     case 'empty':

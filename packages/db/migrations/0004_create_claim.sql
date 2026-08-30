@@ -1,15 +1,5 @@
--- Claim creation, as one transaction that also writes its own audit event.
---
--- `audit_events` has a SELECT policy and deliberately no INSERT policy: the log
--- is the product's "show your work" surface (prd §3), and a history the client
--- can write is a history worth nothing. Every event therefore comes from trusted
--- code — `apply_transition` for transitions, and this for the first one.
---
--- It also closes an atomicity hole. Creating the claim and logging its creation
--- were two separate writes, so a failure between them left a domain that exists
--- with no record of being created — breaking invariant 5, which says every
--- transition emits exactly one audit event. That is not hypothetical: it is the
--- state the first real claim ended up in.
+-- The claim and its first audit event in one transaction; `audit_events` has no
+-- INSERT policy, so the event has to be written by trusted code (prd §3).
 
 create or replace function public.create_claim(
   p_name          text,
@@ -27,8 +17,7 @@ declare
   v_owner  uuid := (select auth.uid());
   v_domain public.domains%rowtype;
 begin
-  -- SECURITY DEFINER, so the caller's identity is checked rather than assumed.
-  -- A claim belongs to whoever is signed in, and to nobody otherwise (D1).
+  -- SECURITY DEFINER bypasses RLS, so the caller's identity is checked here (D1).
   if v_owner is null then
     raise exception 'not signed in' using errcode = '42501';
   end if;

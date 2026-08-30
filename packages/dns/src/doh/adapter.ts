@@ -13,18 +13,9 @@ const TYPE_NAME = new Map<number, RecordType>(
   Object.entries(RECORD_TYPE_NUMBER).map(([name, number]) => [number, name as RecordType]),
 )
 
-/**
- * Three independent resolvers with independent caches (D4), so the propagation
- * matrix reports observed reality rather than a modelled delay curve.
- *
- * Cloudflare, Google and AdGuard's unfiltered endpoint each serve a JSON API.
- * Quad9 was the third until it turned out to require HTTP/2, which Node's fetch
- * does not speak (D15) — the port absorbed the swap and the engine never learned
- * there was one, which is the whole argument for having a port.
- */
+/** Three resolvers with independent caches (D4). Quad9 is absent: it needs HTTP/2, which Node's fetch lacks (D15). */
 export type Endpoint = {
   readonly resolver: ResolverId
-  /** Given the host and record type to look up, the URL to request. */
   readonly url: (host: string, type: RecordType) => string
 }
 
@@ -39,8 +30,7 @@ export const DOH_ENDPOINTS: readonly Endpoint[] = [
     url: (host, type) => `https://dns.google/resolve?name=${encodeURIComponent(host)}&type=${type}`,
   },
   {
-    // Unfiltered on purpose: AdGuard's default endpoint blocks domains, and a
-    // blocked name would read as `absent` — a silently wrong verdict.
+    // Unfiltered on purpose: AdGuard's default endpoint blocks names, which would read as `absent`.
     resolver: 'adguard',
     url: (host, type) =>
       `https://unfiltered.adguard-dns.com/resolve?name=${encodeURIComponent(host)}&type=${type}`,
@@ -86,7 +76,6 @@ async function askOne(
     return ourFailure(endpoint.resolver, isTimeout(error) ? 'timeout' : 'network')
   }
 
-  // A resolver rate-limiting us says nothing whatsoever about their zone.
   if (response.status === 429) return ourFailure(endpoint.resolver, 'throttled')
   if (!response.ok) return ourFailure(endpoint.resolver, 'network')
 
@@ -100,15 +89,7 @@ async function askOne(
 const isTimeout = (error: unknown): boolean =>
   error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')
 
-/**
- * The JSON shape all three serve, to the extent we rely on it. They agree on
- * `Status` and `Answer` and on nothing else: Cloudflare puts the extended DNS
- * error in a `Comment` array, Google in a `Comment` string *and* a structured
- * `extended_dns_errors`, AdGuard only in the OPT record under `Extra`. All three
- * are gathered, because the one thing they carry is whether the zone's failure
- * was a DNSSEC failure — and that is the difference between "your zone is
- * misconfigured" and "your zone is down".
- */
+/** All three agree on `Status` and `Answer`; each puts extended DNS errors somewhere different. */
 type DohJson = {
   Status?: number
   Answer?: { type?: number; TTL?: number; data?: string }[]
@@ -125,10 +106,8 @@ export function fromJson(resolver: ResolverId, body: unknown): RawLookup {
     const data = answer.data ?? ''
     const type = TYPE_NAME.get(answer.type ?? -1)
     if (type === undefined) continue
-    // Cloudflare and AdGuard return TXT data quoted; Google returns a single
-    // string bare. `parseCharacterStrings` reads both, joining chunks with no
-    // separator — the >255-byte case a 2048-bit DKIM key actually produces.
-    // Names come back absolute; the trailing dot is presentation, not identity.
+    // Cloudflare and AdGuard quote TXT data, Google returns it bare; chunks join
+    // with no separator (the >255-byte case a 2048-bit DKIM key produces).
     records.push({
       type,
       ttl,
@@ -143,7 +122,6 @@ export function fromJson(resolver: ResolverId, body: unknown): RawLookup {
 
 const OPT = 41
 
-/** Everything a resolver said about *why*, in whichever field it chose. */
 function diagnostics(json: DohJson): string {
   const parts: string[] = []
   if (Array.isArray(json.Comment)) parts.push(...json.Comment)
