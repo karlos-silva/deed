@@ -9,6 +9,10 @@ const config: NextConfig = {
     '@deed/ui',
   ],
   typedRoutes: true,
+  // Browsers use the <link rel="icon"> tags Next emits from app/icon.png, but
+  // crawlers and older clients still ask for the legacy path.
+  redirects: () =>
+    Promise.resolve([{ source: '/favicon.ico', destination: '/icon.png', permanent: true }]),
 }
 
 export default config
