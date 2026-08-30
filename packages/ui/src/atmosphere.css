@@ -74,21 +74,28 @@
   gap: var(--space-6);
 }
 
-/* A milled tile: near-black face, a rim that catches light from above, and a
-   faint halo so it sits on the canvas rather than being cut out of it. */
+/* The tile is presented inside a thick bezel: a milled frame lit from above,
+   with the glyph recessed into pure black behind it. The frame is the shape
+   people recognise, so it is drawn rather than implied by a hairline. */
 .mark-tile {
   position: relative;
   display: grid;
   place-items: center;
   flex: none;
   color: var(--fg);
-  background: radial-gradient(120% 100% at 50% 0%, #1a1a1a 0%, #0b0b0b 55%, #050505 100%);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 10%),
-    inset 0 0 0 1px rgb(255 255 255 / 6%),
-    0 0 0 1px rgb(0 0 0 / 60%),
-    0 8px 28px rgb(0 0 0 / 55%);
+  background: linear-gradient(165deg, #2a2a2a 0%, #141414 38%, #0a0a0a 100%);
+  padding: 7%;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 60%);
 }
+.mark-tile::before {
+  content: '';
+  position: absolute;
+  inset: 7%;
+  border-radius: inherit;
+  background: #000;
+  box-shadow: inset 0 2px 5px rgb(0 0 0 / 90%);
+}
+.mark-tile svg { position: relative; z-index: 1; }
 .mark-glyph { display: inline-grid; place-items: center; color: currentColor; }
 
 .signin-title {
