@@ -24,17 +24,16 @@
 
 /* --------------------------------------------------------------- sign-in -- */
 
-/* The render: rings of dots spreading from beyond the upper-left corner, the
-   way an answer spreads from cache to cache, with the right half almost empty.
-   The composition exploits that emptiness rather than centring a card on top
-   of the subject. */
+/* Frame rather than decorate: the material sits in one corner and the centre
+   stays near-black, so a single narrow column sits in clear air. The render's
+   subject — rings spreading from beyond the upper-left corner — takes that
+   corner, and a vignette holds the middle dark. */
 .signin-stage {
   position: relative;
   min-height: 100dvh;
   display: grid;
-  align-items: center;
-  justify-items: end;
-  padding: var(--space-8) clamp(var(--space-6), 8vw, var(--space-16));
+  place-items: center;
+  padding: var(--space-16) var(--space-5) var(--space-10);
   overflow: hidden;
   background-color: var(--bg);
 }
@@ -42,37 +41,42 @@
 .signin-stage::before {
   content: '';
   position: absolute;
-  inset: 0;
+  inset: -8%;
   background-image: image-set(url('/signin-bg-small.jpg') 1x, url('/signin-bg.jpg') 2x);
   background-size: cover;
-  background-position: 18% center;
-  transform: scale(1.04);
+  background-position: left top;
+  /* The downscale flattened the glass. Lifting it back brings out the specular
+     highlights, which are the only thing separating "material" from "murk". */
+  filter: brightness(1.28) contrast(1.06);
 }
 
-/* The rings must not fight the text. A wash from the right keeps the card
-   side near-black while leaving the subject legible on the left. */
+/* Two vignettes: one radial to keep the column on near-black whatever the
+   viewport, one linear so the material fades out to the right rather than
+   stopping at an edge. */
 .signin-stage::after {
   content: '';
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(100deg, rgb(8 8 8 / 20%) 0%, rgb(8 8 8 / 55%) 42%, rgb(8 8 8 / 92%) 72%, var(--bg) 100%),
-    radial-gradient(120% 90% at 12% 30%, transparent 0%, rgb(8 8 8 / 65%) 100%);
+    radial-gradient(62% 52% at 50% 46%, rgb(8 8 8 / 92%) 0%, rgb(8 8 8 / 64%) 55%, transparent 100%),
+    linear-gradient(105deg, transparent 0%, rgb(8 8 8 / 34%) 52%, rgb(8 8 8 / 88%) 92%);
 }
 
 .signin-panel {
   position: relative;
   z-index: 1;
-  width: min(400px, 100%);
+  width: min(520px, 100%);
   display: flex;
   flex-direction: column;
+  align-items: center;
+  text-align: center;
   gap: var(--space-6);
 }
 
 .signin-panel .tile-mark {
-  width: 92px;
-  height: 92px;
-  border-radius: 22px;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
   overflow: hidden;
   border: 1px solid var(--border);
   box-shadow: var(--edge-lit-strong);
@@ -81,44 +85,56 @@
 
 .signin-title {
   font-family: var(--font-display);
-  font-size: clamp(var(--text-2xl), 5vw, 34px);
-  line-height: 1.1;
+  font-size: clamp(26px, 4.2vw, 34px);
+  line-height: 1.15;
   letter-spacing: -0.02em;
   color: var(--fg);
+  text-wrap: balance;
 }
 
-.signin-lede {
-  color: var(--fg-2);
-  font-size: var(--text-lg);
-  line-height: var(--lh-lg);
-  max-width: 34ch;
-}
+.signin-lede { color: var(--fg-muted); font-size: var(--text-md); line-height: var(--lh-md); }
 
-.signin-actions { display: flex; flex-direction: column; gap: var(--space-2); }
-.signin-actions .btn { width: 100%; justify-content: center; height: 42px; }
+/* Neither provider is the primary one. Choosing between GitHub and Google is
+   not a primary/secondary decision, so they carry identical weight. */
+.signin-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  width: 100%;
+}
+.signin-actions .btn {
+  height: 48px;
+  justify-content: center;
+  gap: var(--space-3);
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+  color: var(--fg);
+  font-size: var(--text-md);
+}
+.signin-actions .btn:hover { background: #262626; border-color: #333; }
+.signin-actions .btn svg { width: 17px; height: 17px; flex: none; }
 
 .signin-note {
   color: var(--fg-muted);
   font-size: var(--text-xs);
-  line-height: var(--lh-xs);
-  max-width: 42ch;
+  line-height: var(--lh-base);
+  max-width: 44ch;
   border-top: 1px solid var(--border-subtle);
-  padding-top: var(--space-4);
+  padding-top: var(--space-5);
 }
+.signin-note strong { color: var(--fg-2); font-weight: var(--weight-medium); }
 
-/* On a phone the subject and the card cannot share the width, so the image
-   becomes a header the panel sits below. */
-@media (max-width: 720px) {
-  .signin-stage {
-    justify-items: stretch;
-    align-content: end;
-    padding-bottom: var(--space-10);
-  }
-  .signin-stage::before { background-position: 30% 22%; }
+/* On a phone the material is the same size but the column is a third as wide,
+   so the rings stop framing and start competing. It becomes a texture behind
+   a near-opaque scrim rather than a subject. */
+@media (max-width: 640px) {
+  .signin-stage { padding: var(--space-10) var(--space-5); }
+  .signin-stage::before { background-position: 30% top; filter: brightness(1.1) contrast(1.02); }
   .signin-stage::after {
     background:
-      linear-gradient(180deg, rgb(8 8 8 / 10%) 0%, rgb(8 8 8 / 70%) 44%, var(--bg) 78%);
+      radial-gradient(84% 44% at 50% 44%, rgb(8 8 8 / 97%) 0%, rgb(8 8 8 / 88%) 60%, rgb(8 8 8 / 62%) 100%),
+      linear-gradient(180deg, rgb(8 8 8 / 55%) 0%, rgb(8 8 8 / 30%) 30%, rgb(8 8 8 / 85%) 100%);
   }
-  .signin-panel { width: 100%; }
+  .signin-title { font-size: 25px; }
+  .signin-actions { grid-template-columns: 1fr; }
 }
-

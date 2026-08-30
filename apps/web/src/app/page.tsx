@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { requestDb } from '@/lib/db'
 import { origin } from '@/lib/origin'
 import { session } from '@/lib/session'
+import { GitHubMark, GoogleMark } from '@/components/ProviderIcon'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,19 +41,18 @@ export default async function SignInPage({
         </div>
 
         <div className="stack-2">
-          <h1 className="signin-title">Prove you own a domain.</h1>
-          <p className="signin-lede">
-            Publish one TXT record. We read it back from three independent resolvers, tell you what
-            each one answered, and keep checking.
-          </p>
+          <h1 className="signin-title">Log in to Deed</h1>
+          <p className="signin-lede">Prove you own a domain, and see exactly why when you cannot.</p>
         </div>
 
         <form className="signin-actions" action={signIn}>
-          <button className="btn btn-primary" name="provider" value="github" type="submit">
-            Continue with GitHub
+          <button className="btn" name="provider" value="github" type="submit">
+            <GitHubMark />
+            Log in with GitHub
           </button>
-          <button className="btn btn-secondary" name="provider" value="google" type="submit">
-            Continue with Google
+          <button className="btn" name="provider" value="google" type="submit">
+            <GoogleMark />
+            Log in with Google
           </button>
         </form>
 
