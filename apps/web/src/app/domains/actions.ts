@@ -29,7 +29,6 @@ import {
   loadZone,
   recordLookup,
   saveZone,
-  writeEvent,
 } from '@deed/db'
 import {
   type SandboxZone,
@@ -233,20 +232,9 @@ async function withZone(id: DomainId, edit: (zone: SandboxZone) => SandboxZone):
   await saveZone(db, id, userId, edit(zone))
 
   // The zone changed, so the verdict may have too. Checking immediately is what
-  // makes the sandbox an instrument rather than a screenshot.
+  // makes the sandbox an instrument rather than a screenshot — and the check
+  // writes its own audit event, through the one path allowed to.
   await runCheck(db, stored, 'user', now())
-  await writeEvent(db, {
-    domain_id: id,
-    owner_id: userId,
-    domain_name: stored.domain.name,
-    at: new Date(now()).toISOString(),
-    kind: 'check_completed',
-    actor: 'user',
-    level: null,
-    from_status: null,
-    to_status: 'sandbox zone edited',
-    evidence: null,
-  })
 }
 
 export async function addZoneRecord(formData: FormData): Promise<void> {

@@ -175,6 +175,16 @@ export type Database = {
         }
         Returns: Json
       }
+      create_claim: {
+        Args: {
+          p_is_sandbox: boolean
+          p_name: string
+          p_next_check_at: string
+          p_now: string
+          p_ownership: Json
+        }
+        Returns: Database['public']['Tables']['domains']['Row']
+      }
       claims_due: {
         Args: { p_limit?: number; p_now: string }
         Returns: Database['public']['Tables']['domains']['Row'][]

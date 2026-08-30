@@ -88,37 +88,24 @@ export type NewClaim = {
   readonly nextCheckAt: Timestamp
 }
 
+/**
+ * The claim and its first audit event, in one transaction.
+ *
+ * It goes through a SECURITY DEFINER function because `audit_events` has no
+ * INSERT policy on purpose: a log the client can write is not evidence. Doing it
+ * as two client-side writes also left a window where the domain existed with no
+ * record of being created — which is how the first real claim was lost.
+ */
 export async function createClaim(db: Db, claim: NewClaim): Promise<StoredDomain> {
-  const { data, error } = await db
-    .from('domains')
-    .insert({
-      owner_id: claim.ownerId,
-      name: claim.name,
-      is_sandbox: claim.isSandbox,
-      ownership: toJson(claim.ownership),
-      record: toJson({ status: 'unchecked' }),
-      next_check_at: iso(claim.nextCheckAt),
-      last_changed_at: iso(claim.now),
-      created_at: iso(claim.now),
-    })
-    .select('*')
-    .single()
-  if (error) throw new Error(error.message)
-
-  const stored = toDomain(asDomainRow(data))
-  await writeEvent(db, {
-    domain_id: stored.domain.id,
-    owner_id: claim.ownerId,
-    domain_name: claim.name,
-    at: iso(claim.now),
-    kind: 'claim_created',
-    actor: 'user',
-    level: null,
-    from_status: null,
-    to_status: 'pending',
-    evidence: null,
+  const { data, error } = await db.rpc('create_claim', {
+    p_name: claim.name,
+    p_is_sandbox: claim.isSandbox,
+    p_ownership: toJson(claim.ownership),
+    p_now: iso(claim.now),
+    p_next_check_at: iso(claim.nextCheckAt),
   })
-  return stored
+  if (error) throw new Error(error.message)
+  return toDomain(asDomainRow(data))
 }
 
 /**
@@ -157,13 +144,6 @@ export async function applyTransition(
   })
   if (error) throw new Error(error.message)
   return asTransitionResult(data)
-}
-
-export async function writeEvent(db: Db, event: Omit<AuditRow, 'id'>): Promise<void> {
-  const { error } = await db
-    .from('audit_events')
-    .insert({ ...event, evidence: toJson(event.evidence) })
-  if (error) throw new Error(error.message)
 }
 
 export type AuditPage = { readonly events: AuditRow[]; readonly nextCursor: number | null }
