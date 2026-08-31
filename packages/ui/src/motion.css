@@ -113,6 +113,11 @@ mark {
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
+    /* Without these, `.enter > *` keeps its 0/40/80/120ms staircase and `rise`
+       fills backwards from opacity 0 — so the motion is gone and the sequencing
+       stays, which is the one outcome nobody wants. */
+    animation-delay: -1ms !important;
+    transition-delay: 0s !important;
   }
   .scanning::after { display: none; }
 }

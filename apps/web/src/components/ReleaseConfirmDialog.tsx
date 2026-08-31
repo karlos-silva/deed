@@ -79,7 +79,7 @@ export function ReleaseConfirmDialog({
           <h2 id={`release-title-${domainId}`} className="t-section">
             Release {name}?
           </h2>
-          <button className="btn btn-ghost btn-sm" type="button" aria-label="Close" onClick={onClose}>
+          <button className="btn btn-ghost btn-sm" type="button" aria-label="Close (Esc)" onClick={onClose}>
             Esc
           </button>
         </div>
@@ -102,6 +102,7 @@ export function ReleaseConfirmDialog({
               <input
                 className="input t-mono"
                 name="confirm"
+                autoFocus
                 autoComplete="off"
                 autoCapitalize="off"
                 spellCheck={false}

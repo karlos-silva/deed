@@ -3,7 +3,14 @@ import type { OwnershipState, RecordState } from '@deed/core'
 export function ClaimBadge({ ownership }: { ownership: OwnershipState }) {
   switch (ownership.status) {
     case 'pending':
-      return <span className="badge badge-pending">Pending</span>
+      return (
+        <span className="badge badge-pending">
+          {/* The pulse is what says "still checking" without spending a word on
+              it. The rule has been in the CSS since S3 with nothing to animate. */}
+          <span className="dot" aria-hidden="true" />
+          Pending
+        </span>
+      )
     case 'verified':
       return <span className="badge badge-verified">Verified</span>
     case 'degraded':

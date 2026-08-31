@@ -2,7 +2,6 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import {
-  CHALLENGE_LABEL,
   activeToken,
   at,
   isExclusive,
@@ -13,21 +12,25 @@ import {
   parseClaim,
 } from '@deed/core'
 import { getDomain, listAudit, loadZone } from '@deed/db'
-import { type SandboxZone, preflight, randomProbeLabel } from '@deed/dns'
+import type { SandboxZone } from '@deed/dns'
 import { session } from '@/lib/session'
-import { claimGuidance, fieldLabels, humanSince, humanUntil, recordGuidance, warningCopy } from '@/lib/copy'
-import { revalidateIfDue, router } from '@/lib/verification'
+import { claimGuidance, humanSince, humanUntil, recordGuidance } from '@/lib/copy'
+import { revalidateIfDue } from '@/lib/verification'
 import { ClaimBadge, RecordBadge } from '@/components/StatusBadge'
-import { CopyButton } from '@/components/CopyButton'
 import { ResolverMatrix } from '@/components/ResolverMatrix'
 import { ValueDiff } from '@/components/ValueDiff'
 import { AuditLog } from '@/components/AuditLog'
 import { SandboxZonePanel } from '@/components/SandboxZonePanel'
 import { Footer } from '@/components/Footer'
 import { Notices } from '@/components/Notices'
+import { AutoRefresh } from '@/components/AutoRefresh'
 import { TopBar } from '@/components/TopBar'
 import { checkNow, releaseDomain, removeFromList, restoreToList, rotateToken } from '../actions'
 import { ReleaseDialog } from '@/components/ReleaseDialog'
+import {
+  RecordToPublish,
+  RecordToPublishSkeleton,
+} from '@/components/RecordToPublish'
 import { SubmitButton } from '@/components/SubmitButton'
 
 export const dynamic = 'force-dynamic'
@@ -59,20 +62,7 @@ export default async function DomainPage({ params }: { params: Promise<{ id: str
   const parsedName = parseClaim(domain.name)
   const unicode = parsedName.ok ? parsedName.value.unicode : null
 
-  // Only while a claim is pending: this is when instructions are read, and it costs nine extra lookups.
-  const zoneInfo =
-    domain.ownership.status === 'pending'
-      ? await preflight(await router(current.db)(domain.name), domain.name, {
-          now: clock,
-          probeLabel: randomProbeLabel(),
-          timeoutMs: 3_000,
-        }).catch(() => null)
-      : null
-  const labels = fieldLabels(zoneInfo?.provider ?? null)
-  const relativeHost = `${CHALLENGE_LABEL}${
-    domain.name.split('.').length > 2 ? `.${domain.name.split('.').slice(0, -2).join('.')}` : ''
-  }`
-
+  const closed = isTerminal(domain.ownership)
   const mismatch = domain.record.status === 'mismatch' ? domain.record : null
   const offending = mismatch?.observed.find((o) => o.kind === 'unknown') ?? null
 
@@ -82,6 +72,9 @@ export default async function DomainPage({ params }: { params: Promise<{ id: str
       <Suspense fallback={null}>
         <Notices />
       </Suspense>
+      {/* Pending is where the user waits, so it is where the page has to move.
+          A closed claim never changes again and is left alone. */}
+      {!closed && <AutoRefresh seconds={domain.ownership.status === 'pending' ? 20 : 45} />}
 
       <main className="main stack-6">
         <div className="page-head">
@@ -98,13 +91,21 @@ export default async function DomainPage({ params }: { params: Promise<{ id: str
               </p>
             )}
             <p className="t-small subtle">
-              {domain.lastCheckedAt === null
-                ? 'No check has completed yet.'
-                : `Last checked ${humanSince(domain.lastCheckedAt, clock)}.`}{' '}
-              {domain.nextCheckAt !== null &&
-                `Next automatic check ${
-                  domain.nextCheckAt <= clock ? 'due now' : humanUntil(clock, domain.nextCheckAt)
-                }.`}
+              {closed
+                ? domain.lastCheckedAt === null
+                  ? 'This claim closed without a check ever completing.'
+                  : `Last checked ${humanSince(domain.lastCheckedAt, clock)}. Checking has stopped.`
+                : `${
+                    domain.lastCheckedAt === null
+                      ? 'No check has completed yet.'
+                      : `Last checked ${humanSince(domain.lastCheckedAt, clock)}.`
+                  }${
+                    domain.nextCheckAt !== null
+                      ? ` Next automatic check ${
+                          domain.nextCheckAt <= clock ? 'due now' : humanUntil(clock, domain.nextCheckAt)
+                        }.`
+                      : ''
+                  }`}
             </p>
           </div>
 
@@ -112,10 +113,12 @@ export default async function DomainPage({ params }: { params: Promise<{ id: str
             <Link className="btn btn-ghost btn-sm" href="/domains">
               All domains
             </Link>
-            <form action={checkNow}>
-              <input type="hidden" name="id" value={domain.id} />
-              <SubmitButton pendingLabel="Checking…">Check now</SubmitButton>
-            </form>
+            {!closed && (
+              <form action={checkNow}>
+                <input type="hidden" name="id" value={domain.id} />
+                <SubmitButton pendingLabel="Checking…">Check now</SubmitButton>
+              </form>
+            )}
           </div>
         </div>
 
@@ -129,6 +132,20 @@ export default async function DomainPage({ params }: { params: Promise<{ id: str
           </section>
         )}
 
+        {closed ? (
+          <section className="card">
+            <div className="card-header">
+              <h2 className="t-section">What your DNS said</h2>
+            </div>
+            <div className="card-body">
+              <p className="t-small subtle">
+                {domain.lastCheckedAt === null
+                  ? 'No check ever completed for this claim.'
+                  : `The last check ran ${humanSince(domain.lastCheckedAt, clock)}. Nothing has been checked since, and nothing will be — a closed claim has no proof to keep.`}
+              </p>
+            </div>
+          </section>
+        ) : (
         <section className="card">
           <div className="card-header row-between">
             <h2 className="t-section">What your DNS says</h2>
@@ -155,68 +172,26 @@ export default async function DomainPage({ params }: { params: Promise<{ id: str
             <ResolverMatrix domain={domain} />
           </div>
         </section>
-
-        {value !== null && (
-          <section className="card">
-            <div className="card-header row-between">
-              <h2 className="t-section">The record to publish</h2>
-              <span className="t-small subtle">one TXT record · read-only queries</span>
-            </div>
-            <div className="card-body">
-              <dl className="record">
-                <dt>Type</dt>
-                <dd>TXT</dd>
-                <dd />
-
-                <dt>{labels.host}</dt>
-                <dd>{labels.relativeHost ? relativeHost : host}</dd>
-                <dd>
-                  <CopyButton value={labels.relativeHost ? relativeHost : host} label="host" />
-                </dd>
-
-                <dt>{labels.relativeHost ? 'Full host' : 'Relative'}</dt>
-                <dd className="subtle">{labels.relativeHost ? host : relativeHost}</dd>
-                <dd />
-
-                <dt>{labels.value}</dt>
-                <dd>{value}</dd>
-                <dd>
-                  <CopyButton value={value} label="value" />
-                </dd>
-              </dl>
-
-              {zoneInfo?.provider != null && (
-                <p className="t-small subtle" style={{ marginTop: 'var(--space-3)' }}>
-                  Field names are {zoneInfo.provider.name}’s, because that is whose panel your
-                  nameservers say you are about to open.
-                </p>
-              )}
-
-              {(zoneInfo?.warnings ?? []).map(warningCopy).map((warning, index) => (
-                <div
-                  key={index}
-                  className={`callout callout-${warning.tone === 'problem' ? 'warning' : 'info'}`}
-                  style={{ marginTop: 'var(--space-3)' }}
-                >
-                  <div className="guidance">
-                    <strong className="headline" style={{ fontSize: 'var(--text-base)' }}>
-                      {warning.headline}
-                    </strong>
-                    <p className="body">{warning.body}</p>
-                    {warning.fix !== undefined && <p className="fix">{warning.fix}</p>}
-                  </div>
-                </div>
-              ))}
-
-              <p className="t-small subtle" style={{ marginTop: 'var(--space-3)' }}>
-                Most panels want the name without the domain; both forms are above. Paste the value
-                without quotes — the panel adds its own.
-              </p>
-            </div>
-          </section>
         )}
 
-        {zone !== null && <SandboxZonePanel domain={domain} zone={zone} expected={value} />}
+        {value !== null && (
+          <Suspense fallback={<RecordToPublishSkeleton />}>
+            <RecordToPublish
+              db={current.db}
+              domain={domain}
+              value={value}
+              host={host}
+              now={clock}
+            />
+          </Suspense>
+        )}
+
+        {/* A closed claim has no token, so the Value field would render blank
+            with nothing to explain it, and every write would run a real check
+            against a claim that is finished. */}
+        {zone !== null && !closed && (
+          <SandboxZonePanel domain={domain} zone={zone} expected={value} />
+        )}
 
         <section className="card">
           <div className="card-header row-between">

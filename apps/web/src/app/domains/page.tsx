@@ -11,6 +11,7 @@ import { AddDomainDialog } from '@/components/AddDomainDialog'
 import { NothingClaimedYet } from '@/components/NothingClaimedYet'
 import { RowActions } from '@/components/RowActions'
 import { Notices } from '@/components/Notices'
+import { AutoRefresh } from '@/components/AutoRefresh'
 import { Footer } from '@/components/Footer'
 import { TopBar } from '@/components/TopBar'
 import { claimDomain, releaseDomain, removeFromList, restoreToList } from './actions'
@@ -20,12 +21,12 @@ export const dynamic = 'force-dynamic'
 export default async function DomainsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; show?: string }>
+  searchParams: Promise<{ error?: string; domain?: string; show?: string }>
 }) {
   const current = await session()
   if (current === null) redirect('/')
 
-  const { error, show } = await searchParams
+  const { error, domain: attempted, show } = await searchParams
   const [domains, sweptAt] = await Promise.all([
     listDomains(current.db, current.userId),
     lastSweep(current.db),
@@ -43,11 +44,17 @@ export default async function DomainsPage({
       <Suspense fallback={null}>
         <Notices />
       </Suspense>
+      {/* Only while something on this list can still change on its own. */}
+      {listed.some((d) => !isTerminal(d.domain.ownership)) && <AutoRefresh seconds={45} />}
 
       <main className="main">
         <div className="page-head">
           <h1 className="t-title">Domains</h1>
-          <AddDomainDialog action={claimDomain} {...(error !== undefined && { error })} />
+          <AddDomainDialog
+            action={claimDomain}
+            {...(error !== undefined && { error })}
+            {...(attempted !== undefined && { attempted })}
+          />
         </div>
 
         {removed.length > 0 && (

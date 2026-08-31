@@ -85,6 +85,11 @@ export function RowActions({
             type="button"
             role="menuitem"
             onClick={() => {
+              // Both state changes batch into one commit, so this menu item has
+              // already unmounted by the time the dialog calls showModal() —
+              // and a native dialog restores focus to whatever was focused
+              // then. Without this, cancelling lands you on <body>.
+              trigger.current?.focus()
               setOpen(false)
               setConfirming(true)
             }}

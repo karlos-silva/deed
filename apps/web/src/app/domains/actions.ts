@@ -64,7 +64,11 @@ type Toast = {
 }
 
 const toastQuery = (toast: Toast): string => {
-  const params = new URLSearchParams({ toast: toast.message })
+  // A nonce, because the guard on the client has to defend against an effect
+  // re-running — not against the same thing happening twice. Removing a domain,
+  // undoing, and removing it again produces byte-identical copy, and keying on
+  // content would swallow the second one.
+  const params = new URLSearchParams({ toast: toast.message, tid: String(Date.now()) })
   if (toast.tone !== undefined) params.set('tone', toast.tone)
   if (toast.undo !== undefined) {
     params.set('undo', toast.undo.kind)
@@ -82,6 +86,29 @@ const back: (id: DomainId, notice?: string, tone?: Toast['tone']) => never = (id
   )
 }
 
+/**
+ * A failure that has nothing to do with the claim form. `?error=` is the
+ * parameter that makes AddDomainDialog open itself, so routing an unrelated
+ * refusal through it pops the claim form with "Not found" printed under an
+ * empty field — which is what happened to anyone acting on a domain that had
+ * been released in another tab.
+ */
+/**
+ * The one refusal that belongs in `?error=`: it is about the claim form, so
+ * reopening the form is the point. The attempt travels with it, or the user is
+ * told a value is wrong and can no longer see it.
+ */
+const refuseClaim: (message: string, attempted: string) => never = (message, attempted) => {
+  const params = new URLSearchParams({ error: message, domain: attempted })
+  redirect(`/domains?${params.toString()}`)
+}
+
+const notFound: () => never = () =>
+  toList({
+    message: 'That domain is not here any more. It may have been released or removed.',
+    tone: 'danger',
+  })
+
 const toList: (toast: Toast) => never = (toast) => {
   revalidatePath('/domains')
   redirect(`/domains?${toastQuery(toast)}`)
@@ -93,7 +120,7 @@ export async function claimDomain(formData: FormData): Promise<void> {
 
   // Every refusal happens before a single lookup is attempted (prd §8).
   const parsed = parseClaim(raw)
-  if (!parsed.ok) redirect(`/domains?error=${encodeURIComponent(refusalMessage(parsed.error, raw))}`)
+  if (!parsed.ok) refuseClaim(refusalMessage(parsed.error, raw), raw)
 
   const existing = await listDomains(db, userId)
   // Live claims, not rows: closed ones are kept for their history and never
@@ -101,7 +128,7 @@ export async function claimDomain(formData: FormData): Promise<void> {
   // permanent lockout with no move left that frees a slot.
   const live = existing.filter((d) => !isTerminal(d.domain.ownership))
   if (live.length >= DOMAINS_PER_ACCOUNT) {
-    redirect(`/domains?error=${encodeURIComponent(`One account holds at most ${DOMAINS_PER_ACCOUNT} live claims. Release one first.`)}`)
+    refuseClaim(`One account holds at most ${DOMAINS_PER_ACCOUNT} live claims. Release one first.`, raw)
   }
   // A claim you can still act on, expired ones included — sending you to a dead
   // row instead of issuing a fresh token would be the wrong kind of helpful.
@@ -135,7 +162,14 @@ export async function checkNow(formData: FormData): Promise<void> {
 
   const stored = await getDomain(db, id)
   // RLS already hid anyone else's domain; the refusal must not disclose whether it exists (S4).
-  if (stored === null) redirect('/domains?error=Not+found')
+  if (stored === null) notFound()
+
+  // Without this, checking a released domain fires six live lookups, spends the
+  // hourly budget, appends to a closed log and re-derives the record — so a dead
+  // claim's badge visibly changes — and schedules it back into the sweep.
+  if (isTerminal(stored.domain.ownership)) {
+    back(id, 'This claim is closed. There is nothing left to check.')
+  }
 
   const at = now()
   const decision = checkNowDecision({
@@ -166,7 +200,7 @@ export async function rotateToken(formData: FormData): Promise<void> {
   const { db, userId } = await requireSession()
   const id = asDomainId(text(formData, 'id', ''))
   const stored = await getDomain(db, id)
-  if (stored === null) redirect('/domains?error=Not+found')
+  if (stored === null) notFound()
 
   const claim = stored.domain.ownership
   if (claim.status !== 'pending' && claim.status !== 'verified' && claim.status !== 'degraded') {
@@ -211,7 +245,7 @@ export async function releaseDomain(formData: FormData): Promise<void> {
   const { db, userId } = await requireSession()
   const id = asDomainId(text(formData, 'id', ''))
   const stored = await getDomain(db, id)
-  if (stored === null) redirect('/domains?error=Not+found')
+  if (stored === null) notFound()
 
   const claim = stored.domain.ownership
   // Without this, a second submit appends a second `released` event to a claim
@@ -284,10 +318,18 @@ async function setListed(formData: FormData, listed: boolean): Promise<void> {
   const { db } = await requireSession()
   const id = asDomainId(text(formData, 'id', ''))
   const stored = await getDomain(db, id)
-  if (stored === null) redirect('/domains?error=Not+found')
+  if (stored === null) notFound()
 
-  // Clicking twice is not an error, it is the same answer twice.
-  if (listed === (stored.hiddenAt === null)) redirect(listed ? '/domains?show=removed' : '/domains')
+  // Clicking twice is not an error, it is the same answer twice — but it has to
+  // land on the tab the domain is actually in, and say so. Sending someone to
+  // the list the row is missing from reads as data loss.
+  if (listed === (stored.hiddenAt === null)) {
+    toList({
+      message: listed
+        ? `${stored.domain.name} is already on your list.`
+        : `${stored.domain.name} is already under Removed.`,
+    })
+  }
 
   if (!listed && !isTerminal(stored.domain.ownership)) {
     toList({ message: 'A live claim stays on the list. Release it first.', tone: 'danger' })
@@ -311,7 +353,10 @@ async function setListed(formData: FormData, listed: boolean): Promise<void> {
 async function withZone(id: DomainId, edit: (zone: SandboxZone) => SandboxZone): Promise<void> {
   const { db, userId } = await requireSession()
   const stored = await getDomain(db, id)
-  if (stored === null || !stored.domain.isSandbox) redirect('/domains?error=Not+found')
+  if (stored === null || !stored.domain.isSandbox) notFound()
+  if (isTerminal(stored.domain.ownership)) {
+    back(id, 'This claim is closed. Its zone can no longer prove anything.')
+  }
 
   const loaded = (await loadZone(db, id)) as SandboxZone | null
   const zone = loaded ?? emptyZone(stored.domain.name)

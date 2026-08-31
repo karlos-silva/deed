@@ -11,11 +11,17 @@ type Preflight =
 // Not `parseClaim`: it carries the 140KB Public Suffix List. A shape check decides whether to ask the server.
 const PLAUSIBLE = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i
 
-export function ClaimField() {
-  const [value, setValue] = useState('')
+export function ClaimField({ initialValue = '' }: { initialValue?: string }) {
+  // Seeded, because a refusal is a full navigation: the dialog reopens from the
+  // query string, and an empty field would mean being told a value is wrong
+  // while no longer being able to see it.
+  const [value, setValue] = useState(initialValue)
   const [found, setFound] = useState<Preflight | null>(null)
   const [looking, setLooking] = useState(false)
-  const asked = useRef(new Map<string, number>())
+  // The answer, not just the time it was asked: on a cache hit the old code
+  // returned early without re-serving anything, so the previous name's verdict
+  // stayed on screen describing a domain nobody was typing.
+  const asked = useRef(new Map<string, { at: number; result: Preflight }>())
 
   useEffect(() => {
     const name = value.trim().toLowerCase().replace(/^https?:\/\//, '').split('/')[0] ?? ''
@@ -25,15 +31,24 @@ export function ClaimField() {
     }
 
     // At most once per minute per name: every call is a real lookup against shared public resolvers.
-    const lastAsked = asked.current.get(name)
-    if (lastAsked !== undefined && Date.now() - lastAsked < 60_000) return
+    const cached = asked.current.get(name)
+    if (cached !== undefined && Date.now() - cached.at < 60_000) {
+      setFound(cached.result)
+      setLooking(false)
+      return
+    }
+
+    // Whatever is on screen is about a different name until the answer lands.
+    setFound(null)
 
     const timer = setTimeout(() => {
-      asked.current.set(name, Date.now())
       setLooking(true)
       fetch(`/api/preflight?name=${encodeURIComponent(name)}`)
         .then((response) => response.json() as Promise<Preflight>)
-        .then(setFound)
+        .then((result) => {
+          asked.current.set(name, { at: Date.now(), result })
+          setFound(result)
+        })
         .catch(() => {
           setFound(null)
         })
@@ -63,6 +78,9 @@ export function ClaimField() {
           onChange={(event) => {
             setValue(event.target.value)
           }}
+          // Otherwise the dialog's focus delegate is the first focusable in
+          // tree order — the Esc button — not the field it was opened to fill.
+          autoFocus
           placeholder="acme.com — or acme.test to try it without owning one"
           autoComplete="off"
           autoCapitalize="off"

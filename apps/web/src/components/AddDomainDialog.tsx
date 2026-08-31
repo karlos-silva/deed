@@ -9,9 +9,12 @@ const CLOSE_MS = 150
 export function AddDomainDialog({
   action,
   error,
+  attempted,
 }: {
   action: (formData: FormData) => void | Promise<void>
   error?: string
+  /** What was typed when the claim was refused, so the field comes back filled. */
+  attempted?: string
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
   const [open, setOpen] = useState(error !== undefined)
@@ -75,7 +78,7 @@ export function AddDomainDialog({
             <button
               className="btn btn-ghost btn-sm"
               type="button"
-              aria-label="Close"
+              aria-label="Close (Esc)"
               onClick={() => {
                 setOpen(false)
               }}
@@ -85,7 +88,7 @@ export function AddDomainDialog({
           </div>
 
           <div className="modal-body">
-            <ClaimField />
+            <ClaimField {...(attempted !== undefined && { initialValue: attempted })} />
             {error !== undefined && (
               <div className="callout callout-danger" role="alert">
                 {error}

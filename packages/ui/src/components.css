@@ -89,10 +89,8 @@ a:hover { text-decoration-color: var(--fg-muted); }
 .badge-info     { background: var(--blue-bg);    color: var(--blue-fg);   border-color: var(--blue-border); }
 .badge-partial  { background: var(--purple-bg);  color: var(--purple); border-color: var(--purple-border); }
 
-/* pending pulses so "we are still checking" reads without extra copy */
-.badge-pending .dot { animation: pulse 1.6s var(--ease) infinite; }
-@keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.8); } }
-@media (prefers-reduced-motion: reduce) { .badge-pending .dot { animation: none; } }
+/* The pending pulse lives in motion.css as `breathe`, which loads after this
+   file and won on import order anyway. One definition, not two. */
 
 /* --- Card / panel ------------------------------------------------------- */
 .card {
@@ -191,11 +189,19 @@ tr:hover .value .copy, .value:hover .copy, .value:focus-within .copy { opacity: 
 }
 .input::placeholder { color: var(--fg-subtle); }
 .input:hover, .select:hover { border-color: var(--border-strong); }
-.input:focus, .select:focus { outline: none; border-color: var(--border-strong); box-shadow: 0 0 0 3px var(--surface-3); }
+/* This used to be `:focus` with a 3px #1d1d1d ring on a #080808 ground — about
+   1.2:1, and it outranked the global :focus-visible ring on specificity, so the
+   text fields were the only controls in the app with no visible focus at all. */
+.input:focus-visible, .select:focus-visible {
+  outline: none; border-color: var(--fg-subtle); box-shadow: var(--focus-ring);
+}
+.input:focus:not(:focus-visible), .select:focus:not(:focus-visible) {
+  outline: none; border-color: var(--border-strong);
+}
 .field .hint  { font-size: var(--text-base); color: var(--fg-subtle); }
 .field .error { font-size: var(--text-base); color: var(--red-fg); }
 .field[data-invalid] .input { border-color: var(--red-border); }
-.field[data-invalid] .input:focus { border-color: var(--red); box-shadow: 0 0 0 3px var(--red-bg); }
+.field[data-invalid] .input:focus-visible { border-color: var(--red); box-shadow: 0 0 0 3px var(--red-bg); }
 
 /* --- Stepper / timeline ------------------------------------------------- */
 .steps { display: grid; gap: 0; }

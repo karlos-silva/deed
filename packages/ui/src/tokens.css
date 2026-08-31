@@ -115,7 +115,7 @@
      Não há tokens de sombra. Nos screenshots oficiais o produto separa camadas
      por BORDA, nunca por sombra — inventar uma escala de elevação aqui seria
      contradizer o que a própria marca faz. */
-  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--fg-subtle);
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--fg-2);
 
   /* --- Motion ------------------------------------------------------------- */
   --ease: cubic-bezier(.2,.8,.2,1);

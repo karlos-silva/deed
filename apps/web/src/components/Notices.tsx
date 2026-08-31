@@ -21,19 +21,28 @@ export function Notices() {
   const pathname = usePathname()
   const router = useRouter()
   const [, startTransition] = useTransition()
-  // Strict mode mounts effects twice in development; without this the toast
-  // arrives in duplicate.
   const shown = useRef<string | null>(null)
 
   const message = params.get('toast')
   const tone = params.get('tone')
   const undo = params.get('undo')
   const undoId = params.get('undoId')
+  // Minted per action, so removing the same domain twice is two toasts rather
+  // than one. Keying on the message would swallow the second, because the copy
+  // is byte-identical.
+  const id = params.get('tid')
 
   useEffect(() => {
     if (message === null) return
 
-    const key = `${message}|${undo ?? ''}|${undoId ?? ''}`
+    // Cleaned first and unconditionally: an error routed here by some other path
+    // used to sit in the address bar forever and re-fire on reload.
+    router.replace(pathname as Route, { scroll: false })
+
+    // Strict mode mounts effects twice in development. The nonce is what makes
+    // two identical messages two toasts; the message is the fallback for any
+    // redirect that predates it.
+    const key = id ?? message
     if (shown.current === key) return
     shown.current = key
 
@@ -57,10 +66,7 @@ export function Notices() {
     else if (tone === 'ok') toast.success(message, options)
     else toast(message, options)
 
-    // Same entry in the history stack, so Back does not walk through toasts.
-    // `pathname` is a runtime string; typed routes cannot know it is a real one.
-    router.replace(pathname as Route, { scroll: false })
-  }, [message, tone, undo, undoId, pathname, router, startTransition])
+  }, [message, tone, undo, undoId, id, pathname, router, startTransition])
 
   return (
     <Toaster

@@ -130,10 +130,32 @@ describe('what an action says once it lands', () => {
   })
 
   it('does not fire twice when the effect runs again', async () => {
-    search = new URLSearchParams({ toast: 'Once.' })
+    search = new URLSearchParams({ toast: 'Once.', tid: '1' })
     await mount()
     await mount()
 
     expect(document.querySelectorAll('[data-sonner-toast]')).toHaveLength(1)
+  })
+
+  it('says the same thing twice when it happened twice', async () => {
+    // Remove a domain, undo, remove it again: byte-identical copy. Keying the
+    // guard on the message would swallow the second, and the removal would look
+    // as though it had silently failed.
+    search = new URLSearchParams({ toast: 'karlos.dev removed from your list.', tid: '1' })
+    await mount()
+    search = new URLSearchParams({ toast: 'karlos.dev removed from your list.', tid: '2' })
+    await mount()
+
+    expect(document.querySelectorAll('[data-sonner-toast]')).toHaveLength(2)
+  })
+
+  it('cleans the URL even for a message it has already shown', async () => {
+    search = new URLSearchParams({ toast: 'Once.', tid: '1' })
+    await mount()
+    replace.mockClear()
+    await mount()
+
+    // Otherwise the parameter sits in the address bar and re-fires on reload.
+    expect(replace).toHaveBeenCalledWith('/domains', { scroll: false })
   })
 })
