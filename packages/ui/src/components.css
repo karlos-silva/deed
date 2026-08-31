@@ -234,7 +234,9 @@ tr:hover .value .copy, .value:hover .copy, .value:focus-within .copy { opacity: 
   border-bottom: 1px solid transparent; margin-bottom: -1px;
 }
 .tab:hover { color: var(--fg); }
-.tab[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--fg); }
+.tab:any-link { text-decoration: none; }
+.tab[aria-selected="true"],
+.tab[aria-current="page"] { color: var(--fg); border-bottom-color: var(--fg); }
 
 /* --- Empty state -------------------------------------------------------- */
 .empty { display: grid; gap: var(--space-3); justify-items: center; text-align: center; padding: var(--space-12) var(--space-6); }
@@ -249,6 +251,7 @@ tr:hover .value .copy, .value:hover .copy, .value:focus-within .copy { opacity: 
 /* --- Layout helpers ----------------------------------------------------- */
 .stack   { display: grid; gap: var(--space-4); }
 .stack-2 { display: grid; gap: var(--space-2); }
+.stack-3 { display: grid; gap: var(--space-3); }
 .stack-6 { display: grid; gap: var(--space-6); }
 .row     { display: flex; align-items: center; gap: var(--space-3); }
 .row-between { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
@@ -368,3 +371,13 @@ body::after {
    estado na base — como metal pegando luz de cima. Um gradiente SVG faz isso
    com o `currentColor` do tile como parada inferior. */
 .tile svg { stroke: url(#glyphGrad); }
+
+/* --- Utilities ---------------------------------------------------------- */
+.plain-list { display: grid; gap: var(--space-2); padding-left: var(--space-4); color: var(--fg-muted); }
+.plain-list li { list-style: disc; }
+
+/* Reachable by a screen reader, absent for everyone else. */
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap;
+}

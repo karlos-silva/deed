@@ -306,6 +306,19 @@ describe('recovery', () => {
     expect(history.map((h) => h.kind)).toContain('released')
     expect(history.map((h) => h.kind)).toContain('claim_created')
 
+    // And it is off her list, without any of that history moving.
+    await db.as(alice).query(`select public.set_hidden($1, true, now())`, [hers])
+    const [listed] = await db.as(alice).query<{ hidden_at: string | null }>(
+      `select hidden_at from public.domains where id = $1`,
+      [hers],
+    )
+    expect(listed!.hidden_at).not.toBeNull()
+    const afterHiding = await db.as(alice).query<{ kind: string }>(
+      `select kind from public.audit_events where domain_id = $1 order by id`,
+      [hers],
+    )
+    expect(afterHiding.map((h) => h.kind)).toEqual(history.map((h) => h.kind))
+
     // The name is free for others to prove.
     const his = await claim(bob, 'released.com', TOKEN_B)
     const [result] = await transition(bob, his, 0, verifiedOwnership(TOKEN_B))
@@ -314,5 +327,123 @@ describe('recovery', () => {
     // And his log starts empty of her history — it never crosses accounts.
     const hisLog = await db.as(bob).query(`select id from public.audit_events where domain_id = $1`, [his])
     expect(hisLog).toHaveLength(1) // his own claim_created, and nothing of hers
+  })
+})
+
+describe('a closed claim can leave the list without leaving the ledger', () => {
+  it('Removing and restoring writes no state and no history', async () => {
+    const id = await claim(alice, 'closed.com', TOKEN_A)
+    await transition(alice, id, 0, { status: 'revoked', reason: 'released_by_owner' }, [
+      { kind: 'released', actor: 'user' },
+    ])
+
+    const before = await db.as(alice).query<{ version: number; ownership: unknown; kind: string }>(
+      `select d.version, d.ownership, e.kind
+         from public.domains d join public.audit_events e on e.domain_id = d.id
+        where d.id = $1 order by e.id`,
+      [id],
+    )
+
+    await db.as(alice).query(`select public.set_hidden($1, true, now())`, [id])
+    await db.as(alice).query(`select public.set_hidden($1, false, now())`, [id])
+
+    const after = await db.as(alice).query<{ version: number; ownership: unknown; kind: string }>(
+      `select d.version, d.ownership, e.kind
+         from public.domains d join public.audit_events e on e.domain_id = d.id
+        where d.id = $1 order by e.id`,
+      [id],
+    )
+
+    // Not a transition: no version bump, no state change, no new event.
+    expect(after).toEqual(before)
+
+    const [row] = await db.as(alice).query<{ hidden_at: string | null }>(
+      `select hidden_at from public.domains where id = $1`,
+      [id],
+    )
+    expect(row!.hidden_at).toBeNull()
+  })
+
+  it('A live claim stays on the list', async () => {
+    const id = await claim(alice, 'live.com', TOKEN_A)
+
+    // Pending is live, and so is verified.
+    await expect(
+      db.as(alice).query(`select public.set_hidden($1, true, now())`, [id]),
+    ).rejects.toThrow(/live claim cannot be removed/)
+
+    await transition(alice, id, 0, verifiedOwnership(TOKEN_A))
+    await expect(
+      db.as(alice).query(`select public.set_hidden($1, true, now())`, [id]),
+    ).rejects.toThrow(/live claim cannot be removed/)
+
+    // Not even by writing the column directly.
+    expect(
+      await db.as(alice).refused(`update public.domains set hidden_at = now() where id = $1`, [id]),
+    ).toBe('23514')
+  })
+
+  it('Removing is not something one account does to another', async () => {
+    const hers = await claim(alice, 'hers.com', TOKEN_A)
+    await transition(alice, hers, 0, { status: 'revoked', reason: 'released_by_owner' })
+
+    await expect(
+      db.as(bob).query(`select public.set_hidden($1, true, now())`, [hers]),
+    ).rejects.toThrow(/not your domain/)
+  })
+
+  it('A domain row cannot be deleted, only closed', async () => {
+    const id = await claim(alice, 'permanent.com', TOKEN_A)
+
+    // No delete policy: PostgREST-shaped clients get zero rows affected, never
+    // a deleted one. History and the spent rate-limit budget both survive.
+    await db.as(alice).query(`delete from public.domains where id = $1`, [id])
+    const rows = await db.as(alice).query(`select id from public.domains where id = $1`, [id])
+    expect(rows).toHaveLength(1)
+  })
+})
+
+describe('the cap counts what an account can still act on', () => {
+  it('Releasing a claim frees a slot', async () => {
+    for (let i = 0; i < 25; i++) await claim(alice, `cap${i}.com`)
+    await expect(claim(alice, 'cap25.com')).rejects.toThrow(/domain cap reached/)
+
+    // Closing one makes room; the closed row stays, and does not count.
+    const [first] = await db.as(alice).query<{ id: string; version: number }>(
+      `select id, version from public.domains where owner_id = $1 order by created_at limit 1`,
+      [alice],
+    )
+    await transition(alice, first!.id, first!.version, {
+      status: 'revoked',
+      reason: 'released_by_owner',
+    })
+
+    const made = await claim(alice, 'cap25.com')
+    expect(made).toBeTruthy()
+    const [{ count }] = await db.as(alice).query<{ count: string }>(
+      `select count(*) as count from public.domains where owner_id = $1`,
+      [alice],
+    )
+    expect(Number(count)).toBe(26)
+  })
+})
+
+describe('the write path has exactly one shape', () => {
+  it('Adding a parameter replaced each function rather than overloading it', async () => {
+    // `create or replace` cannot change a signature: it silently creates a second
+    // overload, and PostgREST then refuses the call as ambiguous. Migration 0006
+    // drops before it creates, and this is what proves the drop matched.
+    const rows = await db.admin.query<{ name: string; count: string }>(
+      `select p.proname as name, count(*)::text as count
+         from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'public'
+          and p.proname in ('apply_transition', 'create_claim', 'set_hidden')
+        group by p.proname order by p.proname`,
+    )
+    expect(rows.rows.map((r) => [r.name, r.count])).toEqual([
+      ['apply_transition', '1'],
+      ['create_claim', '1'],
+      ['set_hidden', '1'],
+    ])
   })
 })

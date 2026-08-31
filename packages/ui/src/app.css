@@ -134,6 +134,17 @@
 }
 .domains .row-mark img { display: block; width: 100%; height: auto; }
 .domains .when { color: var(--fg-muted); font-size: var(--text-sm); white-space: nowrap; }
+/* Held to the right, and quiet until the row is hovered or the button is
+   focused — a destructive control should not compete with the name. */
+.domains .row-actions { text-align: right; white-space: nowrap; width: 1%; }
+.domains .row-actions .btn { opacity: 0; transition: opacity var(--dur-2) var(--ease); }
+.domains tbody tr:hover .row-actions .btn,
+.domains .row-actions .btn:focus-visible { opacity: 1; }
+
+@media (hover: none) {
+  .domains .row-actions .btn { opacity: 1; }
+}
+
 .domains .empty-row { color: var(--fg-muted); padding: var(--space-8) var(--space-4); text-align: center; }
 
 .empty-state {

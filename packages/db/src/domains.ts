@@ -22,7 +22,17 @@ import {
 } from './types'
 
 /** The domain and the version it was read at; writes carry it back (state-model §4, invariant 8). */
-export type StoredDomain = { readonly domain: Domain; readonly version: number }
+export type StoredDomain = {
+  readonly domain: Domain
+  readonly version: number
+  /**
+   * When the owner took this closed claim off their list, or null while it is
+   * listed. Deliberately not part of `Domain`: it changes nothing the reducer
+   * reasons about, and putting it there would push a view preference through
+   * every transition, invariant and fixture in `packages/core`.
+   */
+  readonly hiddenAt: Timestamp | null
+}
 
 const stamp = (iso: string): Timestamp => at(Date.parse(iso))
 const iso = (t: Timestamp): string => new Date(t).toISOString()
@@ -31,6 +41,7 @@ const isoOrNull = (t: Timestamp | null): string | null => (t === null ? null : i
 export function toDomain(row: DomainRow): StoredDomain {
   return {
     version: row.version,
+    hiddenAt: row.hidden_at === null ? null : stamp(row.hidden_at),
     domain: {
       id: asDomainId(row.id),
       ownerId: asUserId(row.owner_id),
@@ -82,6 +93,8 @@ export type NewClaim = {
   readonly ownership: OwnershipState
   readonly now: Timestamp
   readonly nextCheckAt: Timestamp
+  /** This owner has held this name before, so the log opens with `reclaimed`. */
+  readonly again: boolean
 }
 
 /** Goes through an RPC because `audit_events` has no INSERT policy: the log is not client-writable. */
@@ -92,6 +105,27 @@ export async function createClaim(db: Db, claim: NewClaim): Promise<StoredDomain
     p_ownership: toJson(claim.ownership),
     p_now: iso(claim.now),
     p_next_check_at: iso(claim.nextCheckAt),
+    p_again: claim.again,
+  })
+  if (error) throw new Error(error.message)
+  return toDomain(asDomainRow(data))
+}
+
+/**
+ * Moves a closed claim between the list and Removed. Not a transition: it writes
+ * no audit event and does not touch `version`, because it changes nothing the
+ * model reasons about (see migration 0006).
+ */
+export async function setHidden(
+  db: Db,
+  id: DomainId,
+  hidden: boolean,
+  now: Timestamp,
+): Promise<StoredDomain> {
+  const { data, error } = await db.rpc('set_hidden', {
+    p_domain_id: id,
+    p_hidden: hidden,
+    p_now: iso(now),
   })
   if (error) throw new Error(error.message)
   return toDomain(asDomainRow(data))
@@ -104,6 +138,12 @@ export async function applyTransition(
   next: Domain,
   events: readonly AuditEvent[],
   now: Timestamp,
+  /**
+   * Set to take the row off the owner's list as part of this transition. Null
+   * leaves it as it is — releasing has to revoke and unlist atomically, because
+   * failing between the two leaves exactly the state the feature removes.
+   */
+  hiddenAt: Timestamp | null = null,
 ): Promise<TransitionResult> {
   const { data, error } = await db.rpc('apply_transition', {
     p_domain_id: next.id,
@@ -126,6 +166,7 @@ export async function applyTransition(
         evidence: event.evidence ?? null,
       })),
     ),
+    p_hidden_at: isoOrNull(hiddenAt),
   })
   if (error) throw new Error(error.message)
   return asTransitionResult(data)

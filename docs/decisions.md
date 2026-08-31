@@ -580,3 +580,66 @@ that the name carries the trust posture. The honest `<title>` and the in-app
 footer stay.
 
 So D9 ends where it began — a quiet interface, and a product that says who it is.
+
+---
+
+## D19 — Deleting a domain removes it from the list, never from the ledger
+
+A domain could be released and then never got out of the way. The `Release`
+control lived in the detail page's Recovery card, which is gated on
+`activeToken(ownership) !== null`, and `activeToken` returns null the moment a
+claim is revoked — so the released row had no control anywhere in the product.
+It sat in the list with a `Released` badge forever.
+
+That was not only untidy. `enforce_domain_cap` counted rows, not live claims, so
+every closed claim consumed one of the account's 25 slots permanently. Because
+`domains_one_claim_per_owner_per_name` is partial and covers only live statuses,
+re-claiming a released name inserts a *second* row. Release and re-claim the same
+name 25 times and the account is locked out, with no move left that frees a slot.
+
+**Deleting the row is the obvious fix and the wrong one.** `audit_events.domain_id`
+is `on delete set null` and `listAudit` finds a claim's history by that id, so a
+deleted row puts its history permanently out of reach of the one person it was
+kept for — the promise in prd §10 and the delivery plan's own scenario, which
+requires that "their audit history for the claim remains readable afterwards".
+`lookups.domain_id` cascades, so a delete would also refund the hour's rate-limit
+budget the account had already spent. The `domains_owner_delete` policy was live
+and unused, which meant any signed-in client holding the publishable key could do
+both through PostgREST. It is dropped, so "history survives" is now a property of
+the schema rather than a convention.
+
+**So the claim closes exactly as it always did, and only the list changes.**
+`hidden_at` is a fact about the owner's list, not about the claim. It lives on
+`StoredDomain`, the persistence wrapper, and never on core's `Domain`: the
+reducer would only spread it through, and putting a view preference in the model
+would push it into every invariant, fixture and construction site in
+`packages/core` to buy nothing. A DB `CHECK` makes it legal only on a terminal
+claim.
+
+Three consequences worth stating.
+
+**Hiding writes no audit event.** prd §6 scopes the log to every check and every
+state transition, and this is neither — `set_hidden` touches no byte of
+`ownership`, `record`, `supersession`, `next_check_at` or `version`. The contrast
+is `token_rotated`, which also changes no status but does write new proof material
+through `apply_transition`. A view preference in an append-only ledger would be a
+category error. It also means the two can never race: they write disjoint columns.
+
+**Releasing revokes and unlists in one transaction.** `apply_transition` gained a
+`p_hidden_at` parameter rather than gaining a sibling RPC, so it stays the one
+write path for a state change (invariant 8). Two round trips can fail between
+them, and the state that failure leaves — revoked, still sitting in the list — is
+the exact one this whole change removes.
+
+**Only `released_by_owner` unlists itself.** A claim that ended some other way —
+`expired`, `grace_expired`, `claimed_by_other` — stays in the list with its badge
+and its explanation until its owner dismisses it by hand. The delivery plan is
+explicit that a losing account "sees an explanation, not a silently vanished
+claim", and auto-hiding those would break it.
+
+Two smaller things fell out. The cap now counts live claims, with a separate
+100-row ceiling since nothing is ever deleted. And `reclaimed` — an audit kind
+that has been in the union, the `CHECK` and the renderer since S7 with nothing
+ever emitting it — is finally written, because with closed claims kept as their
+own rows, claiming a name you held before genuinely starts a second history
+rather than continuing the first.

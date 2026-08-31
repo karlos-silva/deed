@@ -62,6 +62,13 @@ export const activeToken = (o: OwnershipState): Token | null => {
   }
 }
 
+/**
+ * A claim that can never change again: no token to prove, no check to schedule,
+ * nothing left to observe. The one state in which a row may leave the list.
+ */
+export const isTerminal = (o: OwnershipState): boolean =>
+  o.status === 'expired' || o.status === 'revoked'
+
 /** `verified` and `degraded` are exclusive; `pending` is not (invariant 1). */
 export const isExclusive = (o: OwnershipState): boolean =>
   o.status === 'verified' || o.status === 'degraded'

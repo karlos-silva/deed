@@ -9,7 +9,7 @@ export function AddDomainDialog({
   action,
   error,
 }: {
-  action: (formData: FormData) => void
+  action: (formData: FormData) => void | Promise<void>
   error?: string
 }) {
   const dialog = useRef<HTMLDialogElement>(null)

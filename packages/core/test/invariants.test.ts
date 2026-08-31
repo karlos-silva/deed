@@ -2,7 +2,7 @@ import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { reduce } from '../src/reduce'
 import { RESOLVERS, type ResolverId } from '../src/model/ids'
-import type { Domain, OwnershipState } from '../src/model/domain'
+import { type Domain, type OwnershipState, activeToken, isTerminal } from '../src/model/domain'
 import type { Observation, ResolverAnswer } from '../src/model/observation'
 import { OWNERSHIP_GRACE, type Timestamp, at, minutes, plus } from '../src/time'
 import { expectedValue } from '../src/recordSpec'
@@ -217,6 +217,19 @@ describe('the terminal states are absorbing', () => {
           expect(state.nextCheckAt).toBeNull()
         },
       ),
+    )
+  })
+})
+
+describe('a terminal claim is exactly a claim with nothing left to prove', () => {
+  it('isTerminal agrees with activeToken for every ownership state', () => {
+    fc.assert(
+      fc.property(anyClaim, (claim) => {
+        // The list uses one and the detail page's action card uses the other;
+        // if they ever disagreed, a closed claim would show a token to publish
+        // or a live one would offer to leave the list.
+        expect(isTerminal(claim)).toBe(activeToken(claim) === null)
+      }),
     )
   })
 })

@@ -13,7 +13,7 @@ import {
   userId,
 } from '@deed/core'
 import type { AuditRow } from '@deed/db'
-import { claimGuidance, recordGuidance } from '@/lib/copy'
+import { claimGuidance, endedHeadline, recordGuidance } from '@/lib/copy'
 import { AuditLog } from '@/components/AuditLog'
 import { ClaimBadge, RecordBadge } from '@/components/StatusBadge'
 import { ResolverMatrix } from '@/components/ResolverMatrix'
@@ -21,7 +21,8 @@ import { ValueDiff } from '@/components/ValueDiff'
 import { TopBar } from '@/components/TopBar'
 import { NothingClaimedYet } from '@/components/NothingClaimedYet'
 import { AddDomainDialog } from '@/components/AddDomainDialog'
-import { claimDomain } from '@/app/domains/actions'
+import { claimDomain, releaseDomain } from '@/app/domains/actions'
+import { ReleaseDialog } from '@/components/ReleaseDialog'
 import Image from 'next/image'
 
 export const dynamic = 'force-dynamic'
@@ -286,7 +287,58 @@ export default function DesignGallery() {
               </tbody>
             </table>
           </div>
-          <p className="table-foot">5 domains · checked in the background 1 min ago</p>
+          <p className="table-foot">5 domains · 2 removed · checked in the background 1 min ago</p>
+        </Section>
+
+        <Section title="Removed, and the release confirmation">
+          <nav className="tabs" aria-label="Which claims to show">
+            <span className="tab">Domains</span>
+            <span className="tab" aria-current="page">
+              Removed (2)
+            </span>
+          </nav>
+          <div className="table-wrap">
+            <table className="domains">
+              <thead>
+                <tr>
+                  <th scope="col">Domain</th>
+                  <th scope="col">How it ended</th>
+                  <th scope="col">Removed</th>
+                  <th scope="col" className="created">Created</th>
+                  <th scope="col"><span className="visually-hidden">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {CLAIMS.slice(3, 6).map(([label, ownership], i) => (
+                  <tr key={label}>
+                    <th scope="row">
+                      <a href="#">
+                        <span className="row-mark">
+                          <Image src="/domains-tile.png" alt="" width={740} height={740} />
+                        </span>
+                        <span className="name">{['lapsed.com', 'gone.com', 'taken.com'][i]}</span>
+                      </a>
+                    </th>
+                    <td><span className="t-small subtle">{endedHeadline(ownership)}</span></td>
+                    <td className="when">{['2 d ago', '3 w ago', '1 mo ago'][i]}</td>
+                    <td className="when created">{['4 mo ago', '6 mo ago', '1 y ago'][i]}</td>
+                    <td className="row-actions">
+                      <button className="btn btn-ghost btn-sm" type="button">Restore</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="row" style={{ gap: 'var(--space-3)', marginTop: 'var(--space-4)' }}>
+            <ReleaseDialog
+              action={releaseDomain}
+              domainId="d"
+              name="demo.karlos.dev"
+              requireTyping
+            />
+            <span className="t-small subtle">a proved claim — asks for the name back</span>
+          </div>
         </Section>
       </main>
     </div>

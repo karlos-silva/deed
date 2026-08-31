@@ -11,6 +11,8 @@ import {
   type Domain,
   type DomainId,
   domainId as asDomainId,
+  isExclusive,
+  isTerminal,
   longest,
   minutes,
   parseClaim,
@@ -27,6 +29,7 @@ import {
   loadZone,
   recordLookup,
   saveZone,
+  setHidden,
 } from '@deed/db'
 import {
   type SandboxZone,
@@ -61,12 +64,16 @@ export async function claimDomain(formData: FormData): Promise<void> {
   if (!parsed.ok) redirect(`/domains?error=${encodeURIComponent(refusalMessage(parsed.error, raw))}`)
 
   const existing = await listDomains(db, userId)
-  if (existing.length >= DOMAINS_PER_ACCOUNT) {
-    redirect(`/domains?error=${encodeURIComponent(`One account holds at most ${DOMAINS_PER_ACCOUNT} domains.`)}`)
+  // Live claims, not rows: closed ones are kept for their history and never
+  // deleted, so counting them would let an account release its way into a
+  // permanent lockout with no move left that frees a slot.
+  const live = existing.filter((d) => !isTerminal(d.domain.ownership))
+  if (live.length >= DOMAINS_PER_ACCOUNT) {
+    redirect(`/domains?error=${encodeURIComponent(`One account holds at most ${DOMAINS_PER_ACCOUNT} live claims. Release one first.`)}`)
   }
-  const mine = existing.find(
-    (d) => d.domain.name === parsed.value.name && d.domain.ownership.status !== 'revoked',
-  )
+  // A claim you can still act on, expired ones included — sending you to a dead
+  // row instead of issuing a fresh token would be the wrong kind of helpful.
+  const mine = live.find((d) => d.domain.name === parsed.value.name)
   if (mine !== undefined) back(mine.domain.id)
 
   const at = now()
@@ -77,6 +84,9 @@ export async function claimDomain(formData: FormData): Promise<void> {
     ownership: { status: 'pending', token: mintToken(), claimedAt: at, expiresAt: plus(at, CLAIM_TTL) },
     now: at,
     nextCheckAt: at,
+    // Held before and let go: the log opens with `reclaimed`, because this is a
+    // second, separate history for the same name rather than a continuation.
+    again: existing.some((d) => d.domain.name === parsed.value.name),
   })
 
   if (parsed.value.isSandbox) {
@@ -171,6 +181,18 @@ export async function releaseDomain(formData: FormData): Promise<void> {
   const stored = await getDomain(db, id)
   if (stored === null) redirect('/domains?error=Not+found')
 
+  const claim = stored.domain.ownership
+  // Without this, a second submit appends a second `released` event to a claim
+  // that is already closed, and the log stops being a record of what happened.
+  if (isTerminal(claim)) back(id, 'This claim is already closed.')
+
+  // The dialog asks for the name back before it will release a proved claim.
+  // Checking it here too, because a dialog is a courtesy and not a guard: a bare
+  // POST must not be able to give away a name someone has proved they own.
+  if (isExclusive(claim) && text(formData, 'confirm', '') !== stored.domain.name) {
+    back(id, 'Type the domain name to confirm releasing a proved claim.')
+  }
+
   const at = now()
   const next: Domain = {
     ...stored.domain,
@@ -197,12 +219,59 @@ export async function releaseDomain(formData: FormData): Promise<void> {
       },
     ],
     at,
+    // Revoked and off the list in one transaction. Failing between the two would
+    // leave it revoked and still sitting in the list, which is the state this
+    // whole feature exists to remove.
+    at,
   )
   if (!result.applied) back(id, 'Something else changed this domain first. Nothing was released.')
 
   void userId
   revalidatePath('/domains')
-  back(id, 'Released. The name is free for anyone to claim again.')
+  redirect(
+    `/domains?notice=${encodeURIComponent(
+      `${stored.domain.name} released. The name is free for anyone to claim again — its history is under Removed.`,
+    )}`,
+  )
+}
+
+/**
+ * Takes a closed claim off the list, or puts it back. Reversible and destroys
+ * nothing, so it asks for no confirmation; the guard that matters lives in
+ * `set_hidden`, which refuses a claim that is still live.
+ */
+export async function removeFromList(formData: FormData): Promise<void> {
+  await setListed(formData, false)
+}
+
+export async function restoreToList(formData: FormData): Promise<void> {
+  await setListed(formData, true)
+}
+
+async function setListed(formData: FormData, listed: boolean): Promise<void> {
+  const { db } = await requireSession()
+  const id = asDomainId(text(formData, 'id', ''))
+  const stored = await getDomain(db, id)
+  if (stored === null) redirect('/domains?error=Not+found')
+
+  // Clicking twice is not an error, it is the same answer twice.
+  if (listed === (stored.hiddenAt === null)) redirect(listed ? '/domains?show=removed' : '/domains')
+
+  if (!listed && !isTerminal(stored.domain.ownership)) {
+    redirect(
+      `/domains?error=${encodeURIComponent('A live claim stays on the list. Release it first.')}`,
+    )
+  }
+
+  await setHidden(db, id, !listed, now())
+  revalidatePath('/domains')
+  redirect(
+    listed
+      ? `/domains?notice=${encodeURIComponent(`${stored.domain.name} is back on your list.`)}`
+      : `/domains?notice=${encodeURIComponent(
+          `${stored.domain.name} removed from your list. Its history is under Removed.`,
+        )}`,
+  )
 }
 
 async function withZone(id: DomainId, edit: (zone: SandboxZone) => SandboxZone): Promise<void> {

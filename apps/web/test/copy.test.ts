@@ -10,8 +10,9 @@ import {
   days,
   token,
   userId,
+  isTerminal,
 } from '@deed/core'
-import { claimGuidance, recordGuidance } from '../src/lib/copy'
+import { claimGuidance, endedHeadline, recordGuidance } from '../src/lib/copy'
 
 /**
  * Every state the model defines has to produce copy without throwing. The
@@ -83,6 +84,16 @@ describe('the copy layer', () => {
       const guidance = recordGuidance(domain(record, CLAIMS[0]!))
       expect(guidance.headline, JSON.stringify(record)).toBeTruthy()
       expect(guidance.body, JSON.stringify(record)).toBeTruthy()
+    }
+  })
+
+  it('names how every closed claim ended, and says nothing about open ones', () => {
+    for (const ownership of CLAIMS) {
+      const line = endedHeadline(ownership)
+      expect(line, ownership.status).toBeTruthy()
+      // The Removed list only ever shows terminal claims; the open branch exists
+      // to keep the switch exhaustive, not to be read by anyone.
+      expect(line === 'Still open', ownership.status).toBe(!isTerminal(ownership))
     }
   })
 

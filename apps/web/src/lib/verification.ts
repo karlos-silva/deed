@@ -52,7 +52,10 @@ export async function runCheck(
   if (events.length === 0) return { status: 'applied', stored: read }
 
   const result = await applyTransition(db, read, next, events, clock)
-  if (result.applied) return { status: 'applied', stored: { domain: next, version: result.version } }
+  if (result.applied) {
+    // A check never changes list membership, so it carries the flag through.
+    return { status: 'applied', stored: { domain: next, version: result.version, hiddenAt: read.hiddenAt } }
+  }
 
   const fresh = await getDomain(db, read.domain.id)
   return fresh === null ? { status: 'gone' } : { status: 'raced', stored: fresh }

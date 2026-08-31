@@ -67,6 +67,7 @@ export type Database = {
       domains: {
         Row: {
           created_at: string
+          hidden_at: string | null
           id: string
           is_sandbox: boolean
           last_changed_at: string
@@ -81,6 +82,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          hidden_at?: string | null
           id?: string
           is_sandbox?: boolean
           last_changed_at?: string
@@ -95,6 +97,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          hidden_at?: string | null
           id?: string
           is_sandbox?: boolean
           last_changed_at?: string
@@ -172,17 +175,23 @@ export type Database = {
           p_record: Json
           p_supersession: Json
           p_version: number
+          p_hidden_at?: string | null
         }
         Returns: Json
       }
       create_claim: {
         Args: {
+          p_again?: boolean
           p_is_sandbox: boolean
           p_name: string
           p_next_check_at: string
           p_now: string
           p_ownership: Json
         }
+        Returns: Database['public']['Tables']['domains']['Row']
+      }
+      set_hidden: {
+        Args: { p_domain_id: string; p_hidden: boolean; p_now: string }
         Returns: Database['public']['Tables']['domains']['Row']
       }
       claims_due: {

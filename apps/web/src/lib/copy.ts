@@ -223,7 +223,7 @@ export function claimGuidance(ownership: OwnershipState): Guidance | null {
   }
 }
 
-const revokedHeadline = (reason: Extract<OwnershipState, { status: 'revoked' }>['reason']): string => {
+export const revokedHeadline = (reason: Extract<OwnershipState, { status: 'revoked' }>['reason']): string => {
   switch (reason) {
     case 'grace_expired':
       return 'This claim was released'
@@ -242,6 +242,20 @@ const revokedBody = (reason: Extract<OwnershipState, { status: 'revoked' }>['rea
       return 'You deleted this claim, which freed the name for others. The history below is still yours to read.'
     case 'claimed_by_other':
       return 'Claiming is open to anyone — proof is not. Somebody published their token at this domain before you did, so their claim is now the exclusive one and yours was closed. Nothing you did was wrong; you did not control the zone.'
+  }
+}
+
+/** One line for how a closed claim ended, for the Removed list. */
+export function endedHeadline(ownership: OwnershipState): string {
+  switch (ownership.status) {
+    case 'expired':
+      return 'This claim expired'
+    case 'revoked':
+      return revokedHeadline(ownership.reason)
+    case 'pending':
+    case 'verified':
+    case 'degraded':
+      return 'Still open'
   }
 }
 

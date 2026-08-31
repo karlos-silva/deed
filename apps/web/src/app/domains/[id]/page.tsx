@@ -4,6 +4,8 @@ import {
   CHALLENGE_LABEL,
   activeToken,
   at,
+  isExclusive,
+  isTerminal,
   challengeHost,
   expectedValue,
   domainId as asDomainId,
@@ -22,7 +24,8 @@ import { AuditLog } from '@/components/AuditLog'
 import { SandboxZonePanel } from '@/components/SandboxZonePanel'
 import { Footer } from '@/components/Footer'
 import { TopBar } from '@/components/TopBar'
-import { checkNow, releaseDomain, rotateToken } from '../actions'
+import { checkNow, releaseDomain, removeFromList, restoreToList, rotateToken } from '../actions'
+import { ReleaseDialog } from '@/components/ReleaseDialog'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,7 +44,7 @@ export default async function DomainPage({
   const found = await getDomain(current.db, asDomainId(id))
   if (found === null) notFound()
 
-  const { domain } = await revalidateIfDue(current.db, found)
+  const { domain, hiddenAt } = await revalidateIfDue(current.db, found)
   const clock = at(Date.now())
 
   const record = recordGuidance(domain)
@@ -234,6 +237,36 @@ export default async function DomainPage({
           </div>
         </section>
 
+        {isTerminal(domain.ownership) && (
+          <section className="card">
+            <div className="card-header">
+              <h2 className="t-section">This claim is closed</h2>
+            </div>
+            <div className="card-body stack-3">
+              <p className="t-small subtle">
+                {hiddenAt === null
+                  ? 'Nothing here can change again. You can take it off your list without losing any of this — the log stays, at this address.'
+                  : `Removed from your list on ${new Date(hiddenAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}. The log is untouched.`}
+              </p>
+              {hiddenAt === null ? (
+                <form action={removeFromList}>
+                  <input type="hidden" name="id" value={domain.id} />
+                  <button className="btn btn-secondary btn-sm" type="submit">
+                    Remove from list
+                  </button>
+                </form>
+              ) : (
+                <form action={restoreToList}>
+                  <input type="hidden" name="id" value={domain.id} />
+                  <button className="btn btn-secondary btn-sm" type="submit">
+                    Restore to list
+                  </button>
+                </form>
+              )}
+            </div>
+          </section>
+        )}
+
         {token !== null && (
           <section className="card">
             <div className="card-header">
@@ -253,17 +286,19 @@ export default async function DomainPage({
                 </button>
               </form>
 
-              <form action={releaseDomain} className="stack-2">
-                <input type="hidden" name="id" value={domain.id} />
+              <div className="stack-2">
                 <strong className="t-body">Release this domain</strong>
                 <p className="t-small subtle">
                   This frees the name for anyone else to claim and prove. Your history stays
                   readable here afterwards.
                 </p>
-                <button className="btn btn-danger btn-sm" type="submit">
-                  Release
-                </button>
-              </form>
+                <ReleaseDialog
+                  action={releaseDomain}
+                  domainId={domain.id}
+                  name={domain.name}
+                  requireTyping={isExclusive(domain.ownership)}
+                />
+              </div>
             </div>
           </section>
         )}
