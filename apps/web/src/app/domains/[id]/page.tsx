@@ -229,39 +229,52 @@ export default async function DomainPage({ params }: { params: Promise<{ id: str
           </section>
         )}
 
+        {/* Next to the thing it acts on, and named after the verb. Not one of
+            the eight products surveyed puts a credential rotation inside a
+            danger or delete section — they keep it beside the value it
+            replaces, because that is what the user needs to see. */}
         {token !== null && (
           <section className="card">
             <div className="card-header">
-              <h2 className="t-section">Recovery</h2>
+              <h2 className="t-section">Rotate the token</h2>
             </div>
-            <div className="card-body grid-2">
-              <form action={rotateToken} className="stack-2">
+            <div className="card-body card-action">
+              <p className="t-small subtle">
+                If this token leaked — a public gist, a screenshot — replace it. The old value keeps
+                being tolerated only until its cache clears, then stops proving anything. You keep
+                the domain.
+              </p>
+              <form action={rotateToken}>
                 <input type="hidden" name="id" value={domain.id} />
-                <strong className="t-body">Rotate the token</strong>
-                <p className="t-small subtle">
-                  If this token leaked — a public gist, a screenshot — replace it. The old value
-                  keeps being tolerated only until its cache clears, then stops proving anything.
-                  You keep the domain.
-                </p>
                 <SubmitButton pendingLabel="Issuing…">Issue a new token</SubmitButton>
               </form>
-
-              <div className="stack-2">
-                <strong className="t-body">Release this domain</strong>
-                <p className="t-small subtle">
-                  This frees the name for anyone else to claim and prove. Your history stays
-                  readable here afterwards.
-                </p>
-                <ReleaseDialog
-                  action={releaseDomain}
-                  domainId={domain.id}
-                  name={domain.name}
-                  requireTyping={isExclusive(domain.ownership)}
-                />
-              </div>
             </div>
           </section>
         )}
+
+        {/* Its own section at the bottom, named after what it does. Grouping is
+            by object scope: this acts on the claim's existence, so it sits with
+            nothing else and carries the only destructive treatment on the page. */}
+        {!closed && (
+          <section className="card card-danger">
+            <div className="card-header">
+              <h2 className="t-section">Release this domain</h2>
+            </div>
+            <div className="card-body card-action">
+              <p className="t-small subtle">
+                The name goes back to the pool and anyone can prove it from that moment. Your
+                history stays readable here afterwards.
+              </p>
+              <ReleaseDialog
+                action={releaseDomain}
+                domainId={domain.id}
+                name={domain.name}
+                requireTyping={isExclusive(domain.ownership)}
+              />
+            </div>
+          </section>
+        )}
+
       </main>
 
       <Footer />

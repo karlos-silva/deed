@@ -463,6 +463,21 @@
 .sandbox-note { display: inline-flex; align-items: center; gap: var(--space-2); }
 .wrap-anywhere { overflow-wrap: anywhere; }
 .nowrap { white-space: nowrap; }
+/* Description on the left, the action inline on the right — never full width.
+   Of eight products surveyed, none uses a full-width destructive button: it
+   reads as the page's primary call to action, which is the opposite signal. */
+.card-action {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-6); flex-wrap: wrap;
+}
+.card-action > p { flex: 1 1 320px; margin: 0; }
+.card-action form { flex: none; }
+
+/* The only destructive treatment on the page, so it does not have to shout. */
+.card-danger { border-color: var(--red-border); }
+.card-danger .card-header { border-bottom-color: var(--red-border); }
+.card-danger .card-header .t-section { color: var(--red-fg); }
+
 .grid-2 { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 
 /* --- Toasts --------------------------------------------------------------
