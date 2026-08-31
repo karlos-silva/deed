@@ -163,12 +163,14 @@ const event = (id: number, over: Partial<AuditRow>): AuditRow => ({
 // What `audit_timeline` returns for a claim that was made, verified, and then
 // watched: the run is one entry, not fourteen rows, and it is collapsed before
 // the page limit so the two moments are still here.
+// The shape audit_timeline actually returns, which is the point of the fixture:
+// one line per moment, and every routine check inside the run it belongs to.
 const NOISY: TimelineEntry[] = [
   {
     kind: 'watch',
-    runs: 14,
+    runs: 123,
     newestAt: new Date(T0).toISOString(),
-    oldestAt: new Date(T0 - 46_800_000).toISOString(),
+    oldestAt: new Date(T0 - 108_000_000).toISOString(),
     status: 'verified',
     id: 14,
     evidence: null,
@@ -183,13 +185,13 @@ const NOISY: TimelineEntry[] = [
     }),
   },
   {
-    kind: 'moment',
-    event: event(16, {
-      kind: 'state_changed',
-      level: 'record',
-      from_status: 'absent',
-      to_status: 'verified',
-    }),
+    kind: 'watch',
+    runs: 9,
+    newestAt: new Date(T0 - 115_200_000).toISOString(),
+    oldestAt: new Date(T0 - 118_800_000).toISOString(),
+    status: 'absent',
+    id: 16,
+    evidence: null,
   },
   { kind: 'moment', event: event(20, { kind: 'claim_created', actor: 'user', to_status: 'pending' }) },
 ]

@@ -19,11 +19,17 @@ export function AuditLog({ entries, now }: { entries: TimelineEntry[]; now: numb
         entry.kind === 'watch' ? (
           <li className="log-watch" key={`w${entry.id}`}>
             <span className="log-tick" aria-hidden="true" />
-            <span className="what">{`Checked ${entry.runs} times — ${held(entry.status)}`}</span>
-            <span className="when">
-              {`${humanSince(Date.parse(entry.oldestAt), now)} – ${humanSince(Date.parse(entry.newestAt), now)}`}
+            <span className="what">
+              {entry.runs === 1
+                ? `Checked once — ${held(entry.status)}`
+                : `Checked ${entry.runs} times — ${held(entry.status)}`}
             </span>
-            <Evidence evidence={entry.evidence} summary="What the last of them saw" />
+            <span className="when">
+              {entry.runs === 1
+                ? humanSince(Date.parse(entry.newestAt), now)
+                : `${humanSince(Date.parse(entry.oldestAt), now)} – ${humanSince(Date.parse(entry.newestAt), now)}`}
+            </span>
+            <Evidence evidence={entry.evidence} summary={entry.runs === 1 ? "What it saw" : "What the last of them saw"} />
           </li>
         ) : (
           <li className="log-moment" data-state={toneOf(entry.event)} key={entry.event.id}>

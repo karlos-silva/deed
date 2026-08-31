@@ -516,3 +516,80 @@ describe('the log is paged in entries, not in rows', () => {
     expect(bobSees).toHaveLength(0)
   })
 })
+
+describe('one instant is one line', () => {
+  it('A check that changes something does not report itself three times', async () => {
+    const id = await claim(alice, 'threeliner.com', TOKEN_A)
+
+    // Exactly what a real verification writes: the check, the record moving,
+    // and the claim moving — one transaction, one timestamp, one event to a
+    // reader.
+    await db.admin.query(
+      `insert into public.audit_events
+         (domain_id, owner_id, domain_name, at, kind, actor, level, from_status, to_status)
+       values
+         ($1, $2, 'threeliner.com', now() + interval '1 s', 'check_completed', 'sweep', 'record', null, 'absent'),
+         ($1, $2, 'threeliner.com', now() + interval '1 s', 'state_changed',   'sweep', 'record', 'unchecked', 'absent'),
+         ($1, $2, 'threeliner.com', now() + interval '2 s', 'check_completed', 'sweep', 'record', null, 'absent'),
+         ($1, $2, 'threeliner.com', now() + interval '3 s', 'check_completed', 'sweep', 'record', null, 'verified'),
+         ($1, $2, 'threeliner.com', now() + interval '3 s', 'state_changed',   'sweep', 'record', 'absent', 'verified'),
+         ($1, $2, 'threeliner.com', now() + interval '3 s', 'state_changed',   'sweep', 'claim',  'pending', 'verified'),
+         ($1, $2, 'threeliner.com', now() + interval '4 s', 'check_completed', 'sweep', 'record', null, 'verified')`,
+      [id, alice],
+    )
+
+    const rows = await db.as(alice).query<{ entry_kind: string; kind: string; level: string | null; runs: number }>(
+      `select entry_kind, kind, level, runs from public.audit_timeline($1, 20)`,
+      [id],
+    )
+
+    // Newest first: still verified, it verified, still not found, you claimed it.
+    expect(rows.map((r) => [r.entry_kind, r.kind, r.level, r.runs])).toEqual([
+      ['watch', 'check_completed', 'record', 1],
+      ['moment', 'state_changed', 'claim', 1],
+      ['watch', 'check_completed', 'record', 2],
+      ['moment', 'claim_created', null, 1],
+    ])
+  })
+
+  it('A record change with no claim change still gets its line', async () => {
+    const id = await claim(alice, 'recordonly.com', TOKEN_A)
+    await db.admin.query(
+      `insert into public.audit_events
+         (domain_id, owner_id, domain_name, at, kind, actor, level, from_status, to_status)
+       values
+         ($1, $2, 'recordonly.com', now() + interval '1 s', 'state_changed', 'sweep', 'record', 'absent', 'propagating')`,
+      [id, alice],
+    )
+
+    const rows = await db.as(alice).query<{ level: string | null; to_status: string }>(
+      `select level, to_status from public.audit_timeline($1, 20)`,
+      [id],
+    )
+
+    // The claim did not move, so the record transition is the only news there is.
+    expect(rows[0]?.level).toBe('record')
+    expect(rows[0]?.to_status).toBe('propagating')
+  })
+
+  it('Every row is still in the ledger', async () => {
+    const id = await claim(alice, 'ledger.com', TOKEN_A)
+    await db.admin.query(
+      `insert into public.audit_events
+         (domain_id, owner_id, domain_name, at, kind, actor, level, from_status, to_status)
+       values
+         ($1, $2, 'ledger.com', now() + interval '1 s', 'check_completed', 'sweep', 'record', null, 'absent'),
+         ($1, $2, 'ledger.com', now() + interval '1 s', 'state_changed',   'sweep', 'record', 'unchecked', 'absent')`,
+      [id, alice],
+    )
+
+    // The timeline decides what earns a line. It never decides what is kept —
+    // state-model §6 requires check_completed to be emitted, and it is.
+    const stored = await db.as(alice).query<{ kind: string }>(
+      `select kind from public.audit_events where domain_id = $1 order by id`,
+      [id],
+    )
+    expect(stored).toHaveLength(3)
+    expect(stored.map((r) => r.kind)).toContain('check_completed')
+  })
+})
