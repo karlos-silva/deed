@@ -18,6 +18,7 @@ import { ResolverMatrix } from '../src/components/ResolverMatrix'
 import { ValueDiff } from '../src/components/ValueDiff'
 import { ClaimBadge, RecordBadge } from '../src/components/StatusBadge'
 import { NothingClaimedYet } from '../src/components/NothingClaimedYet'
+import { RecordTable } from '../src/components/RecordToPublish'
 
 /**
  * The detail page renders these on every visit, so anything that throws here is
@@ -146,5 +147,55 @@ describe('the detail page renders every state', () => {
     const expected = expectedValue(TOKEN)
     const html = renderToStaticMarkup(<ValueDiff expected={expected} observed={`"${expected}"`} />)
     expect(html.match(/<mark>/g) ?? []).toHaveLength(2)
+  })
+
+  it('gives the panel the name it wants, and shows the one it appends', () => {
+    // The relative form is what Copy hands over; the zone is text beside it.
+    // Showing the absolute name is the failure class every product that does it
+    // ships a warning paragraph about.
+    const relative = renderToStaticMarkup(
+      <RecordTable
+        host="_deed-challenge.demo"
+        suffix=".karlos.dev"
+        value="deed-challenge=abc"
+        hostLabel="Host"
+        valueLabel="Value"
+      />,
+    )
+    expect(relative).toContain('_deed-challenge.demo')
+    expect(relative).toContain('zone-suffix')
+    expect(relative).toContain('.karlos.dev')
+
+    // A panel that wants the whole name gets the whole name, and no dimmed tail
+    // suggesting something is added for it.
+    const absolute = renderToStaticMarkup(
+      <RecordTable
+        host="_deed-challenge.demo.karlos.dev"
+        suffix={null}
+        value="deed-challenge=abc"
+        hostLabel="Hostname"
+        valueLabel="Enter this value"
+      />,
+    )
+    expect(absolute).toContain('_deed-challenge.demo.karlos.dev')
+    expect(absolute).not.toContain('zone-suffix')
+
+    // The header follows the panel's own vocabulary, which is why the column
+    // names are a prop rather than a constant.
+    expect(absolute).toContain('Hostname')
+    expect(absolute).toContain('Enter this value')
+  })
+
+  it('never truncates the value it asks you to publish', () => {
+    const html = renderToStaticMarkup(
+      <RecordTable
+        host="_deed-challenge"
+        suffix=".example.com"
+        value={`deed-challenge=${'a'.repeat(52)}`}
+        hostLabel="Host"
+        valueLabel="Value"
+      />,
+    )
+    expect(html).toContain('a'.repeat(52))
   })
 })

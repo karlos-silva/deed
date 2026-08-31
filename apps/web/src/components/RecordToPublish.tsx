@@ -51,27 +51,13 @@ export async function RecordToPublish({
         <span className="t-small subtle">one TXT record · read-only queries</span>
       </div>
       <div className="card-body">
-        <dl className="record">
-          <dt>Type</dt>
-          <dd>TXT</dd>
-          <dd />
-
-          <dt>{labels.host}</dt>
-          <dd>{labels.relativeHost ? relativeHost : host}</dd>
-          <dd>
-            <CopyButton value={labels.relativeHost ? relativeHost : host} label="host" />
-          </dd>
-
-          <dt>{labels.relativeHost ? 'Full host' : 'Relative'}</dt>
-          <dd className="subtle">{labels.relativeHost ? host : relativeHost}</dd>
-          <dd />
-
-          <dt>{labels.value}</dt>
-          <dd>{value}</dd>
-          <dd>
-            <CopyButton value={value} label="value" />
-          </dd>
-        </dl>
+        <RecordTable
+          host={labels.relativeHost ? relativeHost : host}
+          suffix={labels.relativeHost ? `.${domain.name}` : null}
+          value={value}
+          hostLabel={labels.host}
+          valueLabel={labels.value}
+        />
 
         {zoneInfo?.provider != null && (
           <p className="t-small subtle" style={{ marginTop: 'var(--space-3)' }}>
@@ -97,8 +83,9 @@ export async function RecordToPublish({
         ))}
 
         <p className="t-small subtle" style={{ marginTop: 'var(--space-3)' }}>
-          Most panels want the name without the domain; both forms are above. Paste the value
-          without quotes — the panel adds its own.
+          {labels.relativeHost
+            ? 'The greyed part is your domain, which the panel adds itself — Copy gives you only the part it wants. Paste the value without quotes.'
+            : 'This panel wants the whole name, so Copy gives you the whole name. Paste the value without quotes.'}
         </p>
       </div>
     </section>
@@ -114,10 +101,65 @@ export function RecordToPublishSkeleton() {
         <span className="t-small subtle">reading your zone…</span>
       </div>
       <div className="card-body stack-3">
-        <div className="skeleton" style={{ height: 18, width: '30%' }} />
-        <div className="skeleton" style={{ height: 18, width: '55%' }} />
-        <div className="skeleton" style={{ height: 18, width: '80%' }} />
+        <div className="skeleton" style={{ height: 16, width: '40%' }} />
+        <div className="skeleton" style={{ height: 42, borderRadius: 'var(--radius-md)' }} />
       </div>
     </section>
+  )
+}
+
+/**
+ * Type, host, value — eleven of eleven products surveyed use exactly these
+ * three columns in this order. Split out from the async card above so it can be
+ * rendered and asserted without performing live DNS.
+ */
+export function RecordTable({
+  host,
+  suffix,
+  value,
+  hostLabel,
+  valueLabel,
+}: {
+  host: string
+  /**
+   * The zone the panel appends for you, or null when this panel wants the whole
+   * name. Rendered outside what Copy hands over: read the absolute name, copy
+   * the relative one. Of eleven products, none offers a toggle, and the ones
+   * that print the absolute name are exactly the ones that ship a warning about
+   * `_x.example.com.example.com`.
+   */
+  suffix: string | null
+  value: string
+  hostLabel: string
+  valueLabel: string
+}) {
+  return (
+    <div className="table-wrap">
+      <table className="dns-record">
+        <thead>
+          <tr>
+            <th scope="col">Type</th>
+            <th scope="col">{hostLabel}</th>
+            <th scope="col">{valueLabel}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td className="type">TXT</td>
+            <td className="host">
+              <span className="t-mono">
+                {host}
+                {suffix !== null && <span className="zone-suffix">{suffix}</span>}
+              </span>
+              <CopyButton value={host} label="host" compact />
+            </td>
+            <td className="value">
+              <span className="t-mono">{value}</span>
+              <CopyButton value={value} label="value" compact />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   )
 }

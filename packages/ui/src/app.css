@@ -546,3 +546,53 @@
   .toast[data-removed='true'],
   .toast[data-swiped-out='true'] { animation: none; }
 }
+
+/* --- The DNS record ------------------------------------------------------
+   Type → host → value, in that order, because eleven of eleven products
+   surveyed use exactly those three columns in exactly that order. Copy is
+   per-cell, icon-only and adjacent to the value it copies (nine of eleven);
+   a single copy-all is never the primary path. Monospace throughout, with no
+   truncation — a clipped TXT value is the riskier half of the split. */
+
+.dns-record { width: 100%; border-collapse: collapse; }
+.dns-record thead th {
+  text-align: left; font-size: var(--text-xs); font-weight: var(--weight-medium);
+  letter-spacing: .04em; text-transform: uppercase; color: var(--fg-subtle);
+  padding: var(--space-2) var(--space-3); background: var(--surface-2);
+  border: 1px solid var(--border); border-right: none;
+}
+.dns-record thead th:first-child { border-top-left-radius: var(--radius-md); }
+.dns-record thead th:last-child {
+  border-right: 1px solid var(--border); border-top-right-radius: var(--radius-md);
+}
+.dns-record tbody td {
+  padding: var(--space-3); vertical-align: top;
+  border: 1px solid var(--border); border-top: none; border-right: none;
+  font-size: var(--text-md);
+}
+.dns-record tbody td:last-child { border-right: 1px solid var(--border); }
+.dns-record tbody tr:last-child td:first-child { border-bottom-left-radius: var(--radius-md); }
+.dns-record tbody tr:last-child td:last-child { border-bottom-right-radius: var(--radius-md); }
+
+.dns-record .type { width: 1%; white-space: nowrap; color: var(--fg-2); font-family: var(--font-mono); }
+.dns-record .host, .dns-record .value {
+  display: flex; align-items: flex-start; gap: var(--space-2); border-top: none;
+}
+.dns-record .host .t-mono, .dns-record .value .t-mono {
+  flex: 1; min-width: 0; overflow-wrap: anywhere; line-height: var(--lh-md);
+}
+
+/* The part the panel appends for you. Dimmer, and outside what Copy hands
+   over — read the absolute name, copy the relative one. */
+.zone-suffix { color: var(--fg-faint); }
+
+.copy-icon {
+  appearance: none; cursor: pointer; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; padding: 0; margin-top: -2px;
+  background: none; color: var(--fg-subtle);
+  border: 1px solid transparent; border-radius: var(--radius-sm);
+  transition: color var(--dur-1) var(--ease), background var(--dur-1) var(--ease);
+}
+.copy-icon:hover { color: var(--fg); background: var(--surface-3); }
+.copy-icon.done { color: var(--green); }

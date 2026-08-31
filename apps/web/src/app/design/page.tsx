@@ -21,6 +21,7 @@ import { ValueDiff } from '@/components/ValueDiff'
 import { TopBar } from '@/components/TopBar'
 import { NothingClaimedYet } from '@/components/NothingClaimedYet'
 import { AddDomainDialog } from '@/components/AddDomainDialog'
+import { RecordTable } from '@/components/RecordToPublish'
 import { claimDomain, releaseDomain, removeFromList, restoreToList } from '@/app/domains/actions'
 import { ReleaseDialog } from '@/components/ReleaseDialog'
 import { RowActions } from '@/components/RowActions'
@@ -273,6 +274,28 @@ export default function DesignGallery() {
 
         <Section title="The audit log, empty">
           <AuditLog entries={[]} now={T0} />
+        </Section>
+
+        <Section title="The record to publish">
+          <RecordTable
+            host="_deed-challenge.demo"
+            suffix=".karlos.dev"
+            value={VALUE}
+            hostLabel="Host"
+            valueLabel="Value"
+          />
+          <p className="t-small subtle" style={{ marginTop: 'var(--space-3)' }}>
+            and the same record for a panel that wants the whole name
+          </p>
+          <div style={{ marginTop: 'var(--space-2)' }}>
+            <RecordTable
+              host="_deed-challenge.demo.karlos.dev"
+              suffix={null}
+              value={VALUE}
+              hostLabel="Hostname"
+              valueLabel="Enter this value"
+            />
+          </div>
         </Section>
 
         <Section title="First run">
