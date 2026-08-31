@@ -134,16 +134,45 @@
 }
 .domains .row-mark img { display: block; width: 100%; height: auto; }
 .domains .when { color: var(--fg-muted); font-size: var(--text-sm); white-space: nowrap; }
-/* Held to the right, and quiet until the row is hovered or the button is
-   focused — a destructive control should not compete with the name. */
+/* The per-row overflow control. Always visible: an affordance you have to
+   discover by hovering is one a touch user never finds, and the whole point of
+   this column is that a closed claim can be got rid of. */
 .domains .row-actions { text-align: right; white-space: nowrap; width: 1%; }
-.domains .row-actions .btn { opacity: 0; transition: opacity var(--dur-2) var(--ease); }
-.domains tbody tr:hover .row-actions .btn,
-.domains .row-actions .btn:focus-visible { opacity: 1; }
 
-@media (hover: none) {
-  .domains .row-actions .btn { opacity: 1; }
+.row-menu {
+  appearance: none; cursor: pointer; font: inherit; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 26px; padding: 0;
+  background: var(--surface-3); color: var(--fg-muted);
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  transition: color var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
 }
+.row-menu span { display: block; margin-top: -5px; letter-spacing: 0.5px; }
+.row-menu:hover { color: var(--fg); border-color: var(--border-strong); }
+.row-menu[aria-expanded='true'] { color: var(--fg); border-color: var(--border-strong); }
+
+/* Fixed, not absolute: `.table-wrap` hides its overflow, so a menu on the last
+   row would be cut off. The trigger's rect is measured when it opens, and a
+   scroll closes it rather than letting it drift away from its row. */
+.menu {
+  position: fixed; z-index: 40; min-width: 190px;
+  padding: var(--space-1);
+  background: var(--surface-2); border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 55%), 0 2px 6px rgb(0 0 0 / 40%);
+}
+.menu form { display: contents; }
+.menu-item {
+  appearance: none; cursor: pointer; font: inherit; text-align: left;
+  display: flex; align-items: center; gap: var(--space-2);
+  width: 100%; padding: var(--space-2) var(--space-3);
+  background: none; border: none; border-radius: var(--radius-md);
+  color: var(--fg-2); font-size: var(--text-sm);
+}
+.menu-item:hover { background: var(--surface-3); color: var(--fg); }
+.menu-item.danger { color: var(--red-fg); }
+.menu-item.danger:hover { background: var(--red-bg); color: var(--red-fg); }
+.menu-item svg { flex: none; }
 
 .domains .empty-row { color: var(--fg-muted); padding: var(--space-8) var(--space-4); text-align: center; }
 

@@ -1,16 +1,17 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { at, isTerminal } from '@deed/core'
+import { at, isExclusive, isTerminal } from '@deed/core'
 import { type StoredDomain, lastSweep, listDomains } from '@deed/db'
 import { session } from '@/lib/session'
 import { endedHeadline, humanSince } from '@/lib/copy'
 import { ClaimBadge } from '@/components/StatusBadge'
 import { AddDomainDialog } from '@/components/AddDomainDialog'
 import { NothingClaimedYet } from '@/components/NothingClaimedYet'
+import { RowActions } from '@/components/RowActions'
 import { Footer } from '@/components/Footer'
 import { TopBar } from '@/components/TopBar'
-import { claimDomain, removeFromList, restoreToList } from './actions'
+import { claimDomain, releaseDomain, removeFromList, restoreToList } from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -159,21 +160,15 @@ function Row({
       <td className="when created">{humanSince(domain.createdAt, now)}</td>
       <td className="row-actions">
         {/* Only a closed claim leaves the list; a live one is released first. */}
-        {removed ? (
-          <form action={restoreToList}>
-            <input type="hidden" name="id" value={domain.id} />
-            <button className="btn btn-ghost btn-sm" type="submit">
-              Restore
-            </button>
-          </form>
-        ) : closed ? (
-          <form action={removeFromList}>
-            <input type="hidden" name="id" value={domain.id} />
-            <button className="btn btn-ghost btn-sm" type="submit">
-              Remove
-            </button>
-          </form>
-        ) : null}
+        <RowActions
+          domainId={domain.id}
+          name={domain.name}
+          state={removed ? 'removed' : closed ? 'closed' : 'live'}
+          requireTyping={isExclusive(domain.ownership)}
+          release={releaseDomain}
+          remove={removeFromList}
+          restore={restoreToList}
+        />
       </td>
     </tr>
   )

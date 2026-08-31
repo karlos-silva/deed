@@ -21,8 +21,9 @@ import { ValueDiff } from '@/components/ValueDiff'
 import { TopBar } from '@/components/TopBar'
 import { NothingClaimedYet } from '@/components/NothingClaimedYet'
 import { AddDomainDialog } from '@/components/AddDomainDialog'
-import { claimDomain, releaseDomain } from '@/app/domains/actions'
+import { claimDomain, releaseDomain, removeFromList, restoreToList } from '@/app/domains/actions'
 import { ReleaseDialog } from '@/components/ReleaseDialog'
+import { RowActions } from '@/components/RowActions'
 import Image from 'next/image'
 
 export const dynamic = 'force-dynamic'
@@ -265,6 +266,7 @@ export default function DesignGallery() {
                   <th scope="col">Status</th>
                   <th scope="col">Last checked</th>
                   <th scope="col" className="created">Created</th>
+                  <th scope="col"><span className="visually-hidden">Actions</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -282,6 +284,17 @@ export default function DesignGallery() {
                     <td><ClaimBadge ownership={ownership} /></td>
                     <td className="when">{['1 min ago', '4 min ago', '2 h ago', 'just now', '—'][i]}</td>
                     <td className="when created">{['3 mo ago', '2 mo ago', '6 d ago', '1 h ago', '14 d ago'][i]}</td>
+                    <td className="row-actions">
+                      <RowActions
+                        domainId={`live-${i}`}
+                        name={['acme.com', 'updates.acme.com', 'shop.acme.co.uk', 'acme.test', 'lapsed.com'][i] ?? 'example.com'}
+                        state={i === 4 ? 'closed' : 'live'}
+                        requireTyping={i === 1}
+                        release={releaseDomain}
+                        remove={removeFromList}
+                        restore={restoreToList}
+                      />
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -323,7 +336,15 @@ export default function DesignGallery() {
                     <td className="when">{['2 d ago', '3 w ago', '1 mo ago'][i]}</td>
                     <td className="when created">{['4 mo ago', '6 mo ago', '1 y ago'][i]}</td>
                     <td className="row-actions">
-                      <button className="btn btn-ghost btn-sm" type="button">Restore</button>
+                      <RowActions
+                        domainId={`removed-${i}`}
+                        name={['lapsed.com', 'gone.com', 'taken.com'][i] ?? 'example.com'}
+                        state="removed"
+                        requireTyping={false}
+                        release={releaseDomain}
+                        remove={removeFromList}
+                        restore={restoreToList}
+                      />
                     </td>
                   </tr>
                 ))}
