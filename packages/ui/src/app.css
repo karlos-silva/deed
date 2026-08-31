@@ -334,67 +334,65 @@
 
 .log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 
-/* A moment: something actually happened. It gets a rail, a full sentence and
-   room to breathe. */
-.log-moment {
+/* One entry, one row. The rail carries the tone, the sentence takes the space
+   it needs, the actor and the time hold their own columns so every line agrees
+   on where they start. Four facts used to cost seven rows, because the evidence
+   disclosure took a line of its own under every entry — most of the card's
+   height went to a control almost nobody opens. */
+.log-line {
+  --rail: 2px;
   display: grid;
-  grid-template-columns: var(--rail, 2px) 1fr;
-  gap: var(--space-4);
-  padding: var(--space-3) 0;
-}
-.log-moment .rail {
-  border-radius: var(--radius-pill);
-  background: var(--state-bd);
-  align-self: stretch;
-}
-.log-moment .body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.log-moment .what {
-  color: var(--fg);
-  font-size: var(--text-md);
-  line-height: var(--lh-md);
-}
-.log-moment .meta {
-  color: var(--fg-muted);
-  font-size: var(--text-xs);
-  line-height: var(--lh-xs);
-}
-.log-moment[data-state="ok"] .what { color: var(--green-fg); }
-.log-moment[data-state="problem"] .what { color: var(--red-fg); }
-
-/* A watch: nothing happened, n times running. It is evidence of freshness, not
-   an event, so it reads as one quiet line however many checks it stands for. */
-.log-watch {
-  display: grid;
-  grid-template-columns: var(--rail, 2px) 1fr auto;
-  gap: var(--space-4);
+  grid-template-columns: var(--rail) minmax(0, 1fr) auto auto;
   align-items: baseline;
+  column-gap: var(--space-4);
   padding: var(--space-2) 0;
-  color: var(--fg-muted);
-  font-size: var(--text-sm);
+  border-bottom: 1px solid var(--border-subtle);
 }
-.log-watch .log-tick {
-  height: 100%;
-  min-height: 14px;
-  border-left: 1px dashed var(--border-strong);
-  margin-left: 0;
-}
-.log-watch .when { font-variant-numeric: tabular-nums; color: var(--fg-subtle); font-size: var(--text-xs); white-space: nowrap; }
-/* The disclosure drops to its own row, aligned with the sentence rather than
-   the tick, so a watch stays one line until it is opened. */
-.log-watch .log-evidence { grid-column: 2 / -1; margin-top: var(--space-1); }
+.log-line:last-child { border-bottom: none; }
 
-.log-evidence { margin-top: var(--space-2); }
-.log-evidence summary {
+/* The details wrapper has to inherit the grid, or the summary's four children
+   collapse into one column. */
+.log-line > details { display: contents; }
+.log-line summary {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  align-items: baseline;
   cursor: pointer;
-  color: var(--fg-muted);
-  font-size: var(--text-xs);
-  width: fit-content;
+  list-style: none;
   border-radius: var(--radius-xs);
 }
-.log-evidence summary:hover { color: var(--fg-2); }
-.log-evidence ul {
+.log-line summary::-webkit-details-marker { display: none; }
+.log-line.has-evidence:hover .what { color: var(--fg); }
+
+.log-line .rail {
+  align-self: stretch;
+  min-height: 16px;
+  border-radius: var(--radius-pill);
+  background: var(--state-bd);
+}
+/* A stretch of nothing happening is not an event, so its rail is a hint. */
+.log-line[data-state='quiet'] .rail { background: none; border-left: 1px dashed var(--border-strong); }
+
+.log-line .what {
+  min-width: 0; overflow-wrap: anywhere;
+  color: var(--fg-2); font-size: var(--text-md); line-height: var(--lh-md);
+}
+.log-line[data-state='quiet'] .what { color: var(--fg-muted); font-size: var(--text-sm); }
+.log-line[data-state='ok'] .what { color: var(--green-fg); }
+.log-line[data-state='problem'] .what { color: var(--red-fg); }
+
+.log-line .by,
+.log-line .when {
+  color: var(--fg-subtle); font-size: var(--text-xs); white-space: nowrap;
+}
+.log-line .when { font-variant-numeric: tabular-nums; text-align: right; }
+
+/* Opened, the answers hang under the sentence rather than under the rail. */
+.log-line .answers {
+  grid-column: 2 / -1;
   list-style: none;
-  margin: var(--space-2) 0 0;
+  margin: var(--space-2) 0 var(--space-1);
   padding: var(--space-3);
   display: grid;
   gap: var(--space-2);
@@ -402,14 +400,16 @@
   border-radius: var(--radius-md);
   background: var(--bg);
 }
-.log-evidence li { display: grid; grid-template-columns: 92px 1fr; gap: var(--space-3); font-size: var(--text-xs); }
-.log-evidence .who { color: var(--fg-subtle); }
-.log-evidence .said { font-family: var(--font-mono); color: var(--fg-2); overflow-wrap: anywhere; }
+.log-line .answers li { display: grid; grid-template-columns: 92px 1fr; gap: var(--space-3); font-size: var(--text-xs); }
+.log-line .answers .who { color: var(--fg-subtle); }
+.log-line .answers .said { font-family: var(--font-mono); color: var(--fg-2); overflow-wrap: anywhere; }
 
-@media (max-width: 560px) {
-  .log-watch { grid-template-columns: var(--rail, 2px) 1fr; }
-  .log-watch .when { grid-column: 2; }
-  .log-evidence li { grid-template-columns: 1fr; gap: 2px; }
+@media (max-width: 620px) {
+  /* The actor drops first: on a narrow screen "in the background" is the least
+     of the four things a line is saying. */
+  .log-line { grid-template-columns: var(--rail) minmax(0, 1fr) auto; }
+  .log-line .by { display: none; }
+  .log-line .answers li { grid-template-columns: 1fr; gap: 2px; }
 }
 
 /* -------------------------------------------------------------- signin --- */

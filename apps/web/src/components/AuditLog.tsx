@@ -3,10 +3,13 @@ import { humanSince } from '@/lib/copy'
 import { actorPhrase, toneOf } from '@/lib/logEntries'
 
 /**
- * Entries, not rows. The collapsing happens in SQL (migration 0007) because
- * doing it here meant doing it after the page limit — and a domain checked every
- * 30 seconds spent its entire first page on routine, so the claim and the
- * verification sat pages back behind nothing.
+ * Entries, not rows. The collapsing happens in SQL (migrations 0007 and 0008)
+ * because doing it here meant doing it after the page limit, and because one
+ * instant should be one line.
+ *
+ * Each entry is now one row high. The evidence used to sit on a disclosure of
+ * its own beneath every entry, which doubled the height of the card to carry a
+ * control most readers never open — so the line itself is the disclosure.
  */
 export function AuditLog({ entries, now }: { entries: TimelineEntry[]; now: number }) {
   if (entries.length === 0) {
@@ -17,81 +20,105 @@ export function AuditLog({ entries, now }: { entries: TimelineEntry[]; now: numb
     <ol className="log">
       {entries.map((entry) =>
         entry.kind === 'watch' ? (
-          <li className="log-watch" key={`w${entry.id}`}>
-            <span className="log-tick" aria-hidden="true" />
-            <span className="what">
-              {entry.runs === 1
+          <Line
+            key={`w${entry.id}`}
+            tone="quiet"
+            what={
+              entry.runs === 1
                 ? `Checked once — ${held(entry.status)}`
-                : `Checked ${entry.runs} times — ${held(entry.status)}`}
-            </span>
-            <span className="when">
-              {entry.runs === 1
+                : `Checked ${entry.runs} times — ${held(entry.status)}`
+            }
+            when={
+              entry.runs === 1
                 ? humanSince(Date.parse(entry.newestAt), now)
-                : `${humanSince(Date.parse(entry.oldestAt), now)} – ${humanSince(Date.parse(entry.newestAt), now)}`}
-            </span>
-            <Evidence evidence={entry.evidence} summary={entry.runs === 1 ? "What it saw" : "What the last of them saw"} />
-          </li>
+                : `${humanSince(Date.parse(entry.oldestAt), now)} – ${humanSince(Date.parse(entry.newestAt), now)}`
+            }
+            evidence={entry.evidence}
+          />
         ) : (
-          <li className="log-moment" data-state={toneOf(entry.event)} key={entry.event.id}>
-            <span className="rail" aria-hidden="true" />
-            <div className="body">
-              <p className="what">{describe(entry.event)}</p>
-              <p className="meta">
-                <time dateTime={entry.event.at}>{humanSince(Date.parse(entry.event.at), now)}</time>
-                <span aria-hidden="true"> · </span>
-                {actorPhrase(entry.event.actor)}
-              </p>
-              <Evidence
-                evidence={entry.event.evidence}
-                summary="What each resolver answered"
-              />
-            </div>
-          </li>
+          <Line
+            key={entry.event.id}
+            tone={toneOf(entry.event)}
+            what={describe(entry.event)}
+            by={actorPhrase(entry.event.actor)}
+            when={humanSince(Date.parse(entry.event.at), now)}
+            dateTime={entry.event.at}
+            evidence={entry.event.evidence}
+          />
         ),
       )}
     </ol>
   )
 }
 
-/** A verdict the user can audit is a verdict they can trust (prd §3.4). */
-function Evidence({
+/**
+ * One row: rail, what happened, who, when. Where there is evidence the whole row
+ * is the summary of a `<details>` — a verdict the user can audit is a verdict
+ * they can trust (prd §3.4), but it does not have to spend a line saying so.
+ */
+function Line({
+  tone,
+  what,
+  by,
+  when,
+  dateTime,
   evidence,
-  summary,
 }: {
+  tone: string
+  what: string
+  by?: string
+  when: string
+  dateTime?: string
   evidence: AuditRow['evidence']
-  summary: string
 }) {
   const answers = evidence?.answers ?? []
-  if (answers.length === 0) return null
+
+  const row = (
+    <>
+      <span className="rail" aria-hidden="true" />
+      <span className="what">{what}</span>
+      <span className="by">{by ?? ''}</span>
+      <span className="when">
+        {dateTime === undefined ? when : <time dateTime={dateTime}>{when}</time>}
+      </span>
+    </>
+  )
+
+  if (answers.length === 0) {
+    return (
+      <li className="log-line" data-state={tone}>
+        {row}
+      </li>
+    )
+  }
 
   return (
-    <details className="log-evidence">
-      <summary>{summary}</summary>
-      <ul>
-        {answers.map((answer) => (
-          <li key={answer.resolver}>
-            <span className="who">{answer.resolver}</span>
-            <span className="said">
-              {answer.outcome === 'answered'
-                ? answer.values.join(' , ') || 'no values'
-                : answer.outcome === 'zone_error' || answer.outcome === 'check_failed'
-                  ? `${answer.outcome.replace('_', ' ')}: ${answer.detail}`
-                  : answer.outcome}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </details>
+    <li className="log-line has-evidence" data-state={tone}>
+      <details>
+        <summary>{row}</summary>
+        <ul className="answers">
+          {answers.map((answer) => (
+            <li key={answer.resolver}>
+              <span className="who">{answer.resolver}</span>
+              <span className="said">
+                {answer.outcome === 'answered'
+                  ? answer.values.join(' , ') || 'no values'
+                  : answer.outcome === 'zone_error' || answer.outcome === 'check_failed'
+                    ? `${answer.outcome.replace('_', ' ')}: ${answer.detail}`
+                    : answer.outcome}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </details>
+    </li>
   )
 }
 
 /**
  * What a run of identical checks is evidence of. A bare "nothing changed" makes
  * the reader supply the subject themselves, and the one they supply is usually
- * the wrong one — the whole complaint about this row was that it read as if the
- * interesting events had gone missing. Naming the status that held turns the
- * line from an absence into a statement, which is what Sentry does when it
- * promotes a repeated event's count next to the state it is stuck in.
+ * the wrong one.
  */
 const held = (status: string | null): string => {
   switch (status) {
@@ -109,8 +136,6 @@ const held = (status: string | null): string => {
       return 'our lookup still failing'
     case 'degraded':
       return 'still at risk'
-    // A run with no recorded status has nothing to name, so it keeps the plain
-    // wording rather than inventing a subject.
     case null:
     default:
       return 'nothing changed'

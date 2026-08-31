@@ -13,15 +13,19 @@ import type { AuditRow } from '@deed/db'
  * Who did it, in words rather than in the enum's own vocabulary. `sweep` and
  * `system` are our internal distinction between a background pass and a check
  * triggered by someone opening the page; neither is the user's word for it.
+ *
+ * Kept short because it now shares a line with the sentence and the time, and
+ * of the three it is the least of what a reader came for. "In the background"
+ * already carries "automatically", which is why that word went.
  */
 export function actorPhrase(actor: AuditRow['actor']): string {
   switch (actor) {
     case 'user':
       return 'you'
     case 'sweep':
-      return 'automatically, in the background'
+      return 'in the background'
     case 'system':
-      return 'automatically, when the page was opened'
+      return 'on opening the page'
   }
 }
 

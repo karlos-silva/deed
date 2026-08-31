@@ -106,7 +106,20 @@ describe('the detail page renders every state', () => {
         oldestAt: events[0]!.at,
         status: 'verified',
         id: 99,
-        evidence: null,
+        // The run's last check, which is the only part of a run worth opening.
+        evidence: {
+          startedAt: T0,
+          actor: 'sweep',
+          answers: [
+            {
+              resolver: 'cloudflare' as const,
+              outcome: 'answered' as const,
+              values: ['deed-challenge=x'],
+              ttl: 300,
+            },
+          ],
+          probe: [],
+        },
       },
     ]
     const html = renderToStaticMarkup(<AuditLog entries={entries} now={Date.parse(events[0]!.at)} />)
@@ -117,9 +130,15 @@ describe('the detail page renders every state', () => {
     // The actor enum never reaches the page.
     expect(html).not.toMatch(/SWEEP|>sweep<|>system</)
 
-    // A transition carries a tone; a routine check does not pretend to be one.
-    expect(html).toMatch(/log-moment" data-state="/)
-    expect(html).toContain('log-watch')
+    // A transition carries a tone; a run of checks is marked quiet so it reads
+    // as freshness rather than as something having happened.
+    expect(html).toMatch(/data-state="(ok|problem|neutral|progress|closed)"/)
+    expect(html).toContain('data-state="quiet"')
+
+    // One entry is one row: the evidence opens from the line itself rather than
+    // from a disclosure that costs a row under every entry.
+    expect(html).not.toContain('What each resolver answered')
+    expect(html).toContain('<summary>')
 
     // A run of identical checks names the status that held. "Nothing changed"
     // alone made the reader supply the subject, and the one they supplied was
