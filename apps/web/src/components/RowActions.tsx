@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { ReleaseConfirmDialog } from '@/components/ReleaseConfirmDialog'
+import { SubmitButton } from '@/components/SubmitButton'
 
 /**
  * What this row's claim can still be told to do. `live` and `closed` differ by
@@ -96,19 +97,19 @@ export function RowActions({
         return (
           <form action={remove}>
             <input type="hidden" name="id" value={domainId} />
-            <button className="menu-item" type="submit" role="menuitem">
+            <SubmitButton className="menu-item" role="menuitem" pendingLabel="Removing…">
               <TrashIcon />
               Remove from list
-            </button>
+            </SubmitButton>
           </form>
         )
       case 'removed':
         return (
           <form action={restore}>
             <input type="hidden" name="id" value={domainId} />
-            <button className="menu-item" type="submit" role="menuitem">
+            <SubmitButton className="menu-item" role="menuitem" pendingLabel="Restoring…">
               Restore to list
-            </button>
+            </SubmitButton>
           </form>
         )
     }

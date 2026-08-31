@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { SubmitButton } from '@/components/SubmitButton'
 
 const CLOSE_MS = 150
 
@@ -117,9 +118,13 @@ export function ReleaseConfirmDialog({
           <button className="btn btn-secondary" type="button" onClick={onClose}>
             Cancel
           </button>
-          <button className="btn btn-danger" type="submit" disabled={requireTyping && typed !== name}>
+          <SubmitButton
+            className="btn btn-danger"
+            pendingLabel="Releasing…"
+            disabled={requireTyping && typed !== name}
+          >
             Release
-          </button>
+          </SubmitButton>
         </div>
       </form>
     </dialog>

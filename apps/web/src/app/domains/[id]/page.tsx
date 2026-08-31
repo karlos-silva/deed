@@ -28,6 +28,7 @@ import { Notices } from '@/components/Notices'
 import { TopBar } from '@/components/TopBar'
 import { checkNow, releaseDomain, removeFromList, restoreToList, rotateToken } from '../actions'
 import { ReleaseDialog } from '@/components/ReleaseDialog'
+import { SubmitButton } from '@/components/SubmitButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -113,9 +114,7 @@ export default async function DomainPage({ params }: { params: Promise<{ id: str
             </Link>
             <form action={checkNow}>
               <input type="hidden" name="id" value={domain.id} />
-              <button className="btn btn-secondary btn-sm" type="submit">
-                Check now
-              </button>
+              <SubmitButton pendingLabel="Checking…">Check now</SubmitButton>
             </form>
           </div>
         </div>
@@ -243,16 +242,12 @@ export default async function DomainPage({ params }: { params: Promise<{ id: str
               {hiddenAt === null ? (
                 <form action={removeFromList}>
                   <input type="hidden" name="id" value={domain.id} />
-                  <button className="btn btn-secondary btn-sm" type="submit">
-                    Remove from list
-                  </button>
+                  <SubmitButton pendingLabel="Removing…">Remove from list</SubmitButton>
                 </form>
               ) : (
                 <form action={restoreToList}>
                   <input type="hidden" name="id" value={domain.id} />
-                  <button className="btn btn-secondary btn-sm" type="submit">
-                    Restore to list
-                  </button>
+                  <SubmitButton pendingLabel="Restoring…">Restore to list</SubmitButton>
                 </form>
               )}
             </div>
@@ -273,9 +268,7 @@ export default async function DomainPage({ params }: { params: Promise<{ id: str
                   keeps being tolerated only until its cache clears, then stops proving anything.
                   You keep the domain.
                 </p>
-                <button className="btn btn-secondary btn-sm" type="submit">
-                  Issue a new token
-                </button>
+                <SubmitButton pendingLabel="Issuing…">Issue a new token</SubmitButton>
               </form>
 
               <div className="stack-2">

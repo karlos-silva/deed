@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { ClaimField } from '@/components/ClaimField'
+import { SubmitButton } from '@/components/SubmitButton'
 
 const CLOSE_MS = 150
 
@@ -102,9 +103,9 @@ export function AddDomainDialog({
             >
               Cancel
             </button>
-            <button className="btn btn-primary" type="submit">
+            <SubmitButton className="btn btn-primary" pendingLabel="Adding…">
               Add domain
-            </button>
+            </SubmitButton>
           </div>
         </form>
       </dialog>

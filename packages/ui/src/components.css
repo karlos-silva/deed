@@ -243,6 +243,21 @@ tr:hover .value .copy, .value:hover .copy, .value:focus-within .copy { opacity: 
 .empty-icon { width: 40px; height: 40px; display: grid; place-items: center; border-radius: var(--radius-lg); background: var(--surface-2); border: 1px solid var(--border); color: var(--fg-subtle); }
 
 /* --- Skeleton ----------------------------------------------------------- */
+/* A submit that is working. Sized in em so it tracks whatever button holds it. */
+.spinner {
+  display: inline-block; width: 0.85em; height: 0.85em; flex: none;
+  border: 1.5px solid currentColor; border-right-color: transparent;
+  border-radius: 50%; opacity: 0.7;
+  animation: spin 620ms linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Reduced motion keeps the mark, drops the rotation: the button still reads as
+   busy through its disabled state and its changed label. */
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+
+.btn[data-pending='true'] { cursor: progress; }
+
 .skeleton { background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 37%, var(--surface-2) 63%); background-size: 400% 100%; animation: shimmer 1.4s linear infinite; border-radius: var(--radius-xs); height: 12px; }
 @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
 @media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }

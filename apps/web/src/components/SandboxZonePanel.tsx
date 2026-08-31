@@ -3,6 +3,7 @@ import { CHALLENGE_LABEL } from '@deed/core'
 import { SANDBOX_DELAY, type SandboxZone } from '@deed/dns'
 import { addZoneRecord, removeZoneRecord, setZoneOutage } from '@/app/domains/actions'
 import { RESOLVER_NAMES } from '@/lib/copy'
+import { SubmitButton } from '@/components/SubmitButton'
 
 const OUTAGES = [
   { value: '', label: 'Answering normally' },
@@ -73,9 +74,9 @@ export function SandboxZonePanel({
                     <form action={removeZoneRecord}>
                       <input type="hidden" name="id" value={domain.id} />
                       <input type="hidden" name="record" value={record.id} />
-                      <button className="btn btn-ghost btn-sm" type="submit">
+                      <SubmitButton className="btn btn-ghost btn-sm" pendingLabel="Deleting…">
                         Delete
-                      </button>
+                      </SubmitButton>
                     </form>
                   </td>
                 </tr>
@@ -136,9 +137,9 @@ export function SandboxZonePanel({
             </label>
             <input className="input" id="ttl" name="ttl" type="number" defaultValue={300} min={1} />
           </div>
-          <button className="btn btn-secondary" type="submit">
+          <SubmitButton className="btn btn-secondary" pendingLabel="Adding…">
             Add record
-          </button>
+          </SubmitButton>
         </form>
 
         <div className="divider" />
@@ -157,9 +158,9 @@ export function SandboxZonePanel({
               ))}
             </select>
           </div>
-          <button className="btn btn-secondary" type="submit">
+          <SubmitButton className="btn btn-secondary" pendingLabel="Applying…">
             Apply
-          </button>
+          </SubmitButton>
         </form>
 
         <p className="t-small subtle">
