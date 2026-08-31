@@ -420,11 +420,11 @@ describe('the cap counts what an account can still act on', () => {
 
     const made = await claim(alice, 'cap25.com')
     expect(made).toBeTruthy()
-    const [{ count }] = await db.as(alice).query<{ count: string }>(
+    const counted = await db.as(alice).query<{ count: string }>(
       `select count(*) as count from public.domains where owner_id = $1`,
       [alice],
     )
-    expect(Number(count)).toBe(26)
+    expect(Number(counted[0]?.count)).toBe(26)
   })
 })
 
@@ -445,5 +445,74 @@ describe('the write path has exactly one shape', () => {
       ['create_claim', '1'],
       ['set_hidden', '1'],
     ])
+  })
+})
+
+describe('the log is paged in entries, not in rows', () => {
+  it('A page of routine checks cannot bury the moments', async () => {
+    const id = await claim(alice, 'noisy.com', TOKEN_A)
+    await transition(alice, id, 0, verifiedOwnership(TOKEN_A), [
+      { kind: 'state_changed', actor: 'user', level: 'claim', from: 'pending', to: 'verified' },
+    ])
+
+    // What a sweep every 30 seconds actually produces. Far more than one page.
+    await db.admin.query(
+      `insert into public.audit_events (domain_id, owner_id, domain_name, at, kind, actor, level, to_status)
+       select $1, $2, 'noisy.com', now() + (n || ' seconds')::interval,
+              'check_completed', 'sweep', 'record', 'verified'
+         from generate_series(1, 60) as n`,
+      [id, alice],
+    )
+
+    const rows = await db.as(alice).query<{ entry_kind: string; runs: number; kind: string }>(
+      `select entry_kind, runs, kind from public.audit_timeline($1, 20)`,
+      [id],
+    )
+
+    // Sixty identical checks are one entry, and they are collapsed before the
+    // limit — so the moments are still on the first page rather than five pages
+    // back behind nothing.
+    const watches = rows.filter((r) => r.entry_kind === 'watch')
+    expect(watches).toHaveLength(1)
+    expect(watches[0]!.runs).toBe(60)
+
+    const kinds = rows.filter((r) => r.entry_kind === 'moment').map((r) => r.kind)
+    expect(kinds).toContain('claim_created')
+    expect(kinds).toContain('state_changed')
+  })
+
+  it('A run breaks when the answer changes', async () => {
+    const id = await claim(alice, 'flapping.com', TOKEN_A)
+    await db.admin.query(
+      `insert into public.audit_events (domain_id, owner_id, domain_name, at, kind, actor, level, to_status)
+       values ($1, $2, 'flapping.com', now() + interval '1 s', 'check_completed', 'sweep', 'record', 'absent'),
+              ($1, $2, 'flapping.com', now() + interval '2 s', 'check_completed', 'sweep', 'record', 'absent'),
+              ($1, $2, 'flapping.com', now() + interval '3 s', 'check_completed', 'sweep', 'record', 'verified'),
+              ($1, $2, 'flapping.com', now() + interval '4 s', 'check_completed', 'sweep', 'record', 'absent')`,
+      [id, alice],
+    )
+
+    const rows = await db.as(alice).query<{ entry_kind: string; runs: number; to_status: string }>(
+      `select entry_kind, runs, to_status from public.audit_timeline($1, 20)`,
+      [id],
+    )
+
+    // Newest first: absent(1), verified(1), absent(2), then the claim. A stretch
+    // of "nothing changed" that spans a change would be a lie.
+    expect(rows.map((r) => [r.to_status, r.runs])).toEqual([
+      ['absent', 1],
+      ['verified', 1],
+      ['absent', 2],
+      ['pending', 1],
+    ])
+  })
+
+  it('The log stays the owner\'s alone', async () => {
+    const hers = await claim(alice, 'private.com', TOKEN_A)
+
+    // security invoker, so audit_owner_select is what filters it — not a
+    // re-implementation of the same rule inside the function.
+    const bobSees = await db.as(bob).query(`select entry_kind from public.audit_timeline($1, 20)`, [hers])
+    expect(bobSees).toHaveLength(0)
   })
 })

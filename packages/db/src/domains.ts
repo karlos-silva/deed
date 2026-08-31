@@ -177,6 +177,85 @@ export async function applyTransition(
 export type AuditCursor = { readonly at: string; readonly id: number }
 export type AuditPage = { readonly events: AuditRow[]; readonly nextCursor: AuditCursor | null }
 
+/**
+ * The log as entries rather than rows. Collapsing consecutive identical checks
+ * in TypeScript was correct but happened after the limit, so a domain checked
+ * every 30 seconds spent its whole page on routine and the moments that mattered
+ * sat pages back behind nothing. `audit_timeline` collapses first (0007).
+ */
+export type TimelineEntry =
+  | { readonly kind: 'moment'; readonly event: AuditRow }
+  | {
+      readonly kind: 'watch'
+      readonly runs: number
+      readonly newestAt: string
+      readonly oldestAt: string
+      readonly status: string | null
+      readonly id: number
+    }
+
+export type Timeline = {
+  readonly entries: TimelineEntry[]
+  readonly nextCursor: AuditCursor | null
+}
+
+export async function listTimeline(
+  db: Db,
+  id: DomainId,
+  options: { before?: AuditCursor; limit?: number } = {},
+): Promise<Timeline> {
+  const limit = options.limit ?? 20
+  const before = options.before
+  const { data, error } = await db.rpc('audit_timeline', {
+    p_domain_id: id,
+    // One more than asked, so the presence of a next page is a fact rather than
+    // a guess from a full page.
+    p_limit: limit + 1,
+    p_before: before?.at ?? null,
+    p_before_id: before?.id ?? null,
+  })
+  if (error) throw new Error(error.message)
+
+  const rows = data.slice(0, limit)
+  const entries = rows.map((row): TimelineEntry => {
+    if (row.entry_kind === 'watch') {
+      return {
+        kind: 'watch',
+        runs: row.runs,
+        newestAt: row.at,
+        oldestAt: row.oldest_at,
+        status: row.to_status,
+        id: row.id,
+      }
+    }
+    return {
+      kind: 'moment',
+      // The function returns the fields a moment is rendered from; owner and
+      // name are on the row it came from and nothing on screen reads them.
+      event: asAuditRow({
+        id: row.id,
+        domain_id: id,
+        owner_id: '',
+        domain_name: '',
+        at: row.at,
+        kind: row.kind,
+        actor: row.actor,
+        level: row.level,
+        from_status: row.from_status,
+        to_status: row.to_status,
+        evidence: row.evidence,
+      }),
+    }
+  })
+
+  const last = rows.at(-1)
+  return {
+    entries,
+    nextCursor:
+      data.length > limit && last !== undefined ? { at: last.oldest_at, id: last.oldest_id } : null,
+  }
+}
+
 export async function listAudit(
   db: Db,
   id: DomainId,

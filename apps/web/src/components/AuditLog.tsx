@@ -1,27 +1,33 @@
-import type { AuditRow } from '@deed/db'
+import type { AuditRow, TimelineEntry } from '@deed/db'
 import { humanSince } from '@/lib/copy'
-import { actorPhrase, toLogEntries, toneOf } from '@/lib/logEntries'
+import { actorPhrase, toneOf } from '@/lib/logEntries'
 
-export function AuditLog({ events, now }: { events: AuditRow[]; now: number }) {
-  if (events.length === 0) {
+/**
+ * Entries, not rows. The collapsing happens in SQL (migration 0007) because
+ * doing it here meant doing it after the page limit — and a domain checked every
+ * 30 seconds spent its entire first page on routine, so the claim and the
+ * verification sat pages back behind nothing.
+ */
+export function AuditLog({ entries, now }: { entries: TimelineEntry[]; now: number }) {
+  if (entries.length === 0) {
     return <p className="t-body muted">Nothing has happened yet. The first check is on its way.</p>
   }
 
   return (
     <ol className="log">
-      {toLogEntries(events).map((entry) =>
+      {entries.map((entry) =>
         entry.kind === 'watch' ? (
-          <li className="log-watch" key={`w${entry.newest.id}`}>
+          <li className="log-watch" key={`w${entry.id}`}>
             <span className="log-tick" aria-hidden="true" />
             <span className="what">
-              {entry.count === 1
+              {entry.runs === 1
                 ? 'Checked, nothing changed'
-                : `Checked ${entry.count} times, nothing changed`}
+                : `Checked ${entry.runs} times, nothing changed`}
             </span>
             <span className="when">
-              {entry.count === 1
-                ? humanSince(Date.parse(entry.newest.at), now)
-                : `${humanSince(Date.parse(entry.oldest.at), now)} – ${humanSince(Date.parse(entry.newest.at), now)}`}
+              {entry.runs === 1
+                ? humanSince(Date.parse(entry.newestAt), now)
+                : `${humanSince(Date.parse(entry.oldestAt), now)} – ${humanSince(Date.parse(entry.newestAt), now)}`}
             </span>
           </li>
         ) : (

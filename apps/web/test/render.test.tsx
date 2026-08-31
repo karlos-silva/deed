@@ -12,7 +12,7 @@ import {
   token,
   userId,
 } from '@deed/core'
-import type { AuditRow } from '@deed/db'
+import type { AuditRow, TimelineEntry } from '@deed/db'
 import { AuditLog } from '../src/components/AuditLog'
 import { ResolverMatrix } from '../src/components/ResolverMatrix'
 import { ValueDiff } from '../src/components/ValueDiff'
@@ -93,8 +93,21 @@ describe('the detail page renders every state', () => {
     }
   })
 
-  it('draws the audit log from the rows the database returns', () => {
-    const html = renderToStaticMarkup(<AuditLog events={events} now={Date.parse(events[0]!.at)} />)
+  it('draws the audit log from the entries the database returns', () => {
+    // `audit_timeline` hands back entries, not rows: a run of identical checks
+    // is already one watch by the time it reaches the component.
+    const entries: TimelineEntry[] = [
+      ...events.map((event) => ({ kind: 'moment' as const, event })),
+      {
+        kind: 'watch' as const,
+        runs: 12,
+        newestAt: events[0]!.at,
+        oldestAt: events[0]!.at,
+        status: 'verified',
+        id: 99,
+      },
+    ]
+    const html = renderToStaticMarkup(<AuditLog entries={entries} now={Date.parse(events[0]!.at)} />)
     expect(html).toContain('You claimed this domain')
     expect(html).toContain('not looked at yet')
     expect(html).not.toContain('Invalid Date')
@@ -108,7 +121,7 @@ describe('the detail page renders every state', () => {
   })
 
   it('draws an empty log without pretending something happened', () => {
-    const html = renderToStaticMarkup(<AuditLog events={[]} now={T0} />)
+    const html = renderToStaticMarkup(<AuditLog entries={[]} now={T0} />)
     expect(html).toContain('Nothing has happened yet')
   })
 

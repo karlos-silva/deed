@@ -11,7 +11,7 @@ import {
   domainId as asDomainId,
   parseClaim,
 } from '@deed/core'
-import { getDomain, listAudit, loadZone } from '@deed/db'
+import { getDomain, listTimeline, loadZone } from '@deed/db'
 import type { SandboxZone } from '@deed/dns'
 import { session } from '@/lib/session'
 import { claimGuidance, humanSince, humanUntil, recordGuidance } from '@/lib/copy'
@@ -53,7 +53,7 @@ export default async function DomainPage({ params }: { params: Promise<{ id: str
   const value = token === null ? null : expectedValue(token)
 
   const [audit, zone] = await Promise.all([
-    listAudit(current.db, domain.id, { limit: 25 }),
+    listTimeline(current.db, domain.id, { limit: 20 }),
     domain.isSandbox
       ? (loadZone(current.db, domain.id) as Promise<SandboxZone | null>)
       : Promise.resolve(null),
@@ -199,7 +199,7 @@ export default async function DomainPage({ params }: { params: Promise<{ id: str
             <span className="t-small subtle">newest first</span>
           </div>
           <div className="card-body">
-            <AuditLog events={audit.events} now={clock} />
+            <AuditLog entries={audit.entries} now={clock} />
           </div>
         </section>
 

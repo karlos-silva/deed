@@ -12,7 +12,7 @@ import {
   token,
   userId,
 } from '@deed/core'
-import type { AuditRow } from '@deed/db'
+import type { AuditRow, TimelineEntry } from '@deed/db'
 import { claimGuidance, endedHeadline, recordGuidance } from '@/lib/copy'
 import { AuditLog } from '@/components/AuditLog'
 import { ClaimBadge, RecordBadge } from '@/components/StatusBadge'
@@ -159,11 +159,37 @@ const event = (id: number, over: Partial<AuditRow>): AuditRow => ({
 })
 
 /** The log exactly as the user photographed it: fourteen identical rows. */
-const NOISY: AuditRow[] = [
-  ...Array.from({ length: 14 }, (_, i) => event(i + 1, {})),
-  event(15, { kind: 'state_changed', level: 'claim', from_status: 'pending', to_status: 'verified' }),
-  event(16, { kind: 'state_changed', level: 'record', from_status: 'absent', to_status: 'verified' }),
-  event(20, { kind: 'claim_created', actor: 'user', to_status: 'pending' }),
+// What `audit_timeline` returns for a claim that was made, verified, and then
+// watched: the run is one entry, not fourteen rows, and it is collapsed before
+// the page limit so the two moments are still here.
+const NOISY: TimelineEntry[] = [
+  {
+    kind: 'watch',
+    runs: 14,
+    newestAt: new Date(T0).toISOString(),
+    oldestAt: new Date(T0 - 46_800_000).toISOString(),
+    status: 'verified',
+    id: 14,
+  },
+  {
+    kind: 'moment',
+    event: event(15, {
+      kind: 'state_changed',
+      level: 'claim',
+      from_status: 'pending',
+      to_status: 'verified',
+    }),
+  },
+  {
+    kind: 'moment',
+    event: event(16, {
+      kind: 'state_changed',
+      level: 'record',
+      from_status: 'absent',
+      to_status: 'verified',
+    }),
+  },
+  { kind: 'moment', event: event(20, { kind: 'claim_created', actor: 'user', to_status: 'pending' }) },
 ]
 
 export default function DesignGallery() {
@@ -242,11 +268,11 @@ export default function DesignGallery() {
         })}
 
         <Section title="The audit log, as reported">
-          <AuditLog events={NOISY} now={T0} />
+          <AuditLog entries={NOISY} now={T0} />
         </Section>
 
         <Section title="The audit log, empty">
-          <AuditLog events={[]} now={T0} />
+          <AuditLog entries={[]} now={T0} />
         </Section>
 
         <Section title="First run">
