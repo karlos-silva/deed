@@ -192,6 +192,13 @@ export type TimelineEntry =
       readonly oldestAt: string
       readonly status: string | null
       readonly id: number
+      /**
+       * The newest check in the run. Every check in a run shares one status by
+       * construction, so expanding to all of them would print the same line n
+       * times; the last one's resolver answers are the only part that is worth
+       * opening, and `audit_timeline` already returns them.
+       */
+      readonly evidence: AuditRow['evidence']
     }
 
 export type Timeline = {
@@ -226,6 +233,7 @@ export async function listTimeline(
         oldestAt: row.oldest_at,
         status: row.to_status,
         id: row.id,
+        evidence: row.evidence as AuditRow['evidence'],
       }
     }
     return {

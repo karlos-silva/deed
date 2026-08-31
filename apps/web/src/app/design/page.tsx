@@ -171,6 +171,7 @@ const NOISY: TimelineEntry[] = [
     oldestAt: new Date(T0 - 46_800_000).toISOString(),
     status: 'verified',
     id: 14,
+    evidence: null,
   },
   {
     kind: 'moment',
@@ -281,7 +282,7 @@ export default function DesignGallery() {
             host="_deed-challenge.demo"
             suffix=".karlos.dev"
             value={VALUE}
-            hostLabel="Host"
+            hostLabel="Host / Name"
             valueLabel="Value"
           />
           <p className="t-small subtle" style={{ marginTop: 'var(--space-3)' }}>

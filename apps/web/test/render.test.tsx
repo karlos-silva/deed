@@ -106,6 +106,7 @@ describe('the detail page renders every state', () => {
         oldestAt: events[0]!.at,
         status: 'verified',
         id: 99,
+        evidence: null,
       },
     ]
     const html = renderToStaticMarkup(<AuditLog entries={entries} now={Date.parse(events[0]!.at)} />)
@@ -119,6 +120,12 @@ describe('the detail page renders every state', () => {
     // A transition carries a tone; a routine check does not pretend to be one.
     expect(html).toMatch(/log-moment" data-state="/)
     expect(html).toContain('log-watch')
+
+    // A run of identical checks names the status that held. "Nothing changed"
+    // alone made the reader supply the subject, and the one they supplied was
+    // that the interesting events had been hidden.
+    expect(html).toContain('Checked 12 times — still verified')
+    expect(html).not.toContain('nothing changed')
   })
 
   it('draws an empty log without pretending something happened', () => {

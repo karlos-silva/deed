@@ -140,13 +140,6 @@ const PROVIDERS: readonly Signature[] = [
   },
 ]
 
-/** Generic labels for an unrecognised zone — never a guess. */
-export const UNKNOWN_PROVIDER = {
-  hostLabel: 'Host',
-  valueLabel: 'Value',
-  relativeHost: true,
-} as const
-
 export function providerFromNameservers(nameservers: readonly string[]): Provider | null {
   const lowered = nameservers.map((ns) => ns.replace(/\.$/, '').toLowerCase())
   for (const { match, provider } of PROVIDERS) {

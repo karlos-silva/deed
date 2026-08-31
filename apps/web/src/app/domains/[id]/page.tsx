@@ -186,6 +186,32 @@ export default async function DomainPage({ params }: { params: Promise<{ id: str
           </Suspense>
         )}
 
+        {/* Directly under the record it replaces, not in the destructive
+            footer. Rotation is two-part — retire the old value AND receive the
+            new one — and none of the eight products surveyed strands it away
+            from the value it hands back: Stripe, Supabase, Vercel and GitHub
+            all keep it on the page that shows the credential. It is also
+            routine, so it keeps the default button variant; the only red on
+            this page belongs to Release. */}
+        {token !== null && (
+          <section className="card">
+            <div className="card-header">
+              <h2 className="t-section">Rotate the token</h2>
+            </div>
+            <div className="card-body card-action">
+              <p className="t-small subtle">
+                If this token leaked — a public gist, a screenshot — replace it. The new value
+                appears in the record above, and the old one keeps being tolerated only until its
+                cache clears, then stops proving anything. You keep the domain.
+              </p>
+              <form action={rotateToken}>
+                <input type="hidden" name="id" value={domain.id} />
+                <SubmitButton pendingLabel="Issuing…">Issue a new token</SubmitButton>
+              </form>
+            </div>
+          </section>
+        )}
+
         {/* A closed claim has no token, so the Value field would render blank
             with nothing to explain it, and every write would run a real check
             against a claim that is finished. */}
@@ -208,7 +234,7 @@ export default async function DomainPage({ params }: { params: Promise<{ id: str
             <div className="card-header">
               <h2 className="t-section">This claim is closed</h2>
             </div>
-            <div className="card-body stack-3">
+            <div className="card-body card-action">
               <p className="t-small subtle">
                 {hiddenAt === null
                   ? 'Nothing here can change again. You can take it off your list without losing any of this — the log stays, at this address.'
@@ -225,29 +251,6 @@ export default async function DomainPage({ params }: { params: Promise<{ id: str
                   <SubmitButton pendingLabel="Restoring…">Restore to list</SubmitButton>
                 </form>
               )}
-            </div>
-          </section>
-        )}
-
-        {/* Next to the thing it acts on, and named after the verb. Not one of
-            the eight products surveyed puts a credential rotation inside a
-            danger or delete section — they keep it beside the value it
-            replaces, because that is what the user needs to see. */}
-        {token !== null && (
-          <section className="card">
-            <div className="card-header">
-              <h2 className="t-section">Rotate the token</h2>
-            </div>
-            <div className="card-body card-action">
-              <p className="t-small subtle">
-                If this token leaked — a public gist, a screenshot — replace it. The old value keeps
-                being tolerated only until its cache clears, then stops proving anything. You keep
-                the domain.
-              </p>
-              <form action={rotateToken}>
-                <input type="hidden" name="id" value={domain.id} />
-                <SubmitButton pendingLabel="Issuing…">Issue a new token</SubmitButton>
-              </form>
             </div>
           </section>
         )}

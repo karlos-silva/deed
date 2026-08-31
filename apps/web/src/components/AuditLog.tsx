@@ -19,16 +19,11 @@ export function AuditLog({ entries, now }: { entries: TimelineEntry[]; now: numb
         entry.kind === 'watch' ? (
           <li className="log-watch" key={`w${entry.id}`}>
             <span className="log-tick" aria-hidden="true" />
-            <span className="what">
-              {entry.runs === 1
-                ? 'Checked, nothing changed'
-                : `Checked ${entry.runs} times, nothing changed`}
-            </span>
+            <span className="what">{`Checked ${entry.runs} times — ${held(entry.status)}`}</span>
             <span className="when">
-              {entry.runs === 1
-                ? humanSince(Date.parse(entry.newestAt), now)
-                : `${humanSince(Date.parse(entry.oldestAt), now)} – ${humanSince(Date.parse(entry.newestAt), now)}`}
+              {`${humanSince(Date.parse(entry.oldestAt), now)} – ${humanSince(Date.parse(entry.newestAt), now)}`}
             </span>
+            <Evidence evidence={entry.evidence} summary="What the last of them saw" />
           </li>
         ) : (
           <li className="log-moment" data-state={toneOf(entry.event)} key={entry.event.id}>
@@ -40,7 +35,10 @@ export function AuditLog({ entries, now }: { entries: TimelineEntry[]; now: numb
                 <span aria-hidden="true"> · </span>
                 {actorPhrase(entry.event.actor)}
               </p>
-              {entry.event.evidence !== null && <Evidence event={entry.event} />}
+              <Evidence
+                evidence={entry.event.evidence}
+                summary="What each resolver answered"
+              />
             </div>
           </li>
         ),
@@ -50,13 +48,19 @@ export function AuditLog({ entries, now }: { entries: TimelineEntry[]; now: numb
 }
 
 /** A verdict the user can audit is a verdict they can trust (prd §3.4). */
-function Evidence({ event }: { event: AuditRow }) {
-  const answers = event.evidence?.answers ?? []
+function Evidence({
+  evidence,
+  summary,
+}: {
+  evidence: AuditRow['evidence']
+  summary: string
+}) {
+  const answers = evidence?.answers ?? []
   if (answers.length === 0) return null
 
   return (
     <details className="log-evidence">
-      <summary>What each resolver answered</summary>
+      <summary>{summary}</summary>
       <ul>
         {answers.map((answer) => (
           <li key={answer.resolver}>
@@ -73,6 +77,38 @@ function Evidence({ event }: { event: AuditRow }) {
       </ul>
     </details>
   )
+}
+
+/**
+ * What a run of identical checks is evidence of. A bare "nothing changed" makes
+ * the reader supply the subject themselves, and the one they supply is usually
+ * the wrong one — the whole complaint about this row was that it read as if the
+ * interesting events had gone missing. Naming the status that held turns the
+ * line from an absence into a statement, which is what Sentry does when it
+ * promotes a repeated event's count next to the state it is stuck in.
+ */
+const held = (status: string | null): string => {
+  switch (status) {
+    case 'verified':
+      return 'still verified'
+    case 'absent':
+      return 'still not found'
+    case 'mismatch':
+      return 'still the wrong value'
+    case 'propagating':
+      return 'still spreading'
+    case 'zone_error':
+      return 'their zone still failing'
+    case 'check_failed':
+      return 'our lookup still failing'
+    case 'degraded':
+      return 'still at risk'
+    // A run with no recorded status has nothing to name, so it keeps the plain
+    // wording rather than inventing a subject.
+    case null:
+    default:
+      return 'nothing changed'
+  }
 }
 
 function describe(event: AuditRow): string {

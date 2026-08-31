@@ -197,40 +197,6 @@
   .domains .created { display: none; }
 }
 
-/* ---------------------------------------------------------- the record --- */
-
-.record {
-  display: grid;
-  grid-template-columns: 88px 1fr auto;
-  gap: var(--space-2) var(--space-4);
-  align-items: start;
-  padding: var(--space-4);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  background: var(--bg);
-}
-.record + .record { margin-top: var(--space-3); }
-.record dt {
-  font-size: var(--text-xs);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-  color: var(--fg-subtle);
-  padding-top: 2px;
-}
-.record dd {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  line-height: var(--lh-base);
-  color: var(--fg);
-  overflow-wrap: anywhere;
-}
-
-@media (max-width: 560px) {
-  .record { grid-template-columns: 1fr auto; }
-  .record dt { grid-column: 1 / -1; padding-top: var(--space-2); }
-}
-
 /* ---------------------------------------------------------- the matrix --- */
 
 /* Three independent caches answering the same question. A table, because the
@@ -413,6 +379,9 @@
   margin-left: 0;
 }
 .log-watch .when { font-variant-numeric: tabular-nums; color: var(--fg-subtle); font-size: var(--text-xs); white-space: nowrap; }
+/* The disclosure drops to its own row, aligned with the sentence rather than
+   the tick, so a watch stays one line until it is opened. */
+.log-watch .log-evidence { grid-column: 2 / -1; margin-top: var(--space-1); }
 
 .log-evidence { margin-top: var(--space-2); }
 .log-evidence summary {
@@ -478,7 +447,6 @@
 .card-danger .card-header { border-bottom-color: var(--red-border); }
 .card-danger .card-header .t-section { color: var(--red-fg); }
 
-.grid-2 { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 
 /* --- Toasts --------------------------------------------------------------
    sonner is rendered unstyled, because its own chrome is light and rounded in
@@ -575,10 +543,12 @@
 .dns-record tbody tr:last-child td:last-child { border-bottom-right-radius: var(--radius-md); }
 
 .dns-record .type { width: 1%; white-space: nowrap; color: var(--fg-2); font-family: var(--font-mono); }
-.dns-record .host, .dns-record .value {
-  display: flex; align-items: flex-start; gap: var(--space-2); border-top: none;
-}
-.dns-record .host .t-mono, .dns-record .value .t-mono {
+/* The flex sits on a div inside the cell, never on the `td` itself. A `td`
+   set to `display: flex` stops being a table-cell, so the browser wraps it in
+   an anonymous one and computes the column width against a box carrying none
+   of the padding or borders declared above. */
+.dns-record .cell { display: flex; align-items: flex-start; gap: var(--space-2); }
+.dns-record .cell .t-mono {
   flex: 1; min-width: 0; overflow-wrap: anywhere; line-height: var(--lh-md);
 }
 

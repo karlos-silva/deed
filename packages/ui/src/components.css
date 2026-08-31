@@ -164,17 +164,13 @@ tr.row-error   td:first-child { box-shadow: inset 2px 0 0 var(--red), inset 0 -1
 tr.row-warn    td:first-child { box-shadow: inset 2px 0 0 var(--yellow-fg); }
 tr.row-ok      td:first-child { box-shadow: inset 2px 0 0 var(--green-fg); }
 
-/* --- Value / copy field ------------------------------------------------- */
-.value {
-  display: inline-flex; align-items: center; gap: var(--space-2);
-  max-width: 100%;
-}
-.value code {
-  font-family: var(--font-mono); font-size: var(--text-base);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.value .copy { opacity: 0; transition: opacity var(--dur-fast) var(--ease); }
-tr:hover .value .copy, .value:hover .copy, .value:focus-within .copy { opacity: 1; }
+/* The generic `.value` field that used to live here was written for markup that
+   no longer exists — a <code> clipped with an ellipsis, and a copy button held
+   at `opacity: 0` until the row was hovered. Its only remaining match was the
+   record table's `td.value`, where it did real damage: it took the cell out of
+   the table's column sizing by making it `inline-flex`, and it hid the single
+   most important control on the page from anyone not using a mouse. The record
+   table styles itself in app.css; nothing else wanted these rules. */
 
 /* --- Form --------------------------------------------------------------- */
 .field { display: grid; gap: var(--space-2); }

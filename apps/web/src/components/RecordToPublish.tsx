@@ -147,15 +147,19 @@ export function RecordTable({
           <tr>
             <td className="type">TXT</td>
             <td className="host">
-              <span className="t-mono">
-                {host}
-                {suffix !== null && <span className="zone-suffix">{suffix}</span>}
-              </span>
-              <CopyButton value={host} label="host" compact />
+              <div className="cell">
+                <span className="t-mono">
+                  {host}
+                  {suffix !== null && <span className="zone-suffix">{suffix}</span>}
+                </span>
+                <CopyButton value={host} label="host" compact />
+              </div>
             </td>
             <td className="value">
-              <span className="t-mono">{value}</span>
-              <CopyButton value={value} label="value" compact />
+              <div className="cell">
+                <span className="t-mono">{value}</span>
+                <CopyButton value={value} label="value" compact />
+              </div>
             </td>
           </tr>
         </tbody>

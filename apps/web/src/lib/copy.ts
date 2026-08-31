@@ -274,8 +274,15 @@ export const causeWaitingHelps = (cause: MismatchCause): boolean => {
 
 export const challengeHostOf = (domain: Domain): string => `_deed-challenge.${domain.name}`
 
+/**
+ * When preflight names the provider we print that provider's own field names,
+ * which is what every survey source solves in a troubleshooting paragraph
+ * instead. When it does not, we hedge: `Host / Name` is the header the careful
+ * products ship, and the ones that hedged were right to — the host column is
+ * called Name, Host or Hostname depending on whose panel you open.
+ */
 export const fieldLabels = (provider: Provider | null) => ({
-  host: provider?.hostLabel ?? 'Host',
+  host: provider?.hostLabel ?? 'Host / Name',
   value: provider?.valueLabel ?? 'Value',
   relativeHost: provider?.relativeHost ?? true,
   name: provider?.name ?? null,
