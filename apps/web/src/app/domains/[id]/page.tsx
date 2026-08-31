@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import {
@@ -23,24 +24,18 @@ import { ValueDiff } from '@/components/ValueDiff'
 import { AuditLog } from '@/components/AuditLog'
 import { SandboxZonePanel } from '@/components/SandboxZonePanel'
 import { Footer } from '@/components/Footer'
+import { Notices } from '@/components/Notices'
 import { TopBar } from '@/components/TopBar'
 import { checkNow, releaseDomain, removeFromList, restoreToList, rotateToken } from '../actions'
 import { ReleaseDialog } from '@/components/ReleaseDialog'
 
 export const dynamic = 'force-dynamic'
 
-export default async function DomainPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ id: string }>
-  searchParams: Promise<{ notice?: string }>
-}) {
+export default async function DomainPage({ params }: { params: Promise<{ id: string }> }) {
   const current = await session()
   if (current === null) redirect('/')
 
   const { id } = await params
-  const { notice } = await searchParams
   const found = await getDomain(current.db, asDomainId(id))
   if (found === null) notFound()
 
@@ -83,6 +78,9 @@ export default async function DomainPage({
   return (
     <div className="shell">
       <TopBar email={current.email} />
+      <Suspense fallback={null}>
+        <Notices />
+      </Suspense>
 
       <main className="main stack-6">
         <div className="page-head">
@@ -121,12 +119,6 @@ export default async function DomainPage({
             </form>
           </div>
         </div>
-
-        {notice !== undefined && (
-          <div className="callout callout-info" role="status">
-            {notice}
-          </div>
-        )}
 
         {claim !== null && (
           <section className={`callout callout-${claim.tone === 'problem' ? 'danger' : 'info'}`}>

@@ -50,9 +50,41 @@ const text = (form: FormData, key: string, fallback = ''): string => {
   return typeof value === 'string' ? value : fallback
 }
 
-const back: (id: DomainId, notice?: string) => never = (id, notice) => {
+/**
+ * What to say once the redirect lands. It travels in the query string because a
+ * server action's only channel to the next render is the URL — but the client
+ * strips it the moment it has been shown, so it cannot survive a reload the way
+ * the old `?notice=` callout did.
+ */
+type Toast = {
+  readonly message: string
+  readonly tone?: 'ok' | 'danger'
+  /** Offered when the action is genuinely reversible, and never when it is not. */
+  readonly undo?: { readonly kind: 'restore' | 'remove'; readonly id: DomainId }
+}
+
+const toastQuery = (toast: Toast): string => {
+  const params = new URLSearchParams({ toast: toast.message })
+  if (toast.tone !== undefined) params.set('tone', toast.tone)
+  if (toast.undo !== undefined) {
+    params.set('undo', toast.undo.kind)
+    params.set('undoId', toast.undo.id)
+  }
+  return params.toString()
+}
+
+const back: (id: DomainId, notice?: string, tone?: Toast['tone']) => never = (id, notice, tone) => {
   revalidatePath(`/domains/${id}`)
-  redirect(notice === undefined ? `/domains/${id}` : `/domains/${id}?notice=${encodeURIComponent(notice)}`)
+  redirect(
+    notice === undefined
+      ? `/domains/${id}`
+      : `/domains/${id}?${toastQuery({ message: notice, ...(tone !== undefined && { tone }) })}`,
+  )
+}
+
+const toList: (toast: Toast) => never = (toast) => {
+  revalidatePath('/domains')
+  redirect(`/domains?${toastQuery(toast)}`)
 }
 
 export async function claimDomain(formData: FormData): Promise<void> {
@@ -227,12 +259,12 @@ export async function releaseDomain(formData: FormData): Promise<void> {
   if (!result.applied) back(id, 'Something else changed this domain first. Nothing was released.')
 
   void userId
-  revalidatePath('/domains')
-  redirect(
-    `/domains?notice=${encodeURIComponent(
-      `${stored.domain.name} released. The name is free for anyone to claim again — its history is under Removed.`,
-    )}`,
-  )
+  // No undo: the name went back to the pool as this committed, and somebody else
+  // may already be proving it. A button promising otherwise would be a lie.
+  toList({
+    message: `${stored.domain.name} released. The name is free for anyone to claim again.`,
+    tone: 'danger',
+  })
 }
 
 /**
@@ -258,19 +290,21 @@ async function setListed(formData: FormData, listed: boolean): Promise<void> {
   if (listed === (stored.hiddenAt === null)) redirect(listed ? '/domains?show=removed' : '/domains')
 
   if (!listed && !isTerminal(stored.domain.ownership)) {
-    redirect(
-      `/domains?error=${encodeURIComponent('A live claim stays on the list. Release it first.')}`,
-    )
+    toList({ message: 'A live claim stays on the list. Release it first.', tone: 'danger' })
   }
 
   await setHidden(db, id, !listed, now())
-  revalidatePath('/domains')
-  redirect(
+  // Both directions are one click from being taken back, so both offer it.
+  toList(
     listed
-      ? `/domains?notice=${encodeURIComponent(`${stored.domain.name} is back on your list.`)}`
-      : `/domains?notice=${encodeURIComponent(
-          `${stored.domain.name} removed from your list. Its history is under Removed.`,
-        )}`,
+      ? {
+          message: `${stored.domain.name} is back on your list.`,
+          undo: { kind: 'remove', id },
+        }
+      : {
+          message: `${stored.domain.name} removed from your list.`,
+          undo: { kind: 'restore', id },
+        },
   )
 }
 

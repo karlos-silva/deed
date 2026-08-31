@@ -464,3 +464,70 @@
 .wrap-anywhere { overflow-wrap: anywhere; }
 .nowrap { white-space: nowrap; }
 .grid-2 { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+
+/* --- Toasts --------------------------------------------------------------
+   sonner is rendered unstyled, because its own chrome is light and rounded in
+   a way that reads as a different product. What follows is the same panel
+   vocabulary as the rest of the app: near-black fill, hairline edge, and a
+   tone carried by one 2px rule down the leading side rather than by tinting
+   the whole surface — a green wash for every success would shout. */
+
+[data-sonner-toaster] {
+  --width: 380px;
+  font-family: var(--font-sans);
+}
+
+.toast {
+  position: relative;
+  display: flex; align-items: center; gap: var(--space-3);
+  width: 100%; padding: var(--space-3) var(--space-4);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 55%), 0 2px 8px rgb(0 0 0 / 45%);
+  overflow: hidden;
+}
+
+/* The tone rule. Inset rather than a border so the panel keeps its geometry. */
+.toast::before {
+  content: ''; position: absolute; inset: 0 auto 0 0; width: 2px;
+  background: var(--fg-subtle);
+}
+.toast[data-type='success']::before { background: var(--green); }
+.toast[data-type='error']::before   { background: var(--red); }
+
+.toast-title {
+  flex: 1; min-width: 0;
+  font-size: var(--text-md); line-height: var(--lh-md);
+  color: var(--fg-2); font-weight: var(--weight-regular);
+}
+
+.toast-action {
+  appearance: none; cursor: pointer; font: inherit; flex: none;
+  padding: var(--space-1) var(--space-3);
+  background: var(--surface-3); color: var(--fg);
+  border: 1px solid var(--border-strong); border-radius: var(--radius-md);
+  font-size: var(--text-sm); font-weight: var(--weight-medium);
+  transition: background var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
+}
+.toast-action:hover { background: var(--surface-1); border-color: var(--fg-faint); }
+
+/* Rising rather than sliding in from the edge: the toast belongs to the page,
+   and a horizontal slide would read as something arriving from outside it. */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes toast-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(6px) scale(0.98); }
+}
+.toast[data-mounted='true']  { animation: toast-in var(--dur-3) var(--ease-out) both; }
+.toast[data-removed='true'],
+.toast[data-swiped-out='true'] { animation: toast-out var(--dur-2) var(--ease) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .toast[data-mounted='true'],
+  .toast[data-removed='true'],
+  .toast[data-swiped-out='true'] { animation: none; }
+}

@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -9,6 +10,7 @@ import { ClaimBadge } from '@/components/StatusBadge'
 import { AddDomainDialog } from '@/components/AddDomainDialog'
 import { NothingClaimedYet } from '@/components/NothingClaimedYet'
 import { RowActions } from '@/components/RowActions'
+import { Notices } from '@/components/Notices'
 import { Footer } from '@/components/Footer'
 import { TopBar } from '@/components/TopBar'
 import { claimDomain, releaseDomain, removeFromList, restoreToList } from './actions'
@@ -18,12 +20,12 @@ export const dynamic = 'force-dynamic'
 export default async function DomainsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; notice?: string; show?: string }>
+  searchParams: Promise<{ error?: string; show?: string }>
 }) {
   const current = await session()
   if (current === null) redirect('/')
 
-  const { error, notice, show } = await searchParams
+  const { error, show } = await searchParams
   const [domains, sweptAt] = await Promise.all([
     listDomains(current.db, current.userId),
     lastSweep(current.db),
@@ -38,18 +40,15 @@ export default async function DomainsPage({
   return (
     <div className="shell">
       <TopBar email={current.email} />
+      <Suspense fallback={null}>
+        <Notices />
+      </Suspense>
 
       <main className="main">
         <div className="page-head">
           <h1 className="t-title">Domains</h1>
           <AddDomainDialog action={claimDomain} {...(error !== undefined && { error })} />
         </div>
-
-        {notice !== undefined && (
-          <p className="callout callout-info" role="status">
-            {notice}
-          </p>
-        )}
 
         {removed.length > 0 && (
           <nav className="tabs" aria-label="Which claims to show">
