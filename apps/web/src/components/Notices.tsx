@@ -31,13 +31,18 @@ export function Notices() {
   // than one. Keying on the message would swallow the second, because the copy
   // is byte-identical.
   const id = params.get('tid')
+  // Not shown as a toast — the banner blooms instead. Read here only so the URL
+  // is cleaned on the first render.
+  const just = params.get('just')
 
   useEffect(() => {
-    if (message === null) return
+    if (message === null && just === null) return
 
     // Cleaned first and unconditionally: an error routed here by some other path
     // used to sit in the address bar forever and re-fire on reload.
     router.replace(pathname as Route, { scroll: false })
+
+    if (message === null) return
 
     // Strict mode mounts effects twice in development. The nonce is what makes
     // two identical messages two toasts; the message is the fallback for any
@@ -66,7 +71,7 @@ export function Notices() {
     else if (tone === 'ok') toast.success(message, options)
     else toast(message, options)
 
-  }, [message, tone, undo, undoId, id, pathname, router, startTransition])
+  }, [message, tone, undo, undoId, id, just, pathname, router, startTransition])
 
   return (
     <Toaster

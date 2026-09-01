@@ -14,7 +14,6 @@ import {
 } from '@deed/core'
 import type { AuditRow, TimelineEntry } from '@deed/db'
 import { AuditLog } from '../src/components/AuditLog'
-import { ResolverMatrix } from '../src/components/ResolverMatrix'
 import { ValueDiff } from '../src/components/ValueDiff'
 import { ClaimBadge, RecordBadge } from '../src/components/StatusBadge'
 import { NothingClaimedYet } from '../src/components/NothingClaimedYet'
@@ -87,7 +86,16 @@ describe('the detail page renders every state', () => {
     for (const record of RECORDS) {
       const d = domain(record)
       const html =
-        renderToStaticMarkup(<ResolverMatrix domain={d} />) +
+        renderToStaticMarkup(
+          <RecordTable
+            host="_deed-challenge.demo"
+            suffix=".karlos.dev"
+            value="deed-challenge=x"
+            hostLabel="Host / Name"
+            valueLabel="Value"
+            domain={d}
+          />,
+        ) +
         renderToStaticMarkup(<RecordBadge record={record} />) +
         renderToStaticMarkup(<ClaimBadge ownership={d.ownership} />)
       expect(html, record.status).toContain('Cloudflare')

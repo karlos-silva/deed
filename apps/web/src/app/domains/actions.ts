@@ -188,6 +188,15 @@ export async function checkNow(formData: FormData): Promise<void> {
 
   await recordLookup(db, userId, 'check_now', id)
   const outcome = await runCheck(db, stored, 'user', at)
+
+  // A manual check redirects, so the one celebratory moment has to survive the
+  // hop. `Notices` strips the parameter on the first render, which is what keeps
+  // a reload or an AutoRefresh tick from replaying it.
+  if (outcome.status === 'applied' && outcome.justVerified) {
+    revalidatePath(`/domains/${id}`)
+    redirect(`/domains/${id}?just=verified`)
+  }
+
   back(
     id,
     outcome.status === 'raced'

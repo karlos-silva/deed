@@ -1,52 +1,19 @@
-import { RESOLVERS, type Domain, type ResolverId } from '@deed/core'
-import { RESOLVER_NAMES, humanTtl } from '@/lib/copy'
+import type { Domain, ResolverId } from '@deed/core'
 
-type Answer = {
+export type Answer = {
   readonly label: string
   readonly state: 'ok' | 'progress' | 'problem' | 'idle'
   readonly ttl: number | null
 }
 
 /**
- * Which resolvers we asked, what each returned, and what we concluded (prd §3.4).
- * A table, because that is what it is: three independent caches answering the
- * same question, and the point is comparing them.
+ * What each resolver said, in the reader's words rather than the wire's.
+ *
+ * This used to sit inside a `ResolverMatrix` component that rendered its own
+ * table. The record table carries those rows now — a record's evidence belongs
+ * to the record — so the component went and the derivation stayed.
  */
-export function ResolverMatrix({ domain, checking }: { domain: Domain; checking?: boolean }) {
-  const answers = answersFor(domain)
-
-  return (
-    <table className={`matrix${checking === true ? ' scanning' : ''}`}>
-      <caption className="sr-only">What each resolver answered</caption>
-      <thead>
-        <tr>
-          <th scope="col">Resolver</th>
-          <th scope="col">Answer</th>
-          <th scope="col" className="num">
-            Cached for
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {RESOLVERS.map((resolver) => {
-          const answer = answers[resolver]
-          return (
-            <tr key={resolver} data-state={answer.state === 'idle' ? undefined : answer.state}>
-              <th scope="row">
-                <span className="mdot" aria-hidden="true" />
-                {RESOLVER_NAMES[resolver]}
-              </th>
-              <td className="said">{answer.label}</td>
-              <td className="num">{answer.ttl === null ? '—' : humanTtl(answer.ttl)}</td>
-            </tr>
-          )
-        })}
-      </tbody>
-    </table>
-  )
-}
-
-function answersFor(domain: Domain): Record<ResolverId, Answer> {
+export function answersFor(domain: Domain): Record<ResolverId, Answer> {
   const record = domain.record
   const idle = (label: string): Answer => ({ label, state: 'idle', ttl: null })
   const all = (answer: Answer): Record<ResolverId, Answer> => ({

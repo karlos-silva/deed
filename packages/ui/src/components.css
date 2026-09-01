@@ -136,7 +136,9 @@ a:hover { text-decoration-color: var(--fg-muted); }
                    background: linear-gradient(90deg, var(--green-bg) 0%, transparent 78%); }
 
 /* --- Table -------------------------------------------------------------- */
-.table-wrap { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+/* `auto` rather than `hidden`: the record table gained a fourth column, and on a
+   narrow screen it has to scroll inside its own box rather than push the body. */
+.table-wrap { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow-x: auto; }
 table.dns { width: 100%; border-collapse: collapse; font-size: var(--text-base); }
 table.dns thead th {
   background: var(--surface-2);

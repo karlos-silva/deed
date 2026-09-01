@@ -1,9 +1,11 @@
-import { CHALLENGE_LABEL, type Domain, type Timestamp } from '@deed/core'
+import { CHALLENGE_LABEL, RESOLVERS, type Domain, type Timestamp } from '@deed/core'
 import { preflight, randomProbeLabel } from '@deed/dns'
 import type { Db } from '@deed/db'
-import { fieldLabels, warningCopy } from '@/lib/copy'
+import { RESOLVER_NAMES, fieldLabels, humanTtl, matrixSummary, warningCopy } from '@/lib/copy'
 import { router } from '@/lib/verification'
 import { CopyButton } from '@/components/CopyButton'
+import { RecordBadge } from '@/components/StatusBadge'
+import { answersFor } from '@/lib/resolvers'
 
 /**
  * The instruction card, held behind its own Suspense boundary because it is the
@@ -57,6 +59,7 @@ export async function RecordToPublish({
           value={value}
           hostLabel={labels.host}
           valueLabel={labels.value}
+          domain={domain}
         />
 
         {zoneInfo?.provider != null && (
@@ -119,6 +122,7 @@ export function RecordTable({
   value,
   hostLabel,
   valueLabel,
+  domain,
 }: {
   host: string
   /**
@@ -132,7 +136,15 @@ export function RecordTable({
   value: string
   hostLabel: string
   valueLabel: string
+  /**
+   * When given, the table also carries the record's status and the evidence
+   * behind it — which is what let the "What your DNS says" card go. Optional so
+   * the table can be rendered and asserted on its own.
+   */
+  domain?: Domain
 }) {
+  const answers = domain === undefined ? null : answersFor(domain)
+
   return (
     <div className="table-wrap">
       <table className="dns-record">
@@ -141,6 +153,11 @@ export function RecordTable({
             <th scope="col">Type</th>
             <th scope="col">{hostLabel}</th>
             <th scope="col">{valueLabel}</th>
+            {domain !== undefined && (
+              <th scope="col" className="status">
+                Status
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -155,14 +172,58 @@ export function RecordTable({
                 <CopyButton value={host} label="host" compact />
               </div>
             </td>
+            {/* Never truncated, in any state. `truncated` is a MismatchCause
+                this product diagnoses — "The panel cut the value short" — so
+                cutting it ourselves would be committing the bug we report, and
+                ValueDiff assumes the whole string is on screen. */}
             <td className="value">
               <div className="cell">
                 <span className="t-mono">{value}</span>
                 <CopyButton value={value} label="value" compact />
               </div>
             </td>
+            {domain !== undefined && (
+              <td className="status">
+                <RecordBadge record={domain.record} />
+              </td>
+            )}
           </tr>
         </tbody>
+
+        {domain !== undefined && answers !== null && (
+          <tbody className="resolvers">
+            <tr className="group">
+              <th colSpan={4} scope="colgroup">
+                {matrixSummary(domain.record)}
+              </th>
+            </tr>
+            <tr className="sub">
+              <th colSpan={2} scope="col">
+                Resolver
+              </th>
+              <th scope="col">Answer</th>
+              <th scope="col" className="num">
+                Cached for
+              </th>
+            </tr>
+            {RESOLVERS.map((resolver) => {
+              const answer = answers[resolver]
+              return (
+                <tr
+                  key={resolver}
+                  {...(answer.state !== 'idle' && { 'data-state': answer.state })}
+                >
+                  <th colSpan={2} scope="row">
+                    <span className="mdot" aria-hidden="true" />
+                    {RESOLVER_NAMES[resolver]}
+                  </th>
+                  <td className="said">{answer.label}</td>
+                  <td className="num">{answer.ttl === null ? '—' : humanTtl(answer.ttl)}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        )}
       </table>
     </div>
   )

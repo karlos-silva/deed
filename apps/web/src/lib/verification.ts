@@ -29,7 +29,18 @@ export function router(db: Db) {
 }
 
 export type CheckOutcome =
-  | { readonly status: 'applied'; readonly stored: StoredDomain }
+  | {
+      readonly status: 'applied'
+      readonly stored: StoredDomain
+      /**
+       * This check is the one that proved it. prd §6.5 asks for one celebratory
+       * moment, and it has to fire on the transition rather than on a clock:
+       * `AutoRefresh` re-renders every 20–45s, so a "verified in the last
+       * minute" window would replay the animation two or three times and "once
+       * per lifecycle" would become a loop.
+       */
+      readonly justVerified: boolean
+    }
   /** Somebody else wrote first. Their observation stands; ours is discarded. */
   | { readonly status: 'raced'; readonly stored: StoredDomain }
   | { readonly status: 'gone' }
@@ -49,12 +60,19 @@ export async function runCheck(
   })
 
   const { next, events } = reduce(read.domain, observation, clock)
-  if (events.length === 0) return { status: 'applied', stored: read }
+  if (events.length === 0) return { status: 'applied', stored: read, justVerified: false }
 
   const result = await applyTransition(db, read, next, events, clock)
   if (result.applied) {
     // A check never changes list membership, so it carries the flag through.
-    return { status: 'applied', stored: { domain: next, version: result.version, hiddenAt: read.hiddenAt } }
+    return {
+      status: 'applied',
+      stored: { domain: next, version: result.version, hiddenAt: read.hiddenAt },
+      justVerified: events.some(
+        (event) =>
+          event.kind === 'state_changed' && event.level === 'claim' && event.to === 'verified',
+      ),
+    }
   }
 
   const fresh = await getDomain(db, read.domain.id)
@@ -66,9 +84,14 @@ export async function revalidateIfDue(
   db: Db,
   stored: StoredDomain,
   clock: Timestamp = now(),
-): Promise<StoredDomain> {
+): Promise<StoredDomain & { justVerified: boolean }> {
   const due = stored.domain.nextCheckAt
-  if (due === null || due > clock) return stored
+  if (due === null || due > clock) return { ...stored, justVerified: false }
   const outcome = await runCheck(db, stored, 'system', clock)
-  return outcome.status === 'gone' ? stored : outcome.stored
+  if (outcome.status === 'gone') return { ...stored, justVerified: false }
+  // The render that performed the transition is the render that celebrates.
+  return {
+    ...outcome.stored,
+    justVerified: outcome.status === 'applied' && outcome.justVerified,
+  }
 }

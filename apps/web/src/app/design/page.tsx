@@ -8,15 +8,18 @@ import {
   days,
   domainId,
   expectedValue,
+  isTerminal,
   plus,
   token,
   userId,
 } from '@deed/core'
 import type { AuditRow, TimelineEntry } from '@deed/db'
 import { claimGuidance, endedHeadline, recordGuidance } from '@/lib/copy'
+import { verdict } from '@/lib/verdict'
+import { DomainMeta } from '@/components/DomainMeta'
+import { VerdictBanner } from '@/components/VerdictBanner'
 import { AuditLog } from '@/components/AuditLog'
 import { ClaimBadge, RecordBadge } from '@/components/StatusBadge'
-import { ResolverMatrix } from '@/components/ResolverMatrix'
 import { ValueDiff } from '@/components/ValueDiff'
 import { TopBar } from '@/components/TopBar'
 import { NothingClaimedYet } from '@/components/NothingClaimedYet'
@@ -223,6 +226,34 @@ export default function DesignGallery() {
           </div>
         </Section>
 
+        <Section title="The one verdict, and the facts above it">
+          {CLAIMS.map(([label, ownership]) => {
+            const d = domain({ status: 'verified', seenBy: [...RESOLVERS], ttl }, ownership)
+            return (
+              <div key={label} className="stack-3" style={{ marginBottom: 'var(--space-6)' }}>
+                <span className="t-small subtle">{label}</span>
+                <DomainMeta domain={d} now={T0} closed={isTerminal(ownership)} />
+                <VerdictBanner verdict={verdict(d)} />
+              </div>
+            )
+          })}
+          <div className="stack-3">
+            <span className="t-small subtle">
+              verified, on the render that proved it — the one celebratory moment (prd §6.5)
+            </span>
+            <VerdictBanner
+              verdict={verdict(
+                domain({ status: 'verified', seenBy: [...RESOLVERS], ttl }, CLAIMS[1]?.[1] ?? {
+                  status: 'verified',
+                  token: TOKEN,
+                  verifiedAt: T0,
+                }),
+                true,
+              )}
+            />
+          </div>
+        </Section>
+
         <Section title="Claim guidance">
           {CLAIMS.map(([label, ownership]) => {
             const guidance = claimGuidance(ownership)
@@ -265,7 +296,14 @@ export default function DesignGallery() {
                 {record.status === 'mismatch' && (
                   <ValueDiff expected={VALUE} observed={`"${VALUE}"`} />
                 )}
-                <ResolverMatrix domain={d} />
+                <RecordTable
+                  host="_deed-challenge.demo"
+                  suffix=".karlos.dev"
+                  value={VALUE}
+                  hostLabel="Host / Name"
+                  valueLabel="Value"
+                  domain={d}
+                />
               </div>
             </section>
           )

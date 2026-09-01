@@ -259,6 +259,26 @@ export function endedHeadline(ownership: OwnershipState): string {
   }
 }
 
+/** The caption over the resolver rows: what the three of them add up to. */
+export function matrixSummary(record: RecordState): string {
+  switch (record.status) {
+    case 'unchecked':
+      return 'No resolver has been asked yet'
+    case 'absent':
+      return 'No resolver has the record'
+    case 'verified':
+      return `All ${record.seenBy.length} resolvers answer with your token`
+    case 'propagating':
+      return `${record.seenBy.length} of 3 resolvers have it so far`
+    case 'mismatch':
+      return 'What each resolver answered, and why it does not count'
+    case 'zone_error':
+      return 'A resolver could not read the zone'
+    case 'check_failed':
+      return 'Our lookup failed — this says nothing about your DNS'
+  }
+}
+
 export const causeWaitingHelps = (cause: MismatchCause): boolean => {
   switch (cause) {
     case 'quoted_value':
