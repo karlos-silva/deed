@@ -17,7 +17,7 @@ import { AuditLog } from '../src/components/AuditLog'
 import { ValueDiff } from '../src/components/ValueDiff'
 import { ClaimBadge, RecordBadge } from '../src/components/StatusBadge'
 import { NothingClaimedYet } from '../src/components/NothingClaimedYet'
-import { RecordTable } from '../src/components/RecordToPublish'
+import { RecordTable, ResolverEvidence } from '../src/components/RecordToPublish'
 
 /**
  * The detail page renders these on every visit, so anything that throws here is
@@ -81,21 +81,38 @@ const events: AuditRow[] = [
   },
 ]
 
+describe('the record table', () => {
+  it('carries the record\'s own status, and only when given a domain', () => {
+    const d = domain({ status: 'verified', seenBy: [...RESOLVERS], ttl })
+    const props = {
+      host: '_deed-challenge.demo',
+      suffix: '.karlos.dev',
+      value: 'deed-challenge=x',
+      hostLabel: 'Host / Name',
+      valueLabel: 'Value',
+    }
+
+    const withDomain = renderToStaticMarkup(<RecordTable {...props} domain={d} />)
+    expect(withDomain).toContain('Status')
+    expect(withDomain).toContain('Verified')
+
+    // The resolver evidence is a table of its own. It briefly shared this one as
+    // a second tbody, and the columns do not mean the same things: "Cached for"
+    // landed under the value and the resolver names were squeezed to two lines.
+    expect(withDomain).not.toContain('Cached for')
+    expect(withDomain).not.toContain('Resolver')
+
+    const alone = renderToStaticMarkup(<RecordTable {...props} />)
+    expect(alone).not.toContain('Status')
+  })
+})
+
 describe('the detail page renders every state', () => {
   it('draws the resolver matrix and both badges for each record state', () => {
     for (const record of RECORDS) {
       const d = domain(record)
       const html =
-        renderToStaticMarkup(
-          <RecordTable
-            host="_deed-challenge.demo"
-            suffix=".karlos.dev"
-            value="deed-challenge=x"
-            hostLabel="Host / Name"
-            valueLabel="Value"
-            domain={d}
-          />,
-        ) +
+        renderToStaticMarkup(<ResolverEvidence domain={d} />) +
         renderToStaticMarkup(<RecordBadge record={record} />) +
         renderToStaticMarkup(<ClaimBadge ownership={d.ownership} />)
       expect(html, record.status).toContain('Cloudflare')

@@ -49,7 +49,9 @@ export async function RecordToPublish({
   return (
     <section className="card">
       <div className="card-header row-between">
-        <h2 className="t-section">The record to publish</h2>
+        <h2 className="t-section">
+          {domain.ownership.status === 'pending' ? 'The record to publish' : 'The record'}
+        </h2>
         <span className="t-small subtle">one TXT record · read-only queries</span>
       </div>
       <div className="card-body">
@@ -61,6 +63,8 @@ export async function RecordToPublish({
           valueLabel={labels.value}
           domain={domain}
         />
+
+        <ResolverEvidence domain={domain} />
 
         {zoneInfo?.provider != null && (
           <p className="t-small subtle" style={{ marginTop: 'var(--space-3)' }}>
@@ -143,8 +147,6 @@ export function RecordTable({
    */
   domain?: Domain
 }) {
-  const answers = domain === undefined ? null : answersFor(domain)
-
   return (
     <div className="table-wrap">
       <table className="dns-record">
@@ -190,30 +192,45 @@ export function RecordTable({
           </tr>
         </tbody>
 
-        {domain !== undefined && answers !== null && (
-          <tbody className="resolvers">
-            <tr className="group">
-              <th colSpan={4} scope="colgroup">
-                {matrixSummary(domain.record)}
-              </th>
-            </tr>
-            <tr className="sub">
-              <th colSpan={2} scope="col">
-                Resolver
-              </th>
+      </table>
+    </div>
+  )
+}
+
+/**
+ * The evidence for the row above it, in its own table.
+ *
+ * It briefly shared the record's `<table>` as a second `<tbody>`, which was a
+ * mistake you can only see rendered: the two have different columns — Type /
+ * Host / Value / Status against Resolver / Answer / Cached for — so colSpan
+ * pushed "4 hours" out under the value and squeezed the resolver names into a
+ * two-line column. Same card, because a record's evidence belongs to the
+ * record; separate tables, because they are not the same shape.
+ */
+export function ResolverEvidence({ domain }: { domain: Domain }) {
+  const answers = answersFor(domain)
+
+  return (
+    <div className="evidence">
+      <p className="t-small subtle">{matrixSummary(domain.record)}</p>
+      <div className="table-wrap">
+        <table className="matrix">
+          <caption className="sr-only">What each resolver answered</caption>
+          <thead>
+            <tr>
+              <th scope="col">Resolver</th>
               <th scope="col">Answer</th>
               <th scope="col" className="num">
                 Cached for
               </th>
             </tr>
+          </thead>
+          <tbody>
             {RESOLVERS.map((resolver) => {
               const answer = answers[resolver]
               return (
-                <tr
-                  key={resolver}
-                  {...(answer.state !== 'idle' && { 'data-state': answer.state })}
-                >
-                  <th colSpan={2} scope="row">
+                <tr key={resolver} {...(answer.state !== 'idle' && { 'data-state': answer.state })}>
+                  <th scope="row">
                     <span className="mdot" aria-hidden="true" />
                     {RESOLVER_NAMES[resolver]}
                   </th>
@@ -223,8 +240,8 @@ export function RecordTable({
               )
             })}
           </tbody>
-        )}
-      </table>
+        </table>
+      </div>
     </div>
   )
 }

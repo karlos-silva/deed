@@ -547,38 +547,9 @@
 .dns-record .status { width: 1%; white-space: nowrap; text-align: right; }
 .dns-record thead th.status { text-align: right; }
 
-/* The evidence, as a second body under a caption that says what the three of
-   them add up to. Never behind a click: prd §3.4's "show your work" is
-   discharged here, not in the log. */
-.dns-record .resolvers .group th {
-  padding: var(--space-3) var(--space-3) var(--space-2);
-  text-align: left; font-size: var(--text-xs); font-weight: var(--weight-regular);
-  color: var(--fg-muted); border-top: 1px solid var(--border);
-  border-left: 1px solid var(--border); border-right: 1px solid var(--border);
-}
-.dns-record .resolvers .sub th {
-  padding: 0 var(--space-3) var(--space-2);
-  text-align: left; font-size: var(--text-xs); font-weight: var(--weight-medium);
-  letter-spacing: .04em; text-transform: uppercase; color: var(--fg-subtle);
-  border-left: 1px solid var(--border);
-}
-.dns-record .resolvers .sub th:last-child { border-right: 1px solid var(--border); }
-.dns-record .resolvers tr:not(.group):not(.sub) th,
-.dns-record .resolvers tr:not(.group):not(.sub) td {
-  padding: var(--space-2) var(--space-3);
-  font-size: var(--text-sm); color: var(--fg-2); font-weight: var(--weight-regular);
-  border-left: 1px solid var(--border); border-right: none; border-top: none;
-}
-.dns-record .resolvers tr:not(.group):not(.sub) td:last-child { border-right: 1px solid var(--border); }
-.dns-record .resolvers th[scope='row'] { display: flex; align-items: center; gap: var(--space-2); }
-.dns-record .resolvers .mdot {
-  width: 6px; height: 6px; border-radius: var(--radius-pill);
-  background: var(--state-bd, var(--border-strong)); flex: none;
-}
-.dns-record .resolvers .said { color: var(--fg-muted); }
-.dns-record .resolvers .num { text-align: right; font-variant-numeric: tabular-nums; color: var(--fg-subtle); }
-.dns-record .resolvers tr:last-child th { border-bottom-left-radius: var(--radius-md); }
-.dns-record .resolvers tr:last-child td:last-child { border-bottom-right-radius: var(--radius-md); }
+/* The evidence sits under the record in the same card, with its own table and
+   its own columns — sharing the record's grid put "4 hours" under the value. */
+.evidence { display: grid; gap: var(--space-2); margin-top: var(--space-4); }
 
 .dns-record .type { width: 1%; white-space: nowrap; color: var(--fg-2); font-family: var(--font-mono); }
 /* The flex sits on a div inside the cell, never on the `td` itself. A `td`

@@ -24,7 +24,7 @@ import { ValueDiff } from '@/components/ValueDiff'
 import { TopBar } from '@/components/TopBar'
 import { NothingClaimedYet } from '@/components/NothingClaimedYet'
 import { AddDomainDialog } from '@/components/AddDomainDialog'
-import { RecordTable } from '@/components/RecordToPublish'
+import { RecordTable, ResolverEvidence } from '@/components/RecordToPublish'
 import { claimDomain, releaseDomain, removeFromList, restoreToList } from '@/app/domains/actions'
 import { ReleaseDialog } from '@/components/ReleaseDialog'
 import { RowActions } from '@/components/RowActions'
@@ -296,14 +296,7 @@ export default function DesignGallery() {
                 {record.status === 'mismatch' && (
                   <ValueDiff expected={VALUE} observed={`"${VALUE}"`} />
                 )}
-                <RecordTable
-                  host="_deed-challenge.demo"
-                  suffix=".karlos.dev"
-                  value={VALUE}
-                  hostLabel="Host / Name"
-                  valueLabel="Value"
-                  domain={d}
-                />
+                <ResolverEvidence domain={d} />
               </div>
             </section>
           )
@@ -324,6 +317,7 @@ export default function DesignGallery() {
             value={VALUE}
             hostLabel="Host / Name"
             valueLabel="Value"
+            domain={domain({ status: 'verified', seenBy: [...RESOLVERS], ttl }, CLAIMS[1]?.[1])}
           />
           <p className="t-small subtle" style={{ marginTop: 'var(--space-3)' }}>
             and the same record for a panel that wants the whole name
