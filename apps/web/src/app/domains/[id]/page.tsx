@@ -11,13 +11,12 @@ import {
   domainId as asDomainId,
   parseClaim,
 } from '@deed/core'
-import { getDomain, listTimeline, loadZone } from '@deed/db'
+import { getDomain, loadZone } from '@deed/db'
 import type { SandboxZone } from '@deed/dns'
 import { session } from '@/lib/session'
 import { revalidateIfDue } from '@/lib/verification'
 import { verdict } from '@/lib/verdict'
 import { ValueDiff } from '@/components/ValueDiff'
-import { AuditLog } from '@/components/AuditLog'
 import { DomainMeta } from '@/components/DomainMeta'
 import { VerdictBanner } from '@/components/VerdictBanner'
 import { SandboxZonePanel } from '@/components/SandboxZonePanel'
@@ -37,13 +36,13 @@ export default async function DomainPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ view?: string; just?: string }>
+  searchParams: Promise<{ just?: string }>
 }) {
   const current = await session()
   if (current === null) redirect('/')
 
   const { id } = await params
-  const { view, just } = await searchParams
+  const { just } = await searchParams
   const found = await getDomain(current.db, asDomainId(id))
   if (found === null) notFound()
 
@@ -55,18 +54,9 @@ export default async function DomainPage({
   const value = token === null ? null : expectedValue(token)
   const closed = isTerminal(domain.ownership)
 
-  // A closed claim has no record to publish and nothing left to check, so its
-  // history is not one tab of two — it is the page (S7, D19).
-  const showing = closed || view === 'activity' ? 'activity' : 'records'
-
-  const [audit, zone] = await Promise.all([
-    showing === 'activity'
-      ? listTimeline(current.db, domain.id, { limit: 20 })
-      : Promise.resolve(null),
-    domain.isSandbox
-      ? (loadZone(current.db, domain.id) as Promise<SandboxZone | null>)
-      : Promise.resolve(null),
-  ])
+  const zone = domain.isSandbox
+    ? ((await loadZone(current.db, domain.id)) as SandboxZone | null)
+    : null
 
   const parsedName = parseClaim(domain.name)
   const unicode = parsedName.ok ? parsedName.value.unicode : null
@@ -131,26 +121,10 @@ export default async function DomainPage({
 
         <VerdictBanner verdict={said} />
 
+        {/* A closed claim has no record to publish and nothing left to check.
+            The badge and the meta above say what became of it; there is no
+            second half of the page to switch to. */}
         {!closed && (
-          <nav className="tabs" aria-label="What to show">
-            <Link
-              className="tab"
-              href={`/domains/${domain.id}`}
-              aria-current={showing === 'records' ? 'page' : undefined}
-            >
-              Record
-            </Link>
-            <Link
-              className="tab"
-              href={`/domains/${domain.id}?view=activity`}
-              aria-current={showing === 'activity' ? 'page' : undefined}
-            >
-              Activity
-            </Link>
-          </nav>
-        )}
-
-        {showing === 'records' ? (
           <>
             {offending !== null && value !== null && (
               <ValueDiff expected={value} observed={offending.value} />
@@ -182,20 +156,8 @@ export default async function DomainPage({
             {/* delivery-plan S5: a sandbox domain's page *includes* the simulated
                 zone, clearly labelled. That wording is a MUST about the page, so
                 it does not go behind a click. */}
-            {zone !== null && !closed && (
-              <SandboxZonePanel domain={domain} zone={zone} expected={value} />
-            )}
+            {zone !== null && <SandboxZonePanel domain={domain} zone={zone} expected={value} />}
           </>
-        ) : (
-          <section className="card">
-            <div className="card-header row-between">
-              <h2 className="t-section">Activity</h2>
-              <span className="t-small subtle">newest first</span>
-            </div>
-            <div className="card-body">
-              <AuditLog entries={audit?.entries ?? []} now={clock} />
-            </div>
-          </section>
         )}
       </main>
 

@@ -129,7 +129,7 @@ configuration is *configuration*, not *proof*, and a domain does not stop being
 yours when your SPF is wrong. A second record set would flow through the same
 record lifecycle, the same resolver matrix and the same diagnosis engine without
 adding one new idea. The effort went into pre-flight diagnosis, the resolver
-matrix, rotation, degradation and the audit log instead.
+matrix, rotation and degradation instead.
 
 The seam is real and specified: the state machine is parameterised over the
 record set, so a capability would be a new record spec fed to existing
@@ -233,7 +233,7 @@ watching (D5).
 **The real path is proven, not only the sandbox.** `demo.karlos.dev` was claimed
 through the app and its TXT record published in the real zone; the sweep found
 it at Cloudflare and Google, reached quorum, and moved the claim to `verified`
-with the audit log recording each step and the evidence behind it:
+with the ledger recording each step and the evidence behind it:
 
 ```
 04:31:00.6  state_changed   sweep    record: unchecked → absent

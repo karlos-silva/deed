@@ -177,60 +177,6 @@ export async function applyTransition(
 export type AuditCursor = { readonly at: string; readonly id: number }
 export type AuditPage = { readonly events: AuditRow[]; readonly nextCursor: AuditCursor | null }
 
-/**
- * The log as moments rather than rows. `audit_timeline` decides what earns a
- * line before the page limit is applied — routine checks earn none, so a domain
- * swept every 30 seconds cannot push the claim and the verification pages back
- * behind nothing (0007, 0009).
- */
-export type Timeline = {
-  readonly entries: AuditRow[]
-  readonly nextCursor: AuditCursor | null
-}
-
-export async function listTimeline(
-  db: Db,
-  id: DomainId,
-  options: { before?: AuditCursor; limit?: number } = {},
-): Promise<Timeline> {
-  const limit = options.limit ?? 20
-  const before = options.before
-  const { data, error } = await db.rpc('audit_timeline', {
-    p_domain_id: id,
-    // One more than asked, so the presence of a next page is a fact rather than
-    // a guess from a full page.
-    p_limit: limit + 1,
-    p_before: before?.at ?? null,
-    p_before_id: before?.id ?? null,
-  })
-  if (error) throw new Error(error.message)
-
-  const rows = data.slice(0, limit)
-  const entries = rows.map((row) =>
-    // The function returns the fields a moment is rendered from; owner and name
-    // are on the row it came from and nothing on screen reads them.
-    asAuditRow({
-      id: row.id,
-      domain_id: id,
-      owner_id: '',
-      domain_name: '',
-      at: row.at,
-      kind: row.kind,
-      actor: row.actor,
-      level: row.level,
-      from_status: row.from_status,
-      to_status: row.to_status,
-      evidence: row.evidence,
-    }),
-  )
-
-  const last = entries.at(-1)
-  return {
-    entries,
-    nextCursor: data.length > limit && last !== undefined ? { at: last.at, id: last.id } : null,
-  }
-}
-
 export async function listAudit(
   db: Db,
   id: DomainId,

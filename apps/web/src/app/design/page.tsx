@@ -13,12 +13,10 @@ import {
   token,
   userId,
 } from '@deed/core'
-import type { AuditRow } from '@deed/db'
 import { claimGuidance, endedHeadline, recordGuidance } from '@/lib/copy'
 import { verdict } from '@/lib/verdict'
 import { DomainMeta } from '@/components/DomainMeta'
 import { VerdictBanner } from '@/components/VerdictBanner'
-import { AuditLog } from '@/components/AuditLog'
 import { ClaimBadge, RecordBadge } from '@/components/StatusBadge'
 import { ValueDiff } from '@/components/ValueDiff'
 import { TopBar } from '@/components/TopBar'
@@ -147,34 +145,6 @@ const CLAIMS: [string, OwnershipState][] = [
   ['revoked · claimed_by_other', { status: 'revoked', reason: 'claimed_by_other' }],
 ]
 
-const event = (id: number, over: Partial<AuditRow>): AuditRow => ({
-  id,
-  domain_id: 'd',
-  owner_id: 'u',
-  domain_name: 'demo.karlos.dev',
-  at: new Date(T0 - id * 90_000).toISOString(),
-  kind: 'check_completed',
-  actor: 'sweep',
-  level: null,
-  from_status: null,
-  to_status: 'verified',
-  evidence: null,
-  ...over,
-})
-
-// What `audit_timeline` returns for a claim that was made, verified, and then
-// watched for three days: two lines. The hundred-odd checks in between are in
-// the ledger, and none of them is news.
-const LOG: AuditRow[] = [
-  event(15, {
-    kind: 'state_changed',
-    level: 'claim',
-    from_status: 'pending',
-    to_status: 'verified',
-  }),
-  event(20, { kind: 'claim_created', actor: 'user', to_status: 'pending' }),
-]
-
 export default function DesignGallery() {
   if (process.env.NODE_ENV === 'production') notFound()
 
@@ -277,14 +247,6 @@ export default function DesignGallery() {
             </section>
           )
         })}
-
-        <Section title="The audit log, as reported">
-          <AuditLog entries={LOG} now={T0} />
-        </Section>
-
-        <Section title="The audit log, empty">
-          <AuditLog entries={[]} now={T0} />
-        </Section>
 
         <Section title="The record to publish">
           <RecordTable

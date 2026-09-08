@@ -448,145 +448,7 @@ describe('the write path has exactly one shape', () => {
   })
 })
 
-describe('the log is paged in moments, not in rows', () => {
-  it('A page of routine checks cannot bury the moments', async () => {
-    const id = await claim(alice, 'noisy.com', TOKEN_A)
-    await transition(alice, id, 0, verifiedOwnership(TOKEN_A), [
-      { kind: 'state_changed', actor: 'user', level: 'claim', from: 'pending', to: 'verified' },
-    ])
-
-    // What a sweep every 30 seconds actually produces. Far more than one page.
-    await db.admin.query(
-      `insert into public.audit_events (domain_id, owner_id, domain_name, at, kind, actor, level, to_status)
-       select $1, $2, 'noisy.com', now() + (n || ' seconds')::interval,
-              'check_completed', 'sweep', 'record', 'verified'
-         from generate_series(1, 60) as n`,
-      [id, alice],
-    )
-
-    const rows = await db.as(alice).query<{ kind: string }>(
-      `select kind from public.audit_timeline($1, 20)`,
-      [id],
-    )
-
-    // Sixty identical checks are no lines at all, and they are dropped before
-    // the limit — so the moments are still on the first page rather than five
-    // pages back behind nothing.
-    const kinds = rows.map((r) => r.kind)
-    expect(kinds).not.toContain('check_completed')
-    expect(kinds).toContain('claim_created')
-    expect(kinds).toContain('state_changed')
-  })
-
-  it('A first look that finds a fault is still news', async () => {
-    const id = await claim(alice, 'wrongvalue.com', TOKEN_A)
-    await db.admin.query(
-      `insert into public.audit_events
-         (domain_id, owner_id, domain_name, at, kind, actor, level, from_status, to_status)
-       values
-         ($1, $2, 'wrongvalue.com', now() + interval '1 s', 'check_completed', 'sweep', 'record', null, 'mismatch'),
-         ($1, $2, 'wrongvalue.com', now() + interval '1 s', 'state_changed',   'sweep', 'record', 'unchecked', 'mismatch')`,
-      [id, alice],
-    )
-
-    const rows = await db.as(alice).query<{ kind: string; to_status: string }>(
-      `select kind, to_status from public.audit_timeline($1, 20)`,
-      [id],
-    )
-
-    // Nothing else carries it now that runs of checks earn no line: without
-    // this the owner's log would say they claimed a domain and nothing more,
-    // while the record sat wrong.
-    expect(rows.map((r) => [r.kind, r.to_status])).toEqual([
-      ['state_changed', 'mismatch'],
-      ['claim_created', 'pending'],
-    ])
-  })
-
-  it('A first look that finds nothing yet is not news', async () => {
-    const id = await claim(alice, 'patient.com', TOKEN_A)
-    await db.admin.query(
-      `insert into public.audit_events
-         (domain_id, owner_id, domain_name, at, kind, actor, level, from_status, to_status)
-       values
-         ($1, $2, 'patient.com', now() + interval '1 s', 'check_completed', 'sweep', 'record', null, 'absent'),
-         ($1, $2, 'patient.com', now() + interval '1 s', 'state_changed',   'sweep', 'record', 'unchecked', 'absent')`,
-      [id, alice],
-    )
-
-    const rows = await db.as(alice).query<{ kind: string }>(
-      `select kind from public.audit_timeline($1, 20)`,
-      [id],
-    )
-
-    // "We have not looked" to "not there yet" is the state the instructions on
-    // screen already describe. The claim is the only thing that happened.
-    expect(rows.map((r) => r.kind)).toEqual(['claim_created'])
-  })
-
-  it('The log stays the owner\'s alone', async () => {
-    const hers = await claim(alice, 'private.com', TOKEN_A)
-
-    // security invoker, so audit_owner_select is what filters it — not a
-    // re-implementation of the same rule inside the function.
-    const bobSees = await db.as(bob).query(`select kind from public.audit_timeline($1, 20)`, [hers])
-    expect(bobSees).toHaveLength(0)
-  })
-})
-
-describe('one instant is one line', () => {
-  it('A check that changes something does not report itself three times', async () => {
-    const id = await claim(alice, 'threeliner.com', TOKEN_A)
-
-    // Exactly what a real verification writes: the check, the record moving,
-    // and the claim moving — one transaction, one timestamp, one event to a
-    // reader.
-    await db.admin.query(
-      `insert into public.audit_events
-         (domain_id, owner_id, domain_name, at, kind, actor, level, from_status, to_status)
-       values
-         ($1, $2, 'threeliner.com', now() + interval '1 s', 'check_completed', 'sweep', 'record', null, 'absent'),
-         ($1, $2, 'threeliner.com', now() + interval '1 s', 'state_changed',   'sweep', 'record', 'unchecked', 'absent'),
-         ($1, $2, 'threeliner.com', now() + interval '2 s', 'check_completed', 'sweep', 'record', null, 'absent'),
-         ($1, $2, 'threeliner.com', now() + interval '3 s', 'check_completed', 'sweep', 'record', null, 'verified'),
-         ($1, $2, 'threeliner.com', now() + interval '3 s', 'state_changed',   'sweep', 'record', 'absent', 'verified'),
-         ($1, $2, 'threeliner.com', now() + interval '3 s', 'state_changed',   'sweep', 'claim',  'pending', 'verified'),
-         ($1, $2, 'threeliner.com', now() + interval '4 s', 'check_completed', 'sweep', 'record', null, 'verified')`,
-      [id, alice],
-    )
-
-    const rows = await db.as(alice).query<{ kind: string; level: string | null }>(
-      `select kind, level from public.audit_timeline($1, 20)`,
-      [id],
-    )
-
-    // Newest first: it verified, you claimed it. Seven rows, two moments.
-    expect(rows.map((r) => [r.kind, r.level])).toEqual([
-      ['state_changed', 'claim'],
-      ['claim_created', null],
-    ])
-  })
-
-  it('A record change with no claim change still gets its line', async () => {
-    const id = await claim(alice, 'recordonly.com', TOKEN_A)
-    await db.admin.query(
-      `insert into public.audit_events
-         (domain_id, owner_id, domain_name, at, kind, actor, level, from_status, to_status)
-       values
-         ($1, $2, 'recordonly.com', now() + interval '1 s', 'state_changed', 'sweep', 'record', 'absent', 'propagating')`,
-      [id, alice],
-    )
-
-    const rows = await db.as(alice).query<{ level: string | null; to_status: string }>(
-      `select level, to_status from public.audit_timeline($1, 20)`,
-      [id],
-    )
-
-    // The claim did not move, so the record transition is the only news there is.
-    expect(rows[0]?.level).toBe('record')
-    expect(rows[0]?.to_status).toBe('propagating')
-  })
-
+describe('the ledger keeps what no page reads', () => {
   it('Every row is still in the ledger', async () => {
     const id = await claim(alice, 'ledger.com', TOKEN_A)
     await db.admin.query(
@@ -598,8 +460,9 @@ describe('one instant is one line', () => {
       [id, alice],
     )
 
-    // The timeline decides what earns a line. It never decides what is kept —
-    // state-model §6 requires check_completed to be emitted, and it is.
+    // Nothing on the page reads these any more. state-model §6 is about what
+    // is recorded, not about what is rendered, so the ledger is unchanged: the
+    // check is written, the transition beside it is written, and both stay.
     const stored = await db.as(alice).query<{ kind: string }>(
       `select kind from public.audit_events where domain_id = $1 order by id`,
       [id],

@@ -431,6 +431,8 @@ what changed and when, so that I can fix sending without opening a ticket.
 - **WHEN** a domain has been checked every six hours for a month
 - **THEN** the log is paginated, newest first
 - **AND** the page renders without loading every event
+- *Cut in D20.* The log has no page any more. The paging it needed is still in
+  `listAudit`, and the ledger still holds every row.
 
 #### An outage on our side revokes nothing
 - **WHEN** every sweep for an hour fails with our-side errors
@@ -473,9 +475,10 @@ replace it without losing the domain, so that a mistake is not permanent.
 #### Deletion is confirmed and logged
 - **WHEN** the user deletes a verified domain
 - **THEN** they are told it frees the name for others, and the deletion is recorded
-- **AND** their audit history for the claim remains readable afterwards
-- **AND** a later claim on the name by another account starts an empty log —
-  history never crosses accounts (prd §10)
+- **AND** the ledger for the claim survives the deletion — the row is never
+  deleted, so its events are never orphaned (D19)
+- **AND** a later claim on the name by another account starts a ledger of its
+  own — history never crosses accounts
 **Not here.** Polish.
 
 ---

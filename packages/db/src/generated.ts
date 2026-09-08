@@ -190,24 +190,6 @@ export type Database = {
         }
         Returns: Database['public']['Tables']['domains']['Row']
       }
-      audit_timeline: {
-        Args: {
-          p_domain_id: string
-          p_limit?: number
-          p_before?: string | null
-          p_before_id?: number | null
-        }
-        Returns: {
-          id: number
-          at: string
-          kind: string
-          actor: string
-          level: string | null
-          from_status: string | null
-          to_status: string | null
-          evidence: Json
-        }[]
-      }
       set_hidden: {
         Args: { p_domain_id: string; p_hidden: boolean; p_now: string }
         Returns: Database['public']['Tables']['domains']['Row']

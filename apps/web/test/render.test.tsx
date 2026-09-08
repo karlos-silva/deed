@@ -12,8 +12,6 @@ import {
   token,
   userId,
 } from '@deed/core'
-import type { AuditRow } from '@deed/db'
-import { AuditLog } from '../src/components/AuditLog'
 import { ValueDiff } from '../src/components/ValueDiff'
 import { ClaimBadge, RecordBadge } from '../src/components/StatusBadge'
 import { NothingClaimedYet } from '../src/components/NothingClaimedYet'
@@ -63,29 +61,6 @@ const RECORDS: RecordState[] = [
 ]
 
 /** The exact shape PostgREST returns, timestamps included. */
-const events: AuditRow[] = [
-  {
-    id: 3, domain_id: 'd', owner_id: 'u', domain_name: 'demo.karlos.dev',
-    at: '2026-08-30T04:31:00.6+00:00', kind: 'state_changed', actor: 'sweep',
-    level: 'record', from_status: 'unchecked', to_status: 'mismatch',
-    // A first reading that names a fault keeps its line, and the check behind
-    // it is what the line opens to.
-    evidence: {
-      startedAt: T0,
-      actor: 'sweep',
-      answers: [
-        { resolver: 'cloudflare', outcome: 'answered', values: ['deed-challenge=wrong'], ttl: 300 },
-      ],
-      probe: [],
-    },
-  },
-  {
-    id: 9, domain_id: 'd', owner_id: 'u', domain_name: 'demo.karlos.dev',
-    at: '2026-08-30T04:30:46.97+00:00', kind: 'claim_created', actor: 'user',
-    level: null, from_status: null, to_status: 'pending', evidence: null,
-  },
-]
-
 describe('the record table', () => {
   it('carries the record\'s own status, and only when given a domain', () => {
     const d = domain({ status: 'verified', seenBy: [...RESOLVERS], ttl })
@@ -122,36 +97,6 @@ describe('the detail page renders every state', () => {
         renderToStaticMarkup(<ClaimBadge ownership={d.ownership} />)
       expect(html, record.status).toContain('Cloudflare')
     }
-  })
-
-  it('draws the audit log from the moments the database returns', () => {
-    // `audit_timeline` hands back moments, not rows: routine checks never reach
-    // the component, so there is nothing here to collapse or to caption.
-    const html = renderToStaticMarkup(<AuditLog entries={events} now={Date.parse(events[0]!.at)} />)
-    expect(html).toContain('You claimed this domain')
-    expect(html).toContain('not looked at yet')
-    expect(html).not.toContain('Invalid Date')
-
-    // The actor enum never reaches the page.
-    expect(html).not.toMatch(/SWEEP|>sweep<|>system</)
-
-    // Every line is something that happened, so every line carries a tone.
-    expect(html).toMatch(/data-state="(ok|problem|neutral|progress|closed)"/)
-    expect(html).not.toContain('data-state="quiet"')
-
-    // One entry is one row: the evidence opens from the line itself rather than
-    // from a disclosure that costs a row under every entry.
-    expect(html).not.toContain('What each resolver answered')
-    expect(html).toContain('<summary>')
-
-    // How many times we looked and found nothing new is our business, not the
-    // reader's. Freshness is one field on the record panel.
-    expect(html).not.toMatch(/Checked \d+ times|Checked once/)
-  })
-
-  it('draws an empty log without pretending something happened', () => {
-    const html = renderToStaticMarkup(<AuditLog entries={[]} now={T0} />)
-    expect(html).toContain('Nothing has happened yet')
   })
 
   it('A first-time account has somewhere to start', () => {

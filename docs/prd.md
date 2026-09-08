@@ -106,9 +106,9 @@ That is a scope decision, not an oversight:
   diagnosis engine. It would add implementation surface without adding a single
   new idea.
 - **Depth beats breadth here.** The effort that a second phase would consume goes
-  instead into pre-flight diagnosis, the resolver matrix, rotation, degradation,
-  and the audit log — the parts that actually distinguish this from a form with
-  a spinner.
+  instead into pre-flight diagnosis, the resolver matrix, rotation and
+  degradation — the parts that actually distinguish this from a form with a
+  spinner.
 
 **The seam is real, and specified.** The state machine is parameterised over the
 record set, so a capability is a new record spec fed to existing machinery. What
@@ -129,7 +129,8 @@ is out of scope is building a second one, not being able to.
 - Continuous re-verification with a visible freshness timestamp.
 - Degradation and revocation when a previously verified record disappears.
 - Token rotation as a first-class recovery action.
-- A user-visible audit log of every check and every state transition.
+- An append-only ledger of every check and every state transition — recorded,
+  owner-scoped, and never rendered (D20).
 - A sandbox suffix (`.test`) where a visitor with no domain can drive real
   failures by editing a simulated zone directly.
 
@@ -141,6 +142,9 @@ is out of scope is building a second one, not being able to.
 - Teams, roles, invitations, billing.
 - DMARC/BIMI advisory. Adjacent, and would dilute the ownership story.
 - Bulk import of many domains.
+- A user-visible history. Cut after it shipped (D20): on a live claim every line
+  in it repeated the badge, the freshness field or the resolver matrix, and the
+  routine checks it existed to show were noise. The ledger underneath stays.
 
 ## 6. The experience, moment by moment
 
@@ -264,11 +268,11 @@ What success looks like, one line per quality this project set out to show:
 
 Two questions were open in earlier drafts; both are now decided.
 
-1. **A revoked claim's audit history stays visible to its former holder.** The
-   log records what *they* did and saw; taking it away at revocation would
-   punish exactly the person trying to understand what happened. A later claim
-   by another account starts an empty log — history never crosses accounts
-   (delivery plan S7).
+1. **A revoked claim's audit history stays visible to its former holder.**
+   *Superseded by D20:* there is no history screen any more, for a live claim or
+   a closed one. What survives is the part that was load-bearing — the ledger is
+   never deleted and never crosses accounts, which is a property of the schema
+   (D19), not of a page.
 2. **Re-claiming always issues a fresh token.** Reusing the old one would be
    kinder to a user who accidentally deleted a domain, but it would keep a
    token alive after its claim died — and a token that outlives its claim is

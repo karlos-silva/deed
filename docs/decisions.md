@@ -643,3 +643,39 @@ that has been in the union, the `CHECK` and the renderer since S7 with nothing
 ever emitting it — is finally written, because with closed claims kept as their
 own rows, claiming a name you held before genuinely starts a second history
 rather than continuing the first.
+
+---
+
+## D20 — The Activity tab is cut; the ledger is not
+
+**Decided.** The domain page has no history screen. `audit_timeline` is dropped
+(0010), `listTimeline` and the `AuditLog` component are deleted, and the page is
+the record and the evidence for it — for a live claim and a closed one alike.
+`audit_events` is untouched: still written on every check and every transition,
+still append-only, still owner-scoped, still read by `listAudit`.
+
+**Why.** Two rounds of cutting had already found the log's problem, and the
+second one found the rest of it. The line that said `Checked 156 times — still
+verified` was reporting that we were still polling, which is our business and
+not the reader's; freshness is one field on the record panel (0009). With the
+routine checks gone, what stood there was `You claimed this domain` and
+`Ownership went from pending to verified` — two lines under a badge that says
+**Verified**, beside a table that shows the record, beside a matrix that names
+the three resolvers that answered. A tab whose every line is a second telling of
+what is already on the page is not evidence, it is repetition with a timestamp.
+
+**What this costs, stated plainly.** prd §10.1 had promised a former holder
+their history after revocation, and a closed claim's page had been that history
+(D19, S7). It no longer is: a released or expired claim now shows its name, its
+badge, its dates and nothing more. That is the deliberate part of the trade —
+the page stops pretending there is more to say about a claim that ended.
+
+**Why the ledger stays anyway.** state-model §6 is about what is recorded, not
+about what is rendered, and the two arguments for recording never depended on a
+screen: an append-only ledger is what makes `check_completed` — "we looked and
+it held" — a fact rather than an assertion, and it is what a support path or a
+dispute would be reconstructed from. Deleting the table would also undo D19's
+schema-level guarantee for nothing.
+
+**Reversal cost.** Low, and bounded: the events are all still there, so bringing
+a history screen back is a query and a component, not a migration and a backfill.
