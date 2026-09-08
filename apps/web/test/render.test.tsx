@@ -12,7 +12,7 @@ import {
   token,
   userId,
 } from '@deed/core'
-import type { AuditRow, TimelineEntry } from '@deed/db'
+import type { AuditRow } from '@deed/db'
 import { AuditLog } from '../src/components/AuditLog'
 import { ValueDiff } from '../src/components/ValueDiff'
 import { ClaimBadge, RecordBadge } from '../src/components/StatusBadge'
@@ -65,19 +65,24 @@ const RECORDS: RecordState[] = [
 /** The exact shape PostgREST returns, timestamps included. */
 const events: AuditRow[] = [
   {
+    id: 3, domain_id: 'd', owner_id: 'u', domain_name: 'demo.karlos.dev',
+    at: '2026-08-30T04:31:00.6+00:00', kind: 'state_changed', actor: 'sweep',
+    level: 'record', from_status: 'unchecked', to_status: 'mismatch',
+    // A first reading that names a fault keeps its line, and the check behind
+    // it is what the line opens to.
+    evidence: {
+      startedAt: T0,
+      actor: 'sweep',
+      answers: [
+        { resolver: 'cloudflare', outcome: 'answered', values: ['deed-challenge=wrong'], ttl: 300 },
+      ],
+      probe: [],
+    },
+  },
+  {
     id: 9, domain_id: 'd', owner_id: 'u', domain_name: 'demo.karlos.dev',
     at: '2026-08-30T04:30:46.97+00:00', kind: 'claim_created', actor: 'user',
     level: null, from_status: null, to_status: 'pending', evidence: null,
-  },
-  {
-    id: 3, domain_id: 'd', owner_id: 'u', domain_name: 'demo.karlos.dev',
-    at: '2026-08-30T04:31:00.6+00:00', kind: 'state_changed', actor: 'sweep',
-    level: 'record', from_status: 'unchecked', to_status: 'absent', evidence: null,
-  },
-  {
-    id: 2, domain_id: 'd', owner_id: 'u', domain_name: 'demo.karlos.dev',
-    at: '2026-08-30T04:31:00.6+00:00', kind: 'check_completed', actor: 'sweep',
-    level: null, from_status: null, to_status: 'absent', evidence: null,
   },
 ]
 
@@ -119,35 +124,10 @@ describe('the detail page renders every state', () => {
     }
   })
 
-  it('draws the audit log from the entries the database returns', () => {
-    // `audit_timeline` hands back entries, not rows: a run of identical checks
-    // is already one watch by the time it reaches the component.
-    const entries: TimelineEntry[] = [
-      ...events.map((event) => ({ kind: 'moment' as const, event })),
-      {
-        kind: 'watch' as const,
-        runs: 12,
-        newestAt: events[0]!.at,
-        oldestAt: events[0]!.at,
-        status: 'verified',
-        id: 99,
-        // The run's last check, which is the only part of a run worth opening.
-        evidence: {
-          startedAt: T0,
-          actor: 'sweep',
-          answers: [
-            {
-              resolver: 'cloudflare' as const,
-              outcome: 'answered' as const,
-              values: ['deed-challenge=x'],
-              ttl: 300,
-            },
-          ],
-          probe: [],
-        },
-      },
-    ]
-    const html = renderToStaticMarkup(<AuditLog entries={entries} now={Date.parse(events[0]!.at)} />)
+  it('draws the audit log from the moments the database returns', () => {
+    // `audit_timeline` hands back moments, not rows: routine checks never reach
+    // the component, so there is nothing here to collapse or to caption.
+    const html = renderToStaticMarkup(<AuditLog entries={events} now={Date.parse(events[0]!.at)} />)
     expect(html).toContain('You claimed this domain')
     expect(html).toContain('not looked at yet')
     expect(html).not.toContain('Invalid Date')
@@ -155,21 +135,18 @@ describe('the detail page renders every state', () => {
     // The actor enum never reaches the page.
     expect(html).not.toMatch(/SWEEP|>sweep<|>system</)
 
-    // A transition carries a tone; a run of checks is marked quiet so it reads
-    // as freshness rather than as something having happened.
+    // Every line is something that happened, so every line carries a tone.
     expect(html).toMatch(/data-state="(ok|problem|neutral|progress|closed)"/)
-    expect(html).toContain('data-state="quiet"')
+    expect(html).not.toContain('data-state="quiet"')
 
     // One entry is one row: the evidence opens from the line itself rather than
     // from a disclosure that costs a row under every entry.
     expect(html).not.toContain('What each resolver answered')
     expect(html).toContain('<summary>')
 
-    // A run of identical checks names the status that held. "Nothing changed"
-    // alone made the reader supply the subject, and the one they supplied was
-    // that the interesting events had been hidden.
-    expect(html).toContain('Checked 12 times — still verified')
-    expect(html).not.toContain('nothing changed')
+    // How many times we looked and found nothing new is our business, not the
+    // reader's. Freshness is one field on the record panel.
+    expect(html).not.toMatch(/Checked \d+ times|Checked once/)
   })
 
   it('draws an empty log without pretending something happened', () => {

@@ -1,52 +1,35 @@
-import type { AuditRow, TimelineEntry } from '@deed/db'
+import type { AuditRow } from '@deed/db'
 import { humanSince } from '@/lib/copy'
 import { actorPhrase, toneOf } from '@/lib/logEntries'
 
 /**
- * Entries, not rows. The collapsing happens in SQL (migrations 0007 and 0008)
- * because doing it here meant doing it after the page limit, and because one
- * instant should be one line.
+ * Moments, not rows. The filtering happens in SQL (migrations 0007-0009)
+ * because doing it here meant doing it after the page limit, and because a
+ * check that found nothing new is not something that happened. Whether the
+ * sweep is still running is the record panel's "Last checked" to answer.
  *
- * Each entry is now one row high. The evidence used to sit on a disclosure of
- * its own beneath every entry, which doubled the height of the card to carry a
+ * Each entry is one row high. The evidence used to sit on a disclosure of its
+ * own beneath every entry, which doubled the height of the card to carry a
  * control most readers never open — so the line itself is the disclosure.
  */
-export function AuditLog({ entries, now }: { entries: TimelineEntry[]; now: number }) {
+export function AuditLog({ entries, now }: { entries: AuditRow[]; now: number }) {
   if (entries.length === 0) {
     return <p className="t-body muted">Nothing has happened yet. The first check is on its way.</p>
   }
 
   return (
     <ol className="log">
-      {entries.map((entry) =>
-        entry.kind === 'watch' ? (
-          <Line
-            key={`w${entry.id}`}
-            tone="quiet"
-            what={
-              entry.runs === 1
-                ? `Checked once — ${held(entry.status)}`
-                : `Checked ${entry.runs} times — ${held(entry.status)}`
-            }
-            when={
-              entry.runs === 1
-                ? humanSince(Date.parse(entry.newestAt), now)
-                : `${humanSince(Date.parse(entry.oldestAt), now)} – ${humanSince(Date.parse(entry.newestAt), now)}`
-            }
-            evidence={entry.evidence}
-          />
-        ) : (
-          <Line
-            key={entry.event.id}
-            tone={toneOf(entry.event)}
-            what={describe(entry.event)}
-            by={actorPhrase(entry.event.actor)}
-            when={humanSince(Date.parse(entry.event.at), now)}
-            dateTime={entry.event.at}
-            evidence={entry.event.evidence}
-          />
-        ),
-      )}
+      {entries.map((event) => (
+        <Line
+          key={event.id}
+          tone={toneOf(event)}
+          what={describe(event)}
+          by={actorPhrase(event.actor)}
+          when={humanSince(Date.parse(event.at), now)}
+          dateTime={event.at}
+          evidence={event.evidence}
+        />
+      ))}
     </ol>
   )
 }
@@ -66,9 +49,9 @@ function Line({
 }: {
   tone: string
   what: string
-  by?: string
+  by: string
   when: string
-  dateTime?: string
+  dateTime: string
   evidence: AuditRow['evidence']
 }) {
   const answers = evidence?.answers ?? []
@@ -77,9 +60,9 @@ function Line({
     <>
       <span className="rail" aria-hidden="true" />
       <span className="what">{what}</span>
-      <span className="by">{by ?? ''}</span>
+      <span className="by">{by}</span>
       <span className="when">
-        {dateTime === undefined ? when : <time dateTime={dateTime}>{when}</time>}
+        <time dateTime={dateTime}>{when}</time>
       </span>
     </>
   )
@@ -115,33 +98,6 @@ function Line({
   )
 }
 
-/**
- * What a run of identical checks is evidence of. A bare "nothing changed" makes
- * the reader supply the subject themselves, and the one they supply is usually
- * the wrong one.
- */
-const held = (status: string | null): string => {
-  switch (status) {
-    case 'verified':
-      return 'still verified'
-    case 'absent':
-      return 'still not found'
-    case 'mismatch':
-      return 'still the wrong value'
-    case 'propagating':
-      return 'still spreading'
-    case 'zone_error':
-      return 'their zone still failing'
-    case 'check_failed':
-      return 'our lookup still failing'
-    case 'degraded':
-      return 'still at risk'
-    case null:
-    default:
-      return 'nothing changed'
-  }
-}
-
 function describe(event: AuditRow): string {
   switch (event.kind) {
     case 'claim_created':
@@ -152,6 +108,9 @@ function describe(event: AuditRow): string {
       return 'You released this domain. The name is free for anyone to claim.'
     case 'reclaimed':
       return 'Claimed again, with a fresh token.'
+    // Never reaches the log — `audit_timeline` keeps routine checks out of it
+    // (0009). The case stays because the union is exhaustive and `listAudit`
+    // still returns every one of them.
     case 'check_completed':
       return `Checked — ${readable(event.to_status)}.`
     case 'state_changed':

@@ -198,12 +198,8 @@ export type Database = {
           p_before_id?: number | null
         }
         Returns: {
-          entry_kind: string
           id: number
           at: string
-          oldest_at: string
-          oldest_id: number
-          runs: number
           kind: string
           actor: string
           level: string | null

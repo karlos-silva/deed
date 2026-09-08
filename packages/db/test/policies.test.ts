@@ -448,7 +448,7 @@ describe('the write path has exactly one shape', () => {
   })
 })
 
-describe('the log is paged in entries, not in rows', () => {
+describe('the log is paged in moments, not in rows', () => {
   it('A page of routine checks cannot bury the moments', async () => {
     const id = await claim(alice, 'noisy.com', TOKEN_A)
     await transition(alice, id, 0, verifiedOwnership(TOKEN_A), [
@@ -464,47 +464,64 @@ describe('the log is paged in entries, not in rows', () => {
       [id, alice],
     )
 
-    const rows = await db.as(alice).query<{ entry_kind: string; runs: number; kind: string }>(
-      `select entry_kind, runs, kind from public.audit_timeline($1, 20)`,
+    const rows = await db.as(alice).query<{ kind: string }>(
+      `select kind from public.audit_timeline($1, 20)`,
       [id],
     )
 
-    // Sixty identical checks are one entry, and they are collapsed before the
-    // limit — so the moments are still on the first page rather than five pages
-    // back behind nothing.
-    const watches = rows.filter((r) => r.entry_kind === 'watch')
-    expect(watches).toHaveLength(1)
-    expect(watches[0]!.runs).toBe(60)
-
-    const kinds = rows.filter((r) => r.entry_kind === 'moment').map((r) => r.kind)
+    // Sixty identical checks are no lines at all, and they are dropped before
+    // the limit — so the moments are still on the first page rather than five
+    // pages back behind nothing.
+    const kinds = rows.map((r) => r.kind)
+    expect(kinds).not.toContain('check_completed')
     expect(kinds).toContain('claim_created')
     expect(kinds).toContain('state_changed')
   })
 
-  it('A run breaks when the answer changes', async () => {
-    const id = await claim(alice, 'flapping.com', TOKEN_A)
+  it('A first look that finds a fault is still news', async () => {
+    const id = await claim(alice, 'wrongvalue.com', TOKEN_A)
     await db.admin.query(
-      `insert into public.audit_events (domain_id, owner_id, domain_name, at, kind, actor, level, to_status)
-       values ($1, $2, 'flapping.com', now() + interval '1 s', 'check_completed', 'sweep', 'record', 'absent'),
-              ($1, $2, 'flapping.com', now() + interval '2 s', 'check_completed', 'sweep', 'record', 'absent'),
-              ($1, $2, 'flapping.com', now() + interval '3 s', 'check_completed', 'sweep', 'record', 'verified'),
-              ($1, $2, 'flapping.com', now() + interval '4 s', 'check_completed', 'sweep', 'record', 'absent')`,
+      `insert into public.audit_events
+         (domain_id, owner_id, domain_name, at, kind, actor, level, from_status, to_status)
+       values
+         ($1, $2, 'wrongvalue.com', now() + interval '1 s', 'check_completed', 'sweep', 'record', null, 'mismatch'),
+         ($1, $2, 'wrongvalue.com', now() + interval '1 s', 'state_changed',   'sweep', 'record', 'unchecked', 'mismatch')`,
       [id, alice],
     )
 
-    const rows = await db.as(alice).query<{ entry_kind: string; runs: number; to_status: string }>(
-      `select entry_kind, runs, to_status from public.audit_timeline($1, 20)`,
+    const rows = await db.as(alice).query<{ kind: string; to_status: string }>(
+      `select kind, to_status from public.audit_timeline($1, 20)`,
       [id],
     )
 
-    // Newest first: absent(1), verified(1), absent(2), then the claim. A stretch
-    // of "nothing changed" that spans a change would be a lie.
-    expect(rows.map((r) => [r.to_status, r.runs])).toEqual([
-      ['absent', 1],
-      ['verified', 1],
-      ['absent', 2],
-      ['pending', 1],
+    // Nothing else carries it now that runs of checks earn no line: without
+    // this the owner's log would say they claimed a domain and nothing more,
+    // while the record sat wrong.
+    expect(rows.map((r) => [r.kind, r.to_status])).toEqual([
+      ['state_changed', 'mismatch'],
+      ['claim_created', 'pending'],
     ])
+  })
+
+  it('A first look that finds nothing yet is not news', async () => {
+    const id = await claim(alice, 'patient.com', TOKEN_A)
+    await db.admin.query(
+      `insert into public.audit_events
+         (domain_id, owner_id, domain_name, at, kind, actor, level, from_status, to_status)
+       values
+         ($1, $2, 'patient.com', now() + interval '1 s', 'check_completed', 'sweep', 'record', null, 'absent'),
+         ($1, $2, 'patient.com', now() + interval '1 s', 'state_changed',   'sweep', 'record', 'unchecked', 'absent')`,
+      [id, alice],
+    )
+
+    const rows = await db.as(alice).query<{ kind: string }>(
+      `select kind from public.audit_timeline($1, 20)`,
+      [id],
+    )
+
+    // "We have not looked" to "not there yet" is the state the instructions on
+    // screen already describe. The claim is the only thing that happened.
+    expect(rows.map((r) => r.kind)).toEqual(['claim_created'])
   })
 
   it('The log stays the owner\'s alone', async () => {
@@ -512,7 +529,7 @@ describe('the log is paged in entries, not in rows', () => {
 
     // security invoker, so audit_owner_select is what filters it — not a
     // re-implementation of the same rule inside the function.
-    const bobSees = await db.as(bob).query(`select entry_kind from public.audit_timeline($1, 20)`, [hers])
+    const bobSees = await db.as(bob).query(`select kind from public.audit_timeline($1, 20)`, [hers])
     expect(bobSees).toHaveLength(0)
   })
 })
@@ -538,17 +555,15 @@ describe('one instant is one line', () => {
       [id, alice],
     )
 
-    const rows = await db.as(alice).query<{ entry_kind: string; kind: string; level: string | null; runs: number }>(
-      `select entry_kind, kind, level, runs from public.audit_timeline($1, 20)`,
+    const rows = await db.as(alice).query<{ kind: string; level: string | null }>(
+      `select kind, level from public.audit_timeline($1, 20)`,
       [id],
     )
 
-    // Newest first: still verified, it verified, still not found, you claimed it.
-    expect(rows.map((r) => [r.entry_kind, r.kind, r.level, r.runs])).toEqual([
-      ['watch', 'check_completed', 'record', 1],
-      ['moment', 'state_changed', 'claim', 1],
-      ['watch', 'check_completed', 'record', 2],
-      ['moment', 'claim_created', null, 1],
+    // Newest first: it verified, you claimed it. Seven rows, two moments.
+    expect(rows.map((r) => [r.kind, r.level])).toEqual([
+      ['state_changed', 'claim'],
+      ['claim_created', null],
     ])
   })
 

@@ -371,14 +371,10 @@
   border-radius: var(--radius-pill);
   background: var(--state-bd);
 }
-/* A stretch of nothing happening is not an event, so its rail is a hint. */
-.log-line[data-state='quiet'] .rail { background: none; border-left: 1px dashed var(--border-strong); }
-
 .log-line .what {
   min-width: 0; overflow-wrap: anywhere;
   color: var(--fg-2); font-size: var(--text-md); line-height: var(--lh-md);
 }
-.log-line[data-state='quiet'] .what { color: var(--fg-muted); font-size: var(--text-sm); }
 .log-line[data-state='ok'] .what { color: var(--green-fg); }
 .log-line[data-state='problem'] .what { color: var(--red-fg); }
 

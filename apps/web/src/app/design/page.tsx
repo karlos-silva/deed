@@ -13,7 +13,7 @@ import {
   token,
   userId,
 } from '@deed/core'
-import type { AuditRow, TimelineEntry } from '@deed/db'
+import type { AuditRow } from '@deed/db'
 import { claimGuidance, endedHeadline, recordGuidance } from '@/lib/copy'
 import { verdict } from '@/lib/verdict'
 import { DomainMeta } from '@/components/DomainMeta'
@@ -162,41 +162,17 @@ const event = (id: number, over: Partial<AuditRow>): AuditRow => ({
   ...over,
 })
 
-/** The log exactly as the user photographed it: fourteen identical rows. */
 // What `audit_timeline` returns for a claim that was made, verified, and then
-// watched: the run is one entry, not fourteen rows, and it is collapsed before
-// the page limit so the two moments are still here.
-// The shape audit_timeline actually returns, which is the point of the fixture:
-// one line per moment, and every routine check inside the run it belongs to.
-const NOISY: TimelineEntry[] = [
-  {
-    kind: 'watch',
-    runs: 123,
-    newestAt: new Date(T0).toISOString(),
-    oldestAt: new Date(T0 - 108_000_000).toISOString(),
-    status: 'verified',
-    id: 14,
-    evidence: null,
-  },
-  {
-    kind: 'moment',
-    event: event(15, {
-      kind: 'state_changed',
-      level: 'claim',
-      from_status: 'pending',
-      to_status: 'verified',
-    }),
-  },
-  {
-    kind: 'watch',
-    runs: 9,
-    newestAt: new Date(T0 - 115_200_000).toISOString(),
-    oldestAt: new Date(T0 - 118_800_000).toISOString(),
-    status: 'absent',
-    id: 16,
-    evidence: null,
-  },
-  { kind: 'moment', event: event(20, { kind: 'claim_created', actor: 'user', to_status: 'pending' }) },
+// watched for three days: two lines. The hundred-odd checks in between are in
+// the ledger, and none of them is news.
+const LOG: AuditRow[] = [
+  event(15, {
+    kind: 'state_changed',
+    level: 'claim',
+    from_status: 'pending',
+    to_status: 'verified',
+  }),
+  event(20, { kind: 'claim_created', actor: 'user', to_status: 'pending' }),
 ]
 
 export default function DesignGallery() {
@@ -303,7 +279,7 @@ export default function DesignGallery() {
         })}
 
         <Section title="The audit log, as reported">
-          <AuditLog entries={NOISY} now={T0} />
+          <AuditLog entries={LOG} now={T0} />
         </Section>
 
         <Section title="The audit log, empty">

@@ -178,31 +178,13 @@ export type AuditCursor = { readonly at: string; readonly id: number }
 export type AuditPage = { readonly events: AuditRow[]; readonly nextCursor: AuditCursor | null }
 
 /**
- * The log as entries rather than rows. Collapsing consecutive identical checks
- * in TypeScript was correct but happened after the limit, so a domain checked
- * every 30 seconds spent its whole page on routine and the moments that mattered
- * sat pages back behind nothing. `audit_timeline` collapses first (0007).
+ * The log as moments rather than rows. `audit_timeline` decides what earns a
+ * line before the page limit is applied — routine checks earn none, so a domain
+ * swept every 30 seconds cannot push the claim and the verification pages back
+ * behind nothing (0007, 0009).
  */
-export type TimelineEntry =
-  | { readonly kind: 'moment'; readonly event: AuditRow }
-  | {
-      readonly kind: 'watch'
-      readonly runs: number
-      readonly newestAt: string
-      readonly oldestAt: string
-      readonly status: string | null
-      readonly id: number
-      /**
-       * The newest check in the run. Every check in a run shares one status by
-       * construction, so expanding to all of them would print the same line n
-       * times; the last one's resolver answers are the only part that is worth
-       * opening, and `audit_timeline` already returns them.
-       */
-      readonly evidence: AuditRow['evidence']
-    }
-
 export type Timeline = {
-  readonly entries: TimelineEntry[]
+  readonly entries: AuditRow[]
   readonly nextCursor: AuditCursor | null
 }
 
@@ -224,43 +206,28 @@ export async function listTimeline(
   if (error) throw new Error(error.message)
 
   const rows = data.slice(0, limit)
-  const entries = rows.map((row): TimelineEntry => {
-    if (row.entry_kind === 'watch') {
-      return {
-        kind: 'watch',
-        runs: row.runs,
-        newestAt: row.at,
-        oldestAt: row.oldest_at,
-        status: row.to_status,
-        id: row.id,
-        evidence: row.evidence as AuditRow['evidence'],
-      }
-    }
-    return {
-      kind: 'moment',
-      // The function returns the fields a moment is rendered from; owner and
-      // name are on the row it came from and nothing on screen reads them.
-      event: asAuditRow({
-        id: row.id,
-        domain_id: id,
-        owner_id: '',
-        domain_name: '',
-        at: row.at,
-        kind: row.kind,
-        actor: row.actor,
-        level: row.level,
-        from_status: row.from_status,
-        to_status: row.to_status,
-        evidence: row.evidence,
-      }),
-    }
-  })
+  const entries = rows.map((row) =>
+    // The function returns the fields a moment is rendered from; owner and name
+    // are on the row it came from and nothing on screen reads them.
+    asAuditRow({
+      id: row.id,
+      domain_id: id,
+      owner_id: '',
+      domain_name: '',
+      at: row.at,
+      kind: row.kind,
+      actor: row.actor,
+      level: row.level,
+      from_status: row.from_status,
+      to_status: row.to_status,
+      evidence: row.evidence,
+    }),
+  )
 
-  const last = rows.at(-1)
+  const last = entries.at(-1)
   return {
     entries,
-    nextCursor:
-      data.length > limit && last !== undefined ? { at: last.oldest_at, id: last.oldest_id } : null,
+    nextCursor: data.length > limit && last !== undefined ? { at: last.at, id: last.id } : null,
   }
 }
 
