@@ -448,6 +448,53 @@ describe('the write path has exactly one shape', () => {
   })
 })
 
+describe('the rate-limit ledger is writable by the person it charges', () => {
+  it('An owner can charge herself a lookup', async () => {
+    const id = await claim(alice, 'charged.com', TOKEN_A)
+
+    // What `recordLookup` does on every Check now and every preflight. Under
+    // the original schema this was a 403: `lookups` had RLS on and only a
+    // select policy, so the check that a user asked for failed before it ran.
+    await db.as(alice).query(
+      `insert into public.lookups (owner_id, domain_id, kind) values ($1, $2, 'check_now')`,
+      [alice, id],
+    )
+
+    const spent = await db.as(alice).query<{ count: string }>(
+      `select count(*)::text as count from public.lookups where owner_id = $1`,
+      [alice],
+    )
+    expect(Number(spent[0]?.count)).toBe(1)
+  })
+
+  it('Nobody can spend anyone else\'s budget', async () => {
+    await expect(
+      db.as(bob).query(
+        `insert into public.lookups (owner_id, kind) values ($1, 'preflight')`,
+        [alice],
+      ),
+    ).rejects.toThrow()
+  })
+
+  it('A charge cannot be rewritten or taken back', async () => {
+    await db
+      .as(alice)
+      .query(`insert into public.lookups (owner_id, kind) values ($1, 'check_now')`, [alice])
+
+    // No update policy and no delete policy, so both are silent no-ops rather
+    // than errors — RLS filters the rows away. A budget you can erase is not a
+    // budget.
+    await db.as(alice).query(`update public.lookups set kind = 'preflight' where owner_id = $1`, [alice])
+    await db.as(alice).query(`delete from public.lookups where owner_id = $1`, [alice])
+
+    const left = await db.as(alice).query<{ kind: string }>(
+      `select kind from public.lookups where owner_id = $1`,
+      [alice],
+    )
+    expect(left.map((r) => r.kind)).toEqual(['check_now'])
+  })
+})
+
 describe('the ledger keeps what no page reads', () => {
   it('Every row is still in the ledger', async () => {
     const id = await claim(alice, 'ledger.com', TOKEN_A)
