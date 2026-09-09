@@ -469,6 +469,8 @@
 /* The evidence sits under the record in the same card, with its own table and
    its own columns — sharing the record's grid put "4 hours" under the value. */
 .evidence { display: grid; gap: var(--space-2); margin-top: var(--space-4); }
+/* The same gap when the resolvers agree and the matrix collapses to its sentence. */
+.evidence-line { margin-top: var(--space-4); }
 
 .dns-record .type { width: 1%; white-space: nowrap; color: var(--fg-2); font-family: var(--font-mono); }
 /* The flex sits on a div inside the cell, never on the `td` itself. A `td`

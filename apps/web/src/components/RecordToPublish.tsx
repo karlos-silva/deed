@@ -1,4 +1,10 @@
-import { RESOLVERS, type Domain, type Timestamp, zoneOf } from '@deed/core'
+import {
+  RESOLVERS,
+  type Domain,
+  type RecordState,
+  type Timestamp,
+  zoneOf,
+} from '@deed/core'
 import { preflight, randomProbeLabel } from '@deed/dns'
 import type { Db } from '@deed/db'
 import { RESOLVER_NAMES, fieldLabels, humanTtl, matrixSummary, warningCopy } from '@/lib/copy'
@@ -55,11 +61,10 @@ export async function RecordToPublish({
 
   return (
     <section className="card">
-      <div className="card-header row-between">
+      <div className="card-header">
         <h2 className="t-section">
           {domain.ownership.status === 'pending' ? 'The record to publish' : 'The record'}
         </h2>
-        <span className="t-small subtle">one TXT record · read-only queries</span>
       </div>
       <div className="card-body">
         <RecordTable
@@ -96,11 +101,15 @@ export async function RecordToPublish({
           </div>
         ))}
 
-        <p className="t-small subtle" style={{ marginTop: 'var(--space-3)' }}>
-          {labels.relativeHost
-            ? 'The greyed part is the zone your panel is already in, which it appends for you — Copy gives you only the part it asks for. Paste the value without quotes.'
-            : 'This panel wants the whole name, so Copy gives you the whole name. Paste the value without quotes.'}
-        </p>
+        {/* Instructions for a panel that is open. Once the record is published
+            and answering, they are notes on a job that is finished. */}
+        {domain.ownership.status === 'pending' && (
+          <p className="t-small subtle" style={{ marginTop: 'var(--space-3)' }}>
+            {labels.relativeHost
+              ? 'The greyed part is the zone your panel is already in, which it appends for you — Copy gives you only the part it asks for. Paste the value without quotes.'
+              : 'This panel wants the whole name, so Copy gives you the whole name. Paste the value without quotes.'}
+          </p>
+        )}
       </div>
     </section>
   )
@@ -214,12 +223,50 @@ export function RecordTable({
  * two-line column. Same card, because a record's evidence belongs to the
  * record; separate tables, because they are not the same shape.
  */
+/**
+ * Three rows saying the same thing are not a comparison. The matrix earns its
+ * place by showing where the resolvers differ — who has it, who has the old
+ * value, whose zone is failing — so when they cannot differ, the sentence above
+ * it is the whole answer and the table is that sentence typed three more times.
+ *
+ * They cannot differ in exactly three states: nobody has been asked, nobody has
+ * the record, and every resolver answers with the token. A `verified` record
+ * seen by fewer than all of them still gets the table, because which one is
+ * missing is the thing worth knowing.
+ */
+const unanimous = (record: RecordState): boolean => {
+  switch (record.status) {
+    case 'unchecked':
+    case 'absent':
+      return true
+    case 'verified':
+      return record.seenBy.length === RESOLVERS.length
+    case 'propagating':
+    case 'mismatch':
+    case 'zone_error':
+    case 'check_failed':
+      return false
+  }
+}
+
 export function ResolverEvidence({ domain }: { domain: Domain }) {
+  const record = domain.record
   const answers = answersFor(domain)
+
+  if (unanimous(record)) {
+    return (
+      <p className="t-small subtle evidence-line">
+        {matrixSummary(record)}
+        {/* The one number the table carried that a sentence can too: how long
+            that answer survives a change to the zone. */}
+        {record.status === 'verified' && ` — cached for up to ${humanTtl(record.ttl.max)}`}
+      </p>
+    )
+  }
 
   return (
     <div className="evidence">
-      <p className="t-small subtle">{matrixSummary(domain.record)}</p>
+      <p className="t-small subtle">{matrixSummary(record)}</p>
       <div className="table-wrap">
         <table className="matrix">
           <caption className="sr-only">What each resolver answered</caption>

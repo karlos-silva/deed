@@ -89,15 +89,36 @@ describe('the record table', () => {
 })
 
 describe('the detail page renders every state', () => {
-  it('draws the resolver matrix and both badges for each record state', () => {
+  it('draws the badges for each record state, and the matrix when it says something', () => {
     for (const record of RECORDS) {
       const d = domain(record)
-      const html =
-        renderToStaticMarkup(<ResolverEvidence domain={d} />) +
+      const evidence = renderToStaticMarkup(<ResolverEvidence domain={d} />)
+      const badges =
         renderToStaticMarkup(<RecordBadge record={record} />) +
         renderToStaticMarkup(<ClaimBadge ownership={d.ownership} />)
-      expect(html, record.status).toContain('Cloudflare')
+      expect(badges, record.status).not.toContain('undefined')
+
+      // The table is a comparison, so it appears when there is something to
+      // compare. Nobody asked, nobody has it, and everybody has it are the
+      // three states where three rows would be one sentence repeated.
+      const identical =
+        record.status === 'unchecked' ||
+        record.status === 'absent' ||
+        (record.status === 'verified' && record.seenBy.length === RESOLVERS.length)
+      expect(evidence.includes('Cloudflare'), record.status).toBe(!identical)
+      expect(evidence.replace(/<[^>]+>/g, ''), record.status).not.toBe('')
     }
+  })
+
+  it('says how long a verified answer survives, without a table to say it in', () => {
+    const html = renderToStaticMarkup(
+      <ResolverEvidence domain={domain({ status: 'verified', seenBy: [...RESOLVERS], ttl })} />,
+    )
+    expect(html).toContain('All 3 resolvers answer with your token')
+    expect(html).toContain('cached for up to')
+    // The three rows that used to say "has your token" three times are gone.
+    expect(html).not.toContain('<table')
+    expect(html.match(/has your token/g)).toBeNull()
   })
 
   it('A first-time account has somewhere to start', () => {
@@ -141,6 +162,10 @@ describe('the detail page renders every state', () => {
       )
       const text = html.replace(/<[^>]+>/g, '')
       expect(text, name).toContain(challengeHost(name))
+
+      // Published and answering: the panel is closed, so the instructions for
+      // filling it in are not still on screen.
+      expect(text, name).not.toContain('Paste the value')
     }
   })
 
