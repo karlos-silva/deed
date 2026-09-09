@@ -225,7 +225,10 @@ tr.row-ok      td:first-child { box-shadow: inset 2px 0 0 var(--green-fg); }
 .step-desc  { font-size: var(--text-base); color: var(--fg-muted); margin-top: 2px; }
 
 /* --- Meta row (CREATED / STATUS / REGION) ------------------------------- */
-.meta-row { display: flex; flex-wrap: wrap; gap: var(--space-10); }
+/* Colunas iguais na largura do conteúdo, não itens empilhados à esquerda: com
+   `flex` os cinco terminavam em 618px de 1180 e a página mudava de forma no
+   meio — uma faixa pela metade em cima, cartões de ponta a ponta embaixo. */
+.meta-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-6); }
 .meta-item { display: grid; gap: var(--space-2); }
 .meta-value { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-md); }
 

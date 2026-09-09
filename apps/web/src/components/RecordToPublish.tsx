@@ -64,6 +64,11 @@ export async function RecordToPublish({
         <h2 className="t-section">
           {domain.ownership.status === 'pending' ? 'The record to publish' : 'The record'}
         </h2>
+        {/* The type is one constant — this product publishes TXT and nothing
+            else — so it is context for the card rather than a column holding
+            three letters, and the 47px it held is what the value needed to stop
+            breaking at its own hyphen. */}
+        <span className="t-small subtle">TXT record</span>
       </div>
       <div className="card-body">
         <RecordTable
@@ -130,8 +135,9 @@ export function RecordToPublishSkeleton() {
 }
 
 /**
- * Type, host, value — eleven of eleven products surveyed use exactly these
- * three columns in this order. Split out from the async card above so it can be
+ * Host and value, in that order, as eleven of eleven products surveyed print
+ * them. Type is the card's, not a column's: it never changes. Split out from
+ * the async card above so it can be
  * rendered and asserted without performing live DNS.
  */
 export function RecordTable({
@@ -159,14 +165,12 @@ export function RecordTable({
       <table className="dns-record">
         <thead>
           <tr>
-            <th scope="col">Type</th>
             <th scope="col">{hostLabel}</th>
             <th scope="col">{valueLabel}</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td className="type">TXT</td>
             <td className="host">
               <div className="cell">
                 <span className="t-mono">

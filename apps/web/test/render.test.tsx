@@ -76,6 +76,11 @@ describe('the record table', () => {
     expect(html).toContain('Host / Name')
     expect(html).toContain('Value')
 
+    // Type is not a column. It never varies — this product publishes TXT and
+    // nothing else — so it is said once, by the card, and the width it held
+    // goes to the value.
+    expect(html).not.toContain('>Type<')
+
     // The record's own badge used to sit in a fourth column. It was the third
     // "Verified" on a verified page — the meta row and the verdict banner say
     // it above — and the 88px it held is what pushed the host and the value
@@ -157,6 +162,9 @@ describe('the detail page renders every state', () => {
       // Published and answering: the panel is closed, so the instructions for
       // filling it in are not still on screen.
       expect(text, name).not.toContain('Paste the value')
+
+      // …but which kind of record it is still has to be somewhere.
+      expect(text, name).toContain('TXT record')
     }
   })
 

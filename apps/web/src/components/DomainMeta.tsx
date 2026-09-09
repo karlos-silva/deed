@@ -1,4 +1,4 @@
-import type { Domain, RecordState } from '@deed/core'
+import type { Domain } from '@deed/core'
 import { humanSince, humanUntil } from '@/lib/copy'
 import { ClaimBadge } from '@/components/StatusBadge'
 
@@ -12,6 +12,11 @@ import { ClaimBadge } from '@/components/StatusBadge'
  * is a fact that would appear in one state and vanish in the next, and buying
  * stability for it means live DNS on every page view. It keeps doing real work
  * where it belongs — naming the columns of the record table.
+ *
+ * No resolver count either. "3 of 3" was the verdict banner's own first clause,
+ * forty pixels below it, and of the two the sentence is the one that explains
+ * itself. What is left is the part no sentence carries well: when this was last
+ * true, and when it will be asked again.
  */
 export function DomainMeta({
   domain,
@@ -27,8 +32,6 @@ export function DomainMeta({
       <Item label="Claimed" value={humanSince(domain.createdAt, now)} />
 
       <Item label="Status" value={<ClaimBadge ownership={domain.ownership} />} />
-
-      <Item label="Resolvers" value={<span className="tabular">{seenCount(domain.record)}</span>} />
 
       <Item label="Last checked" value={freshness(domain, now, closed)} />
 
@@ -46,23 +49,6 @@ function Item({ label, value }: { label: string; value: React.ReactNode }) {
       <div className="meta-value">{value}</div>
     </div>
   )
-}
-
-/** How many of the three currently answer with the token that is live now. */
-export function seenCount(record: RecordState): string {
-  switch (record.status) {
-    case 'verified':
-    case 'propagating':
-      return `${record.seenBy.length} of 3`
-    case 'mismatch':
-      return `${record.observed.filter((o) => o.kind === 'current').length} of 3`
-    case 'absent':
-    case 'zone_error':
-      return '0 of 3'
-    case 'unchecked':
-    case 'check_failed':
-      return '—'
-  }
 }
 
 function freshness(domain: Domain, now: number, closed: boolean): string {

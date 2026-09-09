@@ -483,7 +483,6 @@
    its own columns — sharing the record's grid put "4 hours" under the value. */
 .evidence { display: grid; gap: var(--space-2); margin-top: var(--space-4); }
 
-.dns-record .type { width: 1%; white-space: nowrap; color: var(--fg-2); font-family: var(--font-mono); }
 /* The flex sits on a div inside the cell, never on the `td` itself. A `td`
    set to `display: flex` stops being a table-cell, so the browser wraps it in
    an anonymous one and computes the column width against a box carrying none
@@ -501,13 +500,17 @@
   .meta-row { gap: var(--space-6); }
 }
 
+/* Visível parado, não só no hover. É o mesmo argumento que a coluna de ações da
+   lista já fazia: uma affordance que só existe sob o cursor é uma que quem usa
+   toque nunca encontra — e copiar é a única coisa que se faz nesta tabela. */
 .copy-icon {
   appearance: none; cursor: pointer; flex: none;
   display: inline-flex; align-items: center; justify-content: center;
   width: 26px; height: 26px; padding: 0; margin-top: -2px;
-  background: none; color: var(--fg-subtle);
-  border: 1px solid transparent; border-radius: var(--radius-sm);
-  transition: color var(--dur-1) var(--ease), background var(--dur-1) var(--ease);
+  background: var(--surface-3); color: var(--fg-muted);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  transition: color var(--dur-1) var(--ease), background var(--dur-1) var(--ease),
+    border-color var(--dur-1) var(--ease);
 }
-.copy-icon:hover { color: var(--fg); background: var(--surface-3); }
+.copy-icon:hover { color: var(--fg); background: var(--surface-2); border-color: var(--border-strong); }
 .copy-icon.done { color: var(--green); }
