@@ -17,7 +17,7 @@ import { claimGuidance, recordGuidance } from '@/lib/copy'
 import { verdict } from '@/lib/verdict'
 import { DomainMeta } from '@/components/DomainMeta'
 import { VerdictBanner } from '@/components/VerdictBanner'
-import { ClaimBadge, RecordBadge } from '@/components/StatusBadge'
+import { ClaimBadge, RecordBadge, claimTone } from '@/components/StatusBadge'
 import { ValueDiff } from '@/components/ValueDiff'
 import { TopBar } from '@/components/TopBar'
 import { NothingClaimedYet } from '@/components/NothingClaimedYet'
@@ -26,7 +26,7 @@ import { RecordTable, ResolverEvidence } from '@/components/RecordToPublish'
 import { claimDomain, releaseDomain, removeFromList } from '@/app/domains/actions'
 import { ReleaseDialog } from '@/components/ReleaseDialog'
 import { RowActions } from '@/components/RowActions'
-import Image from 'next/image'
+import { DomainMark } from '@/components/DomainMark'
 
 export const dynamic = 'force-dynamic'
 
@@ -295,8 +295,8 @@ export default function DesignGallery() {
                   <tr key={label}>
                     <th scope="row">
                       <a href="#">
-                        <span className="row-mark">
-                          <Image src="/domains-tile.png" alt="" width={740} height={740} />
+                        <span className="row-mark" data-state={claimTone(ownership)}>
+                          <DomainMark />
                         </span>
                         <span className="name">{['acme.com', 'updates.acme.com', 'shop.acme.co.uk', 'acme.test', 'lapsed.com'][i]}</span>
                         {i === 3 && <span className="badge badge-info">simulated</span>}

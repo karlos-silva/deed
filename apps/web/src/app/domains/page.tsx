@@ -1,12 +1,12 @@
 import { Suspense } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { at, isExclusive, isTerminal } from '@deed/core'
 import { type StoredDomain, listDomains } from '@deed/db'
 import { session } from '@/lib/session'
 import { humanSince } from '@/lib/copy'
-import { ClaimBadge } from '@/components/StatusBadge'
+import { ClaimBadge, claimTone } from '@/components/StatusBadge'
+import { DomainMark } from '@/components/DomainMark'
 import { AddDomainDialog } from '@/components/AddDomainDialog'
 import { NothingClaimedYet } from '@/components/NothingClaimedYet'
 import { RowActions } from '@/components/RowActions'
@@ -100,8 +100,11 @@ function Row({ row, now }: { row: StoredDomain; now: number }) {
     <tr>
       <th scope="row">
         <Link href={`/domains/${domain.id}`}>
-          <span className="row-mark">
-            <Image src="/domains-tile.png" alt="" width={740} height={740} />
+          {/* The mark used to be the product's own tile, the same picture on
+              every row. It is the row's state now: yellow while a claim is
+              pending, green once it is proved, red when it is at risk. */}
+          <span className="row-mark" data-state={claimTone(domain.ownership)}>
+            <DomainMark />
           </span>
           <span className="name">{domain.name}</span>
           {domain.isSandbox && <span className="badge badge-info">simulated</span>}

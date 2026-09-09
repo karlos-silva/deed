@@ -70,6 +70,18 @@ a:hover { text-decoration-color: var(--fg-muted); }
 .btn-icon { width: 32px; padding: 0; justify-content: center; }
 .btn-icon.btn-sm { width: 26px; }
 
+/* Who is signed in, in 26px. An initial in a circle, with the whole address in
+   the tooltip and for a screen reader: the email is read once and then only
+   occupies the bar — and it is the one piece of personal data on screen at all
+   times, including over a shoulder. */
+.avatar {
+  display: inline-grid; place-items: center; flex: none;
+  width: 26px; height: 26px; border-radius: var(--radius-pill);
+  background: var(--surface-3); border: 1px solid var(--border);
+  color: var(--fg-2); font-size: var(--text-sm); font-weight: var(--weight-semibold);
+  font-family: var(--font-mono); user-select: none;
+}
+
 /* --- Badge / status ----------------------------------------------------- */
 .badge {
   display: inline-flex; align-items: center; gap: 6px;
@@ -225,9 +237,9 @@ tr.row-ok      td:first-child { box-shadow: inset 2px 0 0 var(--green-fg); }
 .step-desc  { font-size: var(--text-base); color: var(--fg-muted); margin-top: 2px; }
 
 /* --- Meta row (CREATED / STATUS / REGION) ------------------------------- */
-/* Colunas iguais na largura do conteúdo, não itens empilhados à esquerda: com
-   `flex` os cinco terminavam em 618px de 1180 e a página mudava de forma no
-   meio — uma faixa pela metade em cima, cartões de ponta a ponta embaixo. */
+/* Equal columns across the content width, not items packed to the left: with
+   `flex` the five of them ended at 618px of 1180 and the page changed shape
+   halfway down — a half-width strip on top, edge-to-edge cards below. */
 .meta-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-6); }
 .meta-item { display: grid; gap: var(--space-2); }
 .meta-value { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-md); }
@@ -291,23 +303,23 @@ tr.row-ok      td:first-child { box-shadow: inset 2px 0 0 var(--green-fg); }
    ========================================================================== */
 
 /* --- Icon tile -----------------------------------------------------------
-   Não é um quadrado com um ícone dentro. O tile é um objeto de três camadas:
+   Not a square with an icon in it. The tile is a three-layer object:
 
-     1. um bisel metálico de 2px, iluminado por cima —
-        #979797 no topo, #727272 nas laterais, #4d4d4d na base;
-     2. um vão preto de ~3px, que afunda a face;
-     3. a face, em gradiente diagonal, com um brilho radial atrás do glifo
-        e uma grade de 13,5px quase imperceptível.
+     1. a 2px metallic bezel, lit from above —
+        #979797 at the top, #727272 on the sides, #4d4d4d at the base;
+     2. a black gap of ~3px, which sinks the face;
+     3. the face, a diagonal gradient, with a radial glow behind the glyph
+        and a barely perceptible 13.5px grid.
 
-   A luz vem sempre de cima — é o que faz a peça parecer fresada em vez de
-   desenhada.
+   The light always comes from above — that is what makes the piece read as
+   milled rather than drawn.
    ------------------------------------------------------------------------ */
 .tile {
-  --tile-h: 158;          /* matiz do estado */
+  --tile-h: 158;          /* the state's hue */
   --tile-size: 32px;
-  /* Todas as camadas são proporções do tile, medidas no asset de ~83px:
-     bisel 2px = 2,4% · vão até 5px = 6% · grade 13,5px = 16,3% · glifo 45%.
-     Em px fixo o bisel some quando o tile cresce — foi o primeiro erro. */
+  /* Every layer is a proportion of the tile, measured on the ~83px asset:
+     bezel 2px = 2.4% · gap up to 5px = 6% · grid 13.5px = 16.3% · glyph 45%.
+     In fixed px the bezel vanishes as the tile grows — that was the first bug. */
   --bezel: 2.4%;
   --gap:   6%;
   position: relative;
@@ -318,13 +330,13 @@ tr.row-ok      td:first-child { box-shadow: inset 2px 0 0 var(--green-fg); }
   display: grid; place-items: center;
   color: hsl(var(--tile-h) 26% 66%);
 }
-/* o vão preto que afunda a face */
+/* the black gap that sinks the face */
 .tile::before {
   content: ""; position: absolute; inset: var(--bezel);
   border-radius: 26%;
   background: #000;
 }
-/* a face */
+/* the face */
 .tile::after {
   content: ""; position: absolute; inset: var(--gap);
   border-radius: 24%;
@@ -338,7 +350,7 @@ tr.row-ok      td:first-child { box-shadow: inset 2px 0 0 var(--green-fg); }
   filter: drop-shadow(0 0 calc(var(--tile-size) * .09) hsl(var(--tile-h) 42% 72% / .38));
 }
 
-/* No tamanho grande a grade aparece — 13,5px num tile de 80px, então 16,9%. */
+/* At the large size the grid shows — 13.5px on an 80px tile, so 16.9%. */
 .tile-lg { --tile-size: 80px; }
 .tile-lg::after {
   --cell: 16.9%;
@@ -349,8 +361,8 @@ tr.row-ok      td:first-child { box-shadow: inset 2px 0 0 var(--green-fg); }
     linear-gradient(150deg, hsl(var(--tile-h) 26% 22%) 0%, hsl(var(--tile-h) 46% 9%) 100%);
 }
 
-/* Matizes de estado. O asset mostra literalmente o mesmo gradiente com o
-   matiz girado — os valores de luminosidade não mudam entre verde e vermelho. */
+/* State hues. The asset is literally the same gradient with the hue rotated —
+   the lightness values do not change between green and red. */
 .tile-green   { --tile-h: 158; }
 .tile-red     { --tile-h: 357; }
 .tile-blue    { --tile-h: 212; }
@@ -384,20 +396,20 @@ tr.row-ok      td:first-child { box-shadow: inset 2px 0 0 var(--green-fg); }
 .nav a[aria-current="page"] { background: var(--surface-3); color: var(--fg-2); border-color: var(--border-strong); }
 
 
-/* --- Grão -----------------------------------------------------------------
-   Uma textura de material físico sobre a interface inteira, não só nos ícones:
-   é ela que impede o preto de virar vazio digital. Fica em 3,5% — abaixo disso
-   some, acima disso suja o texto. */
+/* --- Grain ----------------------------------------------------------------
+   A physical-material texture over the whole interface, not only on the
+   icons: it is what keeps the black from reading as digital emptiness. It sits
+   at 3.5% — below that it disappears, above it dirties the text. */
 body::after {
   content: ""; position: fixed; inset: 0; z-index: 90;
   pointer-events: none; opacity: .035;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-/* --- Glifo dentro do tile --------------------------------------------------
-   No asset o glifo não tem cor sólida: vai de #f7f9f8 no topo a um tom do
-   estado na base — como metal pegando luz de cima. Um gradiente SVG faz isso
-   com o `currentColor` do tile como parada inferior. */
+/* --- The glyph inside the tile ---------------------------------------------
+   In the asset the glyph has no solid colour: it runs from #f7f9f8 at the top
+   to a tone of the state at the base — like metal catching light from above.
+   An SVG gradient does that, with the tile's `currentColor` as its lower stop. */
 .tile svg { stroke: url(#glyphGrad); }
 
 /* --- Utilities ---------------------------------------------------------- */

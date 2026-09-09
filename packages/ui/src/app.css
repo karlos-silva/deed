@@ -128,11 +128,16 @@
 }
 .domains tbody th a:hover .name { text-decoration: underline; text-underline-offset: 3px; }
 .domains .name { font-family: var(--font-mono); overflow-wrap: anywhere; }
+/* The row's mark carries the claim's state: yellow while it is pending, green
+   once it is proved, red when it is at risk. It used to be the same picture on
+   every row — decoration holding the leftmost position, which is where the eye
+   starts. */
 .domains .row-mark {
-  width: 28px; height: 28px; border-radius: 8px; overflow: hidden; flex: none;
-  border: 1px solid var(--border); box-shadow: var(--edge-lit);
+  width: 28px; height: 28px; border-radius: 8px; flex: none;
+  display: grid; place-items: center;
+  color: var(--state-fg); background: var(--state-bg);
+  border: 1px solid var(--state-bd); box-shadow: var(--edge-lit);
 }
-.domains .row-mark img { display: block; width: 100%; height: auto; }
 .domains .when { color: var(--fg-muted); font-size: var(--text-sm); white-space: nowrap; }
 /* The per-row overflow control. Always visible: an affordance you have to
    discover by hovering is one a touch user never finds, and the whole point of
@@ -500,9 +505,10 @@
   .meta-row { gap: var(--space-6); }
 }
 
-/* Visível parado, não só no hover. É o mesmo argumento que a coluna de ações da
-   lista já fazia: uma affordance que só existe sob o cursor é uma que quem usa
-   toque nunca encontra — e copiar é a única coisa que se faz nesta tabela. */
+/* Visible at rest, not only on hover. It is the argument the list's action
+   column already made: an affordance you have to discover by hovering is one a
+   touch user never finds — and copying is the only thing anyone does in this
+   table. */
 .copy-icon {
   appearance: none; cursor: pointer; flex: none;
   display: inline-flex; align-items: center; justify-content: center;

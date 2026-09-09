@@ -1,5 +1,26 @@
 import type { OwnershipState, RecordState } from '@deed/core'
 
+/**
+ * The claim's state as a tone, for the things that carry it in colour rather
+ * than in a word — the mark beside a domain's name in the list. Exported so
+ * the badge and the mark cannot end up disagreeing about what yellow means.
+ */
+export type ClaimTone = 'ok' | 'progress' | 'problem' | 'closed'
+
+export function claimTone(ownership: OwnershipState): ClaimTone {
+  switch (ownership.status) {
+    case 'pending':
+      return 'progress'
+    case 'verified':
+      return 'ok'
+    case 'degraded':
+      return 'problem'
+    case 'expired':
+    case 'revoked':
+      return 'closed'
+  }
+}
+
 export function ClaimBadge({ ownership }: { ownership: OwnershipState }) {
   switch (ownership.status) {
     case 'pending':

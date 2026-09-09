@@ -111,10 +111,10 @@
   --space-5: 20px;   --space-6: 24px;   --space-8: 32px;  --space-10: 40px;
   --space-12: 48px;  --space-16: 64px;
 
-  /* --- Elevação -------------------------------------------------------------
-     Não há tokens de sombra. Nos screenshots oficiais o produto separa camadas
-     por BORDA, nunca por sombra — inventar uma escala de elevação aqui seria
-     contradizer o que a própria marca faz. */
+  /* --- Elevation -------------------------------------------------------------
+     No shadow tokens. Layers separate with a BORDER, never with a shadow —
+     an elevation scale here would contradict the rule this system is built
+     on. */
   --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--fg-2);
 
   /* --- Motion ------------------------------------------------------------- */
@@ -129,28 +129,27 @@
 html { color-scheme: dark; background: var(--bg); }
 
 /* ============================================================================
-   Camada de movimento e fonte de display
+   Motion layer and display face
    ----------------------------------------------------------------------------
-   Inter é uma fonte de display pobre — humanista demais em tamanho de título,
-   onde se pede geometria. Geist (OFL, Vercel) é um neo-grotesco de produto de
-   desenvolvedor que combina bem com ela. Então: Geist em display, Inter em
-   corpo e UI.
+   Inter is a poor display face — too humanist at headline sizes, where a title
+   wants geometry. Geist (OFL, Vercel) is a developer-product neo-grotesque that
+   pairs with it cleanly. So: Geist for display, Inter for body and UI.
    ========================================================================== */
 :root {
   --font-display: "Geist", "Inter", ui-sans-serif, system-ui, sans-serif;
 
-  /* --- Movimento ---------------------------------------------------------
-     Uma curva só, quatro durações. A regra da marca: movimento relata
-     mudança, não decora. Nada percorre mais de 8px. Nada passa de 400ms,
-     exceto a varredura de checagem, que é o único momento em que o produto
-     mostra que está trabalhando. */
+  /* --- Motion ------------------------------------------------------------
+     One curve, four durations. The rule: motion reports change, it does
+     not decorate. Nothing travels more than 8px. Nothing runs longer than 400ms
+     except the checking sweep, which is the one moment the product shows that
+     it is working. */
   --ease-out:  cubic-bezier(.16, 1, .3, 1);
   --ease-soft: cubic-bezier(.4, 0, .2, 1);
 
-  --dur-1: 120ms;   /* hover, foco — imperceptível, só tira o corte seco */
-  --dur-2: 200ms;   /* troca de estado em um elemento */
-  --dur-3: 320ms;   /* entrada de um bloco */
-  --dur-4: 700ms;   /* a varredura de checagem */
+  --dur-1: 120ms;   /* hover, focus — imperceptible; it only takes the hard cut off */
+  --dur-2: 200ms;   /* one element changing state */
+  --dur-3: 320ms;   /* a block arriving */
+  --dur-4: 700ms;   /* the checking sweep */
 
-  --lift: 6px;      /* distância padrão de entrada */
+  --lift: 6px;      /* the standard entrance distance */
 }
