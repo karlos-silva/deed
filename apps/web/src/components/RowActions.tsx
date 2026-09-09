@@ -125,7 +125,7 @@ export function RowActions({
           setOpen(!open)
         }}
       >
-        <span aria-hidden="true">···</span>
+        <DotsIcon />
       </button>
 
       {open && (
@@ -153,6 +153,22 @@ export function RowActions({
         />
       )}
     </>
+  )
+}
+
+/**
+ * Drawn, not typed. The trigger used to be three middle dots nudged up five
+ * pixels, because a glyph sits where its font's metrics put it and that was
+ * never the middle of the button. An icon has no baseline to fight: the box is
+ * centred and the dots are on its centre line, in any font.
+ */
+function DotsIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+      <circle cx="2.8" cy="8" r="1.4" />
+      <circle cx="8" cy="8" r="1.4" />
+      <circle cx="13.2" cy="8" r="1.4" />
+    </svg>
   )
 }
 

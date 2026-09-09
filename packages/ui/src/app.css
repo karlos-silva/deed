@@ -147,7 +147,6 @@
   border: 1px solid var(--border); border-radius: var(--radius-md);
   transition: color var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
 }
-.row-menu span { display: block; margin-top: -5px; letter-spacing: 0.5px; }
 .row-menu:hover { color: var(--fg); border-color: var(--border-strong); }
 .row-menu[aria-expanded='true'] { color: var(--fg); border-color: var(--border-strong); }
 
