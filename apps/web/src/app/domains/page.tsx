@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { at, isExclusive, isTerminal } from '@deed/core'
 import { type StoredDomain, lastSweep, listDomains } from '@deed/db'
 import { session } from '@/lib/session'
-import { endedHeadline, humanSince } from '@/lib/copy'
+import { humanSince } from '@/lib/copy'
 import { ClaimBadge } from '@/components/StatusBadge'
 import { AddDomainDialog } from '@/components/AddDomainDialog'
 import { NothingClaimedYet } from '@/components/NothingClaimedYet'
@@ -14,29 +14,28 @@ import { Notices } from '@/components/Notices'
 import { AutoRefresh } from '@/components/AutoRefresh'
 import { Footer } from '@/components/Footer'
 import { TopBar } from '@/components/TopBar'
-import { claimDomain, releaseDomain, removeFromList, restoreToList } from './actions'
+import { claimDomain, releaseDomain, removeFromList } from './actions'
 
 export const dynamic = 'force-dynamic'
 
 export default async function DomainsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; domain?: string; show?: string }>
+  searchParams: Promise<{ error?: string; domain?: string }>
 }) {
   const current = await session()
   if (current === null) redirect('/')
 
-  const { error, domain: attempted, show } = await searchParams
+  const { error, domain: attempted } = await searchParams
   const [domains, sweptAt] = await Promise.all([
     listDomains(current.db, current.userId),
     lastSweep(current.db),
   ])
   const clock = at(Date.now())
 
+  // A removed claim is off the list for good; nothing on the page goes looking
+  // for it (D21).
   const listed = domains.filter((d) => d.hiddenAt === null)
-  const removed = domains.filter((d) => d.hiddenAt !== null)
-  const showingRemoved = show === 'removed'
-  const rows = showingRemoved ? removed : listed
 
   return (
     <div className="shell">
@@ -57,37 +56,16 @@ export default async function DomainsPage({
           />
         </div>
 
-        {removed.length > 0 && (
-          <nav className="tabs" aria-label="Which claims to show">
-            <Link className="tab" href="/domains" aria-current={showingRemoved ? undefined : 'page'}>
-              Domains
-            </Link>
-            <Link
-              className="tab"
-              href="/domains?show=removed"
-              aria-current={showingRemoved ? 'page' : undefined}
-            >
-              Removed ({removed.length})
-            </Link>
-          </nav>
-        )}
-
-        {domains.length === 0 ? (
+        {listed.length === 0 ? (
           <NothingClaimedYet />
-        ) : rows.length === 0 ? (
-          <p className="t-body muted">
-            {showingRemoved
-              ? 'Nothing removed.'
-              : 'Every claim is under Removed. Restore one, or add a domain.'}
-          </p>
         ) : (
           <div className="table-wrap">
             <table className="domains">
               <thead>
                 <tr>
                   <th scope="col">Domain</th>
-                  <th scope="col">{showingRemoved ? 'How it ended' : 'Status'}</th>
-                  <th scope="col">{showingRemoved ? 'Removed' : 'Last checked'}</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Last checked</th>
                   <th scope="col" className="created">
                     Created
                   </th>
@@ -97,23 +75,17 @@ export default async function DomainsPage({
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => (
-                  <Row key={row.domain.id} row={row} now={clock} removed={showingRemoved} />
+                {listed.map((row) => (
+                  <Row key={row.domain.id} row={row} now={clock} />
                 ))}
               </tbody>
             </table>
           </div>
         )}
 
-        {domains.length > 0 && (
+        {listed.length > 0 && (
           <p className="table-foot">
             {listed.length} {listed.length === 1 ? 'domain' : 'domains'}
-            {removed.length > 0 && (
-              <>
-                {' · '}
-                <Link href="/domains?show=removed">{removed.length} removed</Link>
-              </>
-            )}
             {sweptAt !== null && <> · checked in the background {humanSince(sweptAt, clock)}</>}
           </p>
         )}
@@ -124,16 +96,8 @@ export default async function DomainsPage({
   )
 }
 
-function Row({
-  row,
-  now,
-  removed,
-}: {
-  row: StoredDomain
-  now: number
-  removed: boolean
-}) {
-  const { domain, hiddenAt } = row
+function Row({ row, now }: { row: StoredDomain; now: number }) {
+  const { domain } = row
   const closed = isTerminal(domain.ownership)
 
   return (
@@ -148,20 +112,10 @@ function Row({
         </Link>
       </th>
       <td>
-        {removed ? (
-          <span className="t-small subtle">{endedHeadline(domain.ownership)}</span>
-        ) : (
-          <ClaimBadge ownership={domain.ownership} />
-        )}
+        <ClaimBadge ownership={domain.ownership} />
       </td>
       <td className="when">
-        {removed
-          ? hiddenAt === null
-            ? '—'
-            : humanSince(hiddenAt, now)
-          : domain.lastCheckedAt === null
-            ? '—'
-            : humanSince(domain.lastCheckedAt, now)}
+        {domain.lastCheckedAt === null ? '—' : humanSince(domain.lastCheckedAt, now)}
       </td>
       <td className="when created">{humanSince(domain.createdAt, now)}</td>
       <td className="row-actions">
@@ -169,11 +123,10 @@ function Row({
         <RowActions
           domainId={domain.id}
           name={domain.name}
-          state={removed ? 'removed' : closed ? 'closed' : 'live'}
+          state={closed ? 'closed' : 'live'}
           requireTyping={isExclusive(domain.ownership)}
           release={releaseDomain}
           remove={removeFromList}
-          restore={restoreToList}
         />
       </td>
     </tr>

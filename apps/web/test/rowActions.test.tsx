@@ -31,7 +31,7 @@ const click = (node: Element): void => {
   })
 }
 
-const row = (state: 'live' | 'closed' | 'removed') => (
+const row = (state: 'live' | 'closed') => (
   <RowActions
     domainId="d1"
     name="acme.com"
@@ -39,7 +39,6 @@ const row = (state: 'live' | 'closed' | 'removed') => (
     requireTyping={false}
     release={noop}
     remove={noop}
-    restore={noop}
   />
 )
 
@@ -137,15 +136,10 @@ describe('the row menu', () => {
     click(trigger())
 
     expect(menu()?.textContent).toContain('Remove from list')
-    // Nothing is destroyed and it is reversible, so it is not dressed as danger.
+    // Nothing is destroyed — the row and its ledger stay — so it is not dressed
+    // as danger. The take-back is the toast's Undo, not a second menu item.
     expect(menu()?.querySelector('.menu-item.danger')).toBeNull()
-  })
-
-  it('offers Restore for a claim already off the list', () => {
-    mount(row('removed'))
-    click(trigger())
-
-    expect(menu()?.textContent).toContain('Restore to list')
+    expect(menu()?.textContent).not.toContain('Restore')
   })
 
   it('asks before releasing, rather than releasing from the menu', () => {

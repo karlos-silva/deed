@@ -679,3 +679,33 @@ schema-level guarantee for nothing.
 
 **Reversal cost.** Low, and bounded: the events are all still there, so bringing
 a history screen back is a query and a component, not a migration and a backfill.
+
+---
+
+## D21 — Removing is one-way; there is no Removed list to come back from
+
+**Decided.** The domains list has one side. The `Removed (n)` tab, the
+`?show=removed` view and the footer's link to it are gone, and `RowState` loses
+its `removed` case. `hidden_at` stays exactly as D19 defined it, `set_hidden`
+is unchanged, and the row and its ledger are still never deleted.
+
+**Why.** The tab and the footer link were two doors to the same room, and the
+room held claims the owner had already dismissed — released, expired or
+revoked, none of them actionable. D19 built it to keep a closed claim from
+vanishing silently; what actually keeps it from vanishing is the schema (the
+row is never deleted, the ledger is never orphaned), not a second tab. With the
+history screen gone (D20), restoring a claim buys a row that shows a name, a
+badge and two dates.
+
+**The take-back survives, and is deliberately short.** Removing still writes a
+toast with Undo, so a mis-clicked menu item is one click from being put back —
+`restoreToList` stays, reachable from there. After the toast, the claim is off
+the list for good. A menu item that permanently hides something with no
+confirmation and no way back would be a footgun; a few seconds of Undo is the
+cheapest honest answer, and it costs no new UI.
+
+**What this costs.** An owner who removes a closed claim and then wants to see
+when it ended has no route to it in the product. The data is all still there —
+`domains`, `audit_events`, and D19's guarantee that neither is deleted — so the
+answer exists; nothing on screen asks it. That is the trade, and it is the same
+one D20 made: the page stops carrying a room for claims that ended.

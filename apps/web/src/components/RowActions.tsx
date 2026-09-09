@@ -7,9 +7,11 @@ import { SubmitButton } from '@/components/SubmitButton'
 /**
  * What this row's claim can still be told to do. `live` and `closed` differ by
  * more than wording: a live claim has to be released, which frees the name for
- * anyone, while a closed one is only being tidied off a list.
+ * anyone, while a closed one is only being tidied off a list. There is no
+ * third state: removing is one-way, and the list it leaves has no other side
+ * (D21).
  */
-export type RowState = 'live' | 'closed' | 'removed'
+export type RowState = 'live' | 'closed'
 
 /**
  * The per-row menu. Fixed rather than absolute because `.table-wrap` clips its
@@ -22,7 +24,6 @@ export function RowActions({
   requireTyping,
   release,
   remove,
-  restore,
 }: {
   domainId: string
   name: string
@@ -30,7 +31,6 @@ export function RowActions({
   requireTyping: boolean
   release: (formData: FormData) => void | Promise<void>
   remove: (formData: FormData) => void | Promise<void>
-  restore: (formData: FormData) => void | Promise<void>
 }) {
   const [open, setOpen] = useState(false)
   const [confirming, setConfirming] = useState(false)
@@ -105,15 +105,6 @@ export function RowActions({
             <SubmitButton className="menu-item" role="menuitem" pendingLabel="Removing…">
               <TrashIcon />
               Remove from list
-            </SubmitButton>
-          </form>
-        )
-      case 'removed':
-        return (
-          <form action={restore}>
-            <input type="hidden" name="id" value={domainId} />
-            <SubmitButton className="menu-item" role="menuitem" pendingLabel="Restoring…">
-              Restore to list
             </SubmitButton>
           </form>
         )

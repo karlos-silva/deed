@@ -25,7 +25,7 @@ import { Notices } from '@/components/Notices'
 import { AutoRefresh } from '@/components/AutoRefresh'
 import { TopBar } from '@/components/TopBar'
 import { RowActions } from '@/components/RowActions'
-import { checkNow, releaseDomain, removeFromList, restoreToList } from '../actions'
+import { checkNow, releaseDomain, removeFromList } from '../actions'
 import { RecordToPublish, RecordToPublishSkeleton } from '@/components/RecordToPublish'
 import { SubmitButton } from '@/components/SubmitButton'
 
@@ -46,7 +46,7 @@ export default async function DomainPage({
   const found = await getDomain(current.db, asDomainId(id))
   if (found === null) notFound()
 
-  const { domain, hiddenAt, justVerified } = await revalidateIfDue(current.db, found)
+  const { domain, justVerified } = await revalidateIfDue(current.db, found)
   const clock = at(Date.now())
 
   const token = activeToken(domain.ownership)
@@ -108,11 +108,10 @@ export default async function DomainPage({
             <RowActions
               domainId={domain.id}
               name={domain.name}
-              state={closed ? (hiddenAt === null ? 'closed' : 'removed') : 'live'}
+              state={closed ? 'closed' : 'live'}
               requireTyping={isExclusive(domain.ownership)}
               release={releaseDomain}
               remove={removeFromList}
-              restore={restoreToList}
             />
           </div>
         </div>

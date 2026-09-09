@@ -311,9 +311,11 @@ export async function releaseDomain(formData: FormData): Promise<void> {
 }
 
 /**
- * Takes a closed claim off the list, or puts it back. Reversible and destroys
- * nothing, so it asks for no confirmation; the guard that matters lives in
- * `set_hidden`, which refuses a claim that is still live.
+ * Takes a closed claim off the list. One-way, now that the list has no other
+ * side to browse (D21): the toast's Undo is the way back, and after it there
+ * is none. It still destroys nothing — the row and its ledger stay — and the
+ * guard that matters lives in `set_hidden`, which refuses a claim that is
+ * still live.
  */
 export async function removeFromList(formData: FormData): Promise<void> {
   await setListed(formData, false)
@@ -329,14 +331,14 @@ async function setListed(formData: FormData, listed: boolean): Promise<void> {
   const stored = await getDomain(db, id)
   if (stored === null) notFound()
 
-  // Clicking twice is not an error, it is the same answer twice — but it has to
-  // land on the tab the domain is actually in, and say so. Sending someone to
-  // the list the row is missing from reads as data loss.
+  // Clicking twice is not an error, it is the same answer twice — but it has
+  // to say which side the domain ended up on. Silently landing on a list the
+  // row is missing from reads as data loss.
   if (listed === (stored.hiddenAt === null)) {
     toList({
       message: listed
         ? `${stored.domain.name} is already on your list.`
-        : `${stored.domain.name} is already under Removed.`,
+        : `${stored.domain.name} is already off your list.`,
     })
   }
 
@@ -345,7 +347,9 @@ async function setListed(formData: FormData, listed: boolean): Promise<void> {
   }
 
   await setHidden(db, id, !listed, now())
-  // Both directions are one click from being taken back, so both offer it.
+  // Undo is the only way back from a removal, so it is the one thing this
+  // toast has to carry. The restore direction offers it too, for the hand that
+  // undid one click too many.
   toList(
     listed
       ? {
