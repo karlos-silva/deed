@@ -1,4 +1,4 @@
-import { CHALLENGE_LABEL, RESOLVERS, type Domain, type Timestamp } from '@deed/core'
+import { RESOLVERS, type Domain, type Timestamp, zoneOf } from '@deed/core'
 import { preflight, randomProbeLabel } from '@deed/dns'
 import type { Db } from '@deed/db'
 import { RESOLVER_NAMES, fieldLabels, humanTtl, matrixSummary, warningCopy } from '@/lib/copy'
@@ -42,9 +42,16 @@ export async function RecordToPublish({
       : null
 
   const labels = fieldLabels(zoneInfo?.provider ?? null)
-  const relativeHost = `${CHALLENGE_LABEL}${
-    domain.name.split('.').length > 2 ? `.${domain.name.split('.').slice(0, -2).join('.')}` : ''
-  }`
+
+  // Split off the zone the panel is already in, so what is copied and what is
+  // greyed beside it always rejoin into the name we actually query. Counting
+  // two labels from the right did neither: it left `.demo` on the copied host
+  // *and* printed the whole claim as the suffix, so a subdomain read back as
+  // `_deed-challenge.demo.demo.karlos.dev` — the exact bug this column
+  // exists to prevent — and under a two-label suffix it handed `acme.co.uk`
+  // users a host to paste that was wrong, not just wrong to read.
+  const zone = zoneOf(domain.name)
+  const relativeHost = host.endsWith(`.${zone}`) ? host.slice(0, -(zone.length + 1)) : host
 
   return (
     <section className="card">
@@ -57,7 +64,7 @@ export async function RecordToPublish({
       <div className="card-body">
         <RecordTable
           host={labels.relativeHost ? relativeHost : host}
-          suffix={labels.relativeHost ? `.${domain.name}` : null}
+          suffix={labels.relativeHost ? `.${zone}` : null}
           value={value}
           hostLabel={labels.host}
           valueLabel={labels.value}
@@ -91,7 +98,7 @@ export async function RecordToPublish({
 
         <p className="t-small subtle" style={{ marginTop: 'var(--space-3)' }}>
           {labels.relativeHost
-            ? 'The greyed part is your domain, which the panel adds itself — Copy gives you only the part it wants. Paste the value without quotes.'
+            ? 'The greyed part is the zone your panel is already in, which it appends for you — Copy gives you only the part it asks for. Paste the value without quotes.'
             : 'This panel wants the whole name, so Copy gives you the whole name. Paste the value without quotes.'}
         </p>
       </div>

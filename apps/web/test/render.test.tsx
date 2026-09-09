@@ -7,6 +7,7 @@ import {
   at,
   domainId,
   days,
+  challengeHost,
   expectedValue,
   plus,
   token,
@@ -15,7 +16,7 @@ import {
 import { ValueDiff } from '../src/components/ValueDiff'
 import { ClaimBadge, RecordBadge } from '../src/components/StatusBadge'
 import { NothingClaimedYet } from '../src/components/NothingClaimedYet'
-import { RecordTable, ResolverEvidence } from '../src/components/RecordToPublish'
+import { RecordToPublish, RecordTable, ResolverEvidence } from '../src/components/RecordToPublish'
 
 /**
  * The detail page renders these on every visit, so anything that throws here is
@@ -114,6 +115,33 @@ describe('the detail page renders every state', () => {
 
     // Two lines, not a lecture. The screen this replaces had three paragraphs.
     expect(html.replace(/<[^>]+>/g, ' ').trim().length).toBeLessThan(200)
+  })
+
+  it('shows the name it is actually going to query, whatever the suffix', async () => {
+    // host + the greyed zone beside it must rejoin into the record's real name.
+    // They did not: the host was cut two labels from the right while the zone
+    // printed was the whole claim, so `demo.karlos.dev` read back as
+    // `_deed-challenge.demo.demo.karlos.dev` — and a `co.uk` claim handed
+    // over a host that was wrong to paste, not merely wrong to read.
+    for (const name of ['acme.com', 'demo.karlos.dev', 'shop.acme.co.uk', 'a.b.example.com']) {
+      const d: Domain = {
+        ...domain({ status: 'verified', seenBy: [...RESOLVERS], ttl }),
+        name,
+        // Verified, so the card asks the zone nothing and this stays a pure render.
+        ownership: { status: 'verified', token: TOKEN, verifiedAt: T0 },
+      }
+      const html = renderToStaticMarkup(
+        await RecordToPublish({
+          db: null as never,
+          domain: d,
+          value: expectedValue(TOKEN),
+          host: challengeHost(name),
+          now: T0,
+        }),
+      )
+      const text = html.replace(/<[^>]+>/g, '')
+      expect(text, name).toContain(challengeHost(name))
+    }
   })
 
   it('marks exactly the two quote characters in the diff', () => {

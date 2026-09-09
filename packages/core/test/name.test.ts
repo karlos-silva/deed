@@ -1,7 +1,7 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { PUBLIC_SUFFIX_RULES } from '../src/data/publicSuffixList'
-import { isPublicSuffix, parseClaim, publicSuffixOf } from '../src/name'
+import { isPublicSuffix, parseClaim, publicSuffixOf, zoneOf } from '../src/name'
 
 const accepted = (input: string) => {
   const parsed = parseClaim(input)
@@ -114,5 +114,38 @@ describe('claiming a name', () => {
         expect(parseClaim(name)).toEqual(parsed)
       }),
     )
+  })
+})
+
+describe('the zone a record is added in', () => {
+  it('is the public suffix plus one label, not the last two', () => {
+    // The apex case is the one counting labels gets right, which is why it hid
+    // the other three for so long.
+    expect(zoneOf('acme.com')).toBe('acme.com')
+    expect(zoneOf('demo.karlos.dev')).toBe('karlos.dev')
+    expect(zoneOf('a.b.example.com')).toBe('example.com')
+
+    // Two-label suffix: counting from the right would have said `acme.co`,
+    // which is not a zone anyone can open.
+    expect(zoneOf('shop.acme.co.uk')).toBe('acme.co.uk')
+    expect(zoneOf('acme.co.uk')).toBe('acme.co.uk')
+  })
+
+  it('follows the list rather than the dots', () => {
+    // A wildcard rule: everything under `ck` is a suffix…
+    expect(zoneOf('shop.www.ck')).toBe('www.ck')
+    // …except `www.ck`, which the exception rule hands back to its owner.
+    expect(zoneOf('www.ck')).toBe('www.ck')
+
+    // The sandbox suffix is in no list, so the fallback is the bare TLD.
+    expect(zoneOf('acme.test')).toBe('acme.test')
+    expect(zoneOf('a.acme.test')).toBe('acme.test')
+  })
+
+  it('always leaves a name it can be split back out of', () => {
+    for (const name of ['acme.com', 'demo.karlos.dev', 'shop.acme.co.uk', 'a.b.example.com']) {
+      const zone = zoneOf(name)
+      expect(name === zone || name.endsWith(`.${zone}`), name).toBe(true)
+    }
   })
 })

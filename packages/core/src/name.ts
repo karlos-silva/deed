@@ -133,6 +133,23 @@ export function publicSuffixOf(name: string): string {
 
 export const isPublicSuffix = (name: string): boolean => publicSuffixOf(name) === name
 
+/**
+ * The zone whose panel a record is added in: the public suffix plus the one
+ * label to its left. `demo.karlos.dev` is edited in `karlos.dev`, and
+ * `shop.acme.co.uk` in `acme.co.uk` — never in `co.uk`, which is why counting
+ * two labels from the right is not the same question.
+ *
+ * A name that is already a public suffix has no zone below it and is returned
+ * as it stands; `parseClaim` refuses those long before this is asked.
+ */
+export function zoneOf(name: string): string {
+  const suffix = publicSuffixOf(name)
+  if (name === suffix) return name
+
+  const label = name.slice(0, -(suffix.length + 1)).split('.').at(-1)
+  return label === undefined || label === '' ? name : `${label}.${suffix}`
+}
+
 const refuse = (error: ClaimRefusal): ClaimParse => ({ ok: false, error })
 
 const byteLength = (value: string): number => new TextEncoder().encode(value).length
