@@ -63,8 +63,7 @@ const RECORDS: RecordState[] = [
 
 /** The exact shape PostgREST returns, timestamps included. */
 describe('the record table', () => {
-  it('carries the record\'s own status, and only when given a domain', () => {
-    const d = domain({ status: 'verified', seenBy: [...RESOLVERS], ttl })
+  it('is the three columns a panel asks for, and nothing else', () => {
     const props = {
       host: '_deed-challenge.demo',
       suffix: '.karlos.dev',
@@ -72,19 +71,22 @@ describe('the record table', () => {
       hostLabel: 'Host / Name',
       valueLabel: 'Value',
     }
+    const html = renderToStaticMarkup(<RecordTable {...props} />)
 
-    const withDomain = renderToStaticMarkup(<RecordTable {...props} domain={d} />)
-    expect(withDomain).toContain('Status')
-    expect(withDomain).toContain('Verified')
+    expect(html).toContain('Host / Name')
+    expect(html).toContain('Value')
+
+    // The record's own badge used to sit in a fourth column. It was the third
+    // "Verified" on a verified page — the meta row and the verdict banner say
+    // it above — and the 88px it held is what pushed the host and the value
+    // onto second lines.
+    expect(html).not.toContain('Status')
 
     // The resolver evidence is a table of its own. It briefly shared this one as
     // a second tbody, and the columns do not mean the same things: "Cached for"
     // landed under the value and the resolver names were squeezed to two lines.
-    expect(withDomain).not.toContain('Cached for')
-    expect(withDomain).not.toContain('Resolver')
-
-    const alone = renderToStaticMarkup(<RecordTable {...props} />)
-    expect(alone).not.toContain('Status')
+    expect(html).not.toContain('Cached for')
+    expect(html).not.toContain('Resolver')
   })
 })
 
@@ -98,44 +100,33 @@ describe('the detail page renders every state', () => {
         renderToStaticMarkup(<ClaimBadge ownership={d.ownership} />)
       expect(badges, record.status).not.toContain('undefined')
 
-      // The table is a comparison, so it appears when there is something to
+      // The matrix is a comparison, so it appears when there is something to
       // compare. Nobody asked, nobody has it, and everybody has it are the
-      // three states where three rows would be one sentence repeated.
+      // three states where its three rows would be one sentence repeated —
+      // and that sentence is already in the verdict banner above.
       const identical =
         record.status === 'unchecked' ||
         record.status === 'absent' ||
         (record.status === 'verified' && record.seenBy.length === RESOLVERS.length)
       expect(evidence.includes('Cloudflare'), record.status).toBe(!identical)
-      expect(evidence.replace(/<[^>]+>/g, ''), record.status).not.toBe('')
+      expect(evidence === '', record.status).toBe(identical)
     }
   })
 
-  it('says how long a verified answer survives, without a table to say it in', () => {
-    const html = renderToStaticMarkup(
+  it('says nothing under the record when the resolvers cannot disagree', () => {
+    const agreed = renderToStaticMarkup(
       <ResolverEvidence domain={domain({ status: 'verified', seenBy: [...RESOLVERS], ttl })} />,
     )
-    expect(html).toContain('All 3 resolvers answer with your token')
-    expect(html).toContain('cached for up to')
-    // The three rows that used to say "has your token" three times are gone.
-    expect(html).not.toContain('<table')
-    expect(html.match(/has your token/g)).toBeNull()
-  })
+    expect(agreed).toBe('')
 
-  it('A first-time account has somewhere to start', () => {
-    const html = renderToStaticMarkup(<NothingClaimedYet />)
-
-    // It says what claiming does and names the way in that needs nothing you do
-    // not already have…
-    expect(html).toMatch(/token/i)
-    expect(html).toMatch(/TXT record/i)
-    expect(html).toMatch(/\.test/)
-
-    // …and it is not an empty table under a heading.
-    expect(html).not.toContain('<table')
-    expect(html).not.toContain('<tbody')
-
-    // Two lines, not a lecture. The screen this replaces had three paragraphs.
-    expect(html.replace(/<[^>]+>/g, ' ').trim().length).toBeLessThan(200)
+    // Two of three is a disagreement, and which one is missing is the news.
+    const partial = renderToStaticMarkup(
+      <ResolverEvidence
+        domain={domain({ status: 'verified', seenBy: ['cloudflare', 'google'], ttl })}
+      />,
+    )
+    expect(partial).toContain('AdGuard')
+    expect(partial).toContain('Cached for')
   })
 
   it('shows the name it is actually going to query, whatever the suffix', async () => {

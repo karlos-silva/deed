@@ -255,7 +255,6 @@ export default function DesignGallery() {
             value={VALUE}
             hostLabel="Host / Name"
             valueLabel="Value"
-            domain={domain({ status: 'verified', seenBy: [...RESOLVERS], ttl }, CLAIMS[1]?.[1])}
           />
           <p className="t-small subtle" style={{ marginTop: 'var(--space-3)' }}>
             and the same record for a panel that wants the whole name

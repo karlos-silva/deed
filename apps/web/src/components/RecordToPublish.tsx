@@ -10,7 +10,6 @@ import type { Db } from '@deed/db'
 import { RESOLVER_NAMES, fieldLabels, humanTtl, matrixSummary, warningCopy } from '@/lib/copy'
 import { router } from '@/lib/verification'
 import { CopyButton } from '@/components/CopyButton'
-import { RecordBadge } from '@/components/StatusBadge'
 import { answersFor } from '@/lib/resolvers'
 
 /**
@@ -73,7 +72,6 @@ export async function RecordToPublish({
           value={value}
           hostLabel={labels.host}
           valueLabel={labels.value}
-          domain={domain}
         />
 
         <ResolverEvidence domain={domain} />
@@ -142,7 +140,6 @@ export function RecordTable({
   value,
   hostLabel,
   valueLabel,
-  domain,
 }: {
   host: string
   /**
@@ -156,12 +153,6 @@ export function RecordTable({
   value: string
   hostLabel: string
   valueLabel: string
-  /**
-   * When given, the table also carries the record's status and the evidence
-   * behind it — which is what let the "What your DNS says" card go. Optional so
-   * the table can be rendered and asserted on its own.
-   */
-  domain?: Domain
 }) {
   return (
     <div className="table-wrap">
@@ -171,11 +162,6 @@ export function RecordTable({
             <th scope="col">Type</th>
             <th scope="col">{hostLabel}</th>
             <th scope="col">{valueLabel}</th>
-            {domain !== undefined && (
-              <th scope="col" className="status">
-                Status
-              </th>
-            )}
           </tr>
         </thead>
         <tbody>
@@ -200,11 +186,6 @@ export function RecordTable({
                 <CopyButton value={value} label="value" compact />
               </div>
             </td>
-            {domain !== undefined && (
-              <td className="status">
-                <RecordBadge record={domain.record} />
-              </td>
-            )}
           </tr>
         </tbody>
 
@@ -224,10 +205,12 @@ export function RecordTable({
  * record; separate tables, because they are not the same shape.
  */
 /**
- * Three rows saying the same thing are not a comparison. The matrix earns its
- * place by showing where the resolvers differ — who has it, who has the old
- * value, whose zone is failing — so when they cannot differ, the sentence above
- * it is the whole answer and the table is that sentence typed three more times.
+ * The matrix earns its place by showing where the resolvers differ — who has
+ * it, who still has the old value, whose zone is failing. When they cannot
+ * differ it says nothing at all: the verdict banner at the top of the page has
+ * already said it in a whole sentence, and repeating that under the table put
+ * "All 3 resolvers answer with your token" a hundred pixels below "3 of 3
+ * resolvers answer with your token".
  *
  * They cannot differ in exactly three states: nobody has been asked, nobody has
  * the record, and every resolver answers with the token. A `verified` record
@@ -253,16 +236,7 @@ export function ResolverEvidence({ domain }: { domain: Domain }) {
   const record = domain.record
   const answers = answersFor(domain)
 
-  if (unanimous(record)) {
-    return (
-      <p className="t-small subtle evidence-line">
-        {matrixSummary(record)}
-        {/* The one number the table carried that a sentence can too: how long
-            that answer survives a change to the zone. */}
-        {record.status === 'verified' && ` — cached for up to ${humanTtl(record.ttl.max)}`}
-      </p>
-    )
-  }
+  if (unanimous(record)) return null
 
   return (
     <div className="evidence">

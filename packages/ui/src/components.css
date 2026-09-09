@@ -269,9 +269,15 @@ tr.row-ok      td:first-child { box-shadow: inset 2px 0 0 var(--green-fg); }
 
 /* --- Layout helpers ----------------------------------------------------- */
 .stack   { display: grid; gap: var(--space-4); }
-.stack-2 { display: grid; gap: var(--space-2); }
-.stack-3 { display: grid; gap: var(--space-3); }
-.stack-6 { display: grid; gap: var(--space-6); }
+/* `align-content: start`, because a grid taller than its rows is stretched by
+   default and a stack is not a layout that distributes slack. `.main` is
+   `flex: 1` inside a full-height shell, so on any page shorter than the window
+   every row grew — a 46px meta row rendering 166px tall, a card 120px taller
+   than its content — and each block's contents sat at the top of its own pool
+   of empty space. */
+.stack-2 { display: grid; gap: var(--space-2); align-content: start; }
+.stack-3 { display: grid; gap: var(--space-3); align-content: start; }
+.stack-6 { display: grid; gap: var(--space-6); align-content: start; }
 .row     { display: flex; align-items: center; gap: var(--space-3); }
 .row-between { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
 .divider { height: 1px; background: var(--border); border: none; }
