@@ -7,12 +7,10 @@ import {
 } from '@deed/core'
 import { preflight, randomProbeLabel } from '@deed/dns'
 import type { Db } from '@deed/db'
-import { RESOLVER_NAMES, fieldLabels, humanTtl, matrixSummary } from '@/lib/copy'
+import { RESOLVER_NAMES, fieldLabels, humanTtl, matrixSummary, warningCopy } from '@/lib/copy'
 import { router } from '@/lib/verification'
 import { CopyButton } from '@/components/CopyButton'
 import { answersFor } from '@/lib/resolvers'
-import { PreflightSteps } from '@/components/PreflightSteps'
-import { preflightSteps } from '@/lib/preflightSteps'
 
 /**
  * The instruction card, held behind its own Suspense boundary because it is the
@@ -78,15 +76,28 @@ export async function RecordToPublish({
 
         <ResolverEvidence domain={domain} />
 
-        {/* The same four checks the add-domain dialog shows, in the same
-            words. They used to render here as a provider sentence plus a stack
-            of callouts — a second shape for one reading of one zone, and the
-            checks that passed said nothing at all. */}
-        {zoneInfo !== null && (
-          <div style={{ marginTop: 'var(--space-4)' }}>
-            <PreflightSteps steps={preflightSteps(domain.name, zoneInfo)} busy={false} />
-          </div>
+        {zoneInfo?.provider != null && (
+          <p className="t-small subtle" style={{ marginTop: 'var(--space-3)' }}>
+            Field names are {zoneInfo.provider.name}’s, because that is whose panel your nameservers
+            say you are about to open.
+          </p>
         )}
+
+        {(zoneInfo?.warnings ?? []).map(warningCopy).map((warning, index) => (
+          <div
+            key={index}
+            className={`callout callout-${warning.tone === 'problem' ? 'warning' : 'info'}`}
+            style={{ marginTop: 'var(--space-3)' }}
+          >
+            <div className="guidance">
+              <strong className="headline" style={{ fontSize: 'var(--text-base)' }}>
+                {warning.headline}
+              </strong>
+              <p className="body">{warning.body}</p>
+              {warning.fix !== undefined && <p className="fix">{warning.fix}</p>}
+            </div>
+          </div>
+        ))}
 
         {/* Instructions for a panel that is open. Once the record is published
             and answering, they are notes on a job that is finished. */}

@@ -26,22 +26,11 @@ import { RecordTable, ResolverEvidence } from '@/components/RecordToPublish'
 import { claimDomain, releaseDomain, removeFromList } from '@/app/domains/actions'
 import { ReleaseDialog } from '@/components/ReleaseDialog'
 import { RowActions } from '@/components/RowActions'
-import { PreflightSteps } from '@/components/PreflightSteps'
-import { preflightSteps } from '@/lib/preflightSteps'
 import Image from 'next/image'
 
 export const dynamic = 'force-dynamic'
 
 // Every state the product can render, on one page, with no sign-in. Development only (S8).
-const CLOUDFLARE = {
-  id: 'cloudflare' as const,
-  name: 'Cloudflare',
-  hostLabel: 'Name',
-  valueLabel: 'Content',
-  relativeHost: true,
-  quirks: ['quoted_value' as const],
-}
-
 const T0 = at(1_767_225_600_000)
 const TOKEN = token('uyxawsmda4slfuoy5kqsxemuu2vfgzuzdmb6e2np2dzscadiqa3q')
 const VALUE = expectedValue(TOKEN)
@@ -278,52 +267,6 @@ export default function DesignGallery() {
               hostLabel="Hostname"
               valueLabel="Enter this value"
             />
-          </div>
-        </Section>
-
-        <Section title="Reading the zone, before there is a token to get wrong">
-          <div className="stack-6">
-            <div>
-              <p className="t-small subtle" style={{ marginBottom: 'var(--space-3)' }}>
-                Reading the zone…
-              </p>
-              <PreflightSteps steps={preflightSteps('acme.com', null)} busy />
-            </div>
-            <div>
-              <p className="t-small subtle" style={{ marginBottom: 'var(--space-3)' }}>
-                What we found before you claim it — a clean zone on a known provider
-              </p>
-              <PreflightSteps
-                steps={preflightSteps('acme.com', {
-                  registered: true,
-                  zoneFailing: false,
-                  provider: CLOUDFLARE,
-                  wildcard: null,
-                  cnameAtHost: null,
-                  warnings: [{ kind: 'provider_quirk', provider: CLOUDFLARE, cause: 'quoted_value' }],
-                })}
-                busy={false}
-              />
-            </div>
-            <div>
-              <p className="t-small subtle" style={{ marginBottom: 'var(--space-3)' }}>
-                …and one with something already living at the host
-              </p>
-              <PreflightSteps
-                steps={preflightSteps('acme.com', {
-                  registered: true,
-                  zoneFailing: false,
-                  provider: null,
-                  wildcard: 'v=spf1 -all',
-                  cnameAtHost: 'shop.myshopify.com',
-                  warnings: [
-                    { kind: 'cname_at_host', target: 'shop.myshopify.com' },
-                    { kind: 'wildcard', value: 'v=spf1 -all' },
-                  ],
-                })}
-                busy={false}
-              />
-            </div>
           </div>
         </Section>
 

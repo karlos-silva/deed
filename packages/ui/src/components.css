@@ -202,10 +202,7 @@ tr.row-ok      td:first-child { box-shadow: inset 2px 0 0 var(--green-fg); }
 .field[data-invalid] .input:focus-visible { border-color: var(--red); box-shadow: 0 0 0 3px var(--red-bg); }
 
 /* --- Stepper / timeline ------------------------------------------------- */
-.steps { display: grid; gap: 0; list-style: none; margin: 0; padding: 0; }
-/* Enquanto as consultas estão fora, os marcadores respiram: as três saem juntas
-   num Promise.all, então marcar uma por vez seria animar o que não aconteceu. */
-.steps[aria-busy='true'] .step-marker { animation: breathe 1.8s var(--ease-soft) infinite; }
+.steps { display: grid; gap: 0; }
 .step { display: grid; grid-template-columns: 24px 1fr; gap: var(--space-3); position: relative; padding-bottom: var(--space-5); }
 .step:last-child { padding-bottom: 0; }
 .step::before {

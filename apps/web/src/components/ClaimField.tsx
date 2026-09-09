@@ -1,21 +1,15 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { PreflightSteps } from '@/components/PreflightSteps'
-import { type PreflightFindings, preflightSteps } from '@/lib/preflightSteps'
+import type { PreflightWarning, Provider } from '@deed/core'
+import { warningCopy } from '@/lib/copy'
 
-/** `/api/preflight` returns the whole `Preflight`, plus the parsed name's unicode form. */
 type Preflight =
-  | ({ ok: true; unicode: string | null } & PreflightFindings)
+  | { ok: true; provider: Provider | null; warnings: PreflightWarning[]; unicode: string | null }
   | { ok: false; reason: string }
 
 // Not `parseClaim`: it carries the 140KB Public Suffix List. A shape check decides whether to ask the server.
 const PLAUSIBLE = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i
-
-/** What was typed, as a name — one definition, so the lookup and the checks on
- *  screen are about the same string. */
-const asName = (typed: string): string =>
-  typed.trim().toLowerCase().replace(/^https?:\/\//, '').split('/')[0] ?? ''
 
 export function ClaimField({ initialValue = '' }: { initialValue?: string }) {
   // Seeded, because a refusal is a full navigation: the dialog reopens from the
@@ -30,7 +24,7 @@ export function ClaimField({ initialValue = '' }: { initialValue?: string }) {
   const asked = useRef(new Map<string, { at: number; result: Preflight }>())
 
   useEffect(() => {
-    const name = asName(value)
+    const name = value.trim().toLowerCase().replace(/^https?:\/\//, '').split('/')[0] ?? ''
     if (!PLAUSIBLE.test(name)) {
       setFound(null)
       return
@@ -68,10 +62,7 @@ export function ClaimField({ initialValue = '' }: { initialValue?: string }) {
     }
   }, [value])
 
-  const name = asName(value)
-  const answer = found?.ok === true ? found : null
-  const steps = looking || answer !== null ? preflightSteps(name, answer) : null
-  const problem = steps?.some((step) => step.state === 'failed') === true
+  const rendered = found?.ok === true ? found.warnings.map(warningCopy) : []
 
   return (
     <>
@@ -100,23 +91,39 @@ export function ClaimField({ initialValue = '' }: { initialValue?: string }) {
       </div>
 
       <div id="preflight" aria-live="polite" style={{ flexBasis: '100%', minWidth: 0 }}>
-        {steps !== null && (
-          <>
-            <p className="t-small subtle" style={{ marginBottom: 'var(--space-3)' }}>
-              {looking ? 'Reading the zone…' : 'What we found before you claim it'}
-            </p>
-            <PreflightSteps steps={steps} busy={looking} />
-          </>
-        )}
+        {looking && <p className="t-small subtle">Reading the zone…</p>}
 
-        {answer?.unicode != null && (
-          <p className="t-small subtle" style={{ marginTop: 'var(--space-3)' }}>
-            Stored as punycode; displays as <span className="t-mono">{answer.unicode}</span>.
+        {found?.ok === true && found.provider !== null && (
+          <p className="t-small subtle">
+            This zone is on <strong>{found.provider.name}</strong>. The instructions will use its own
+            field names.
           </p>
         )}
 
-        {problem && (
-          <p className="t-small subtle" style={{ marginTop: 'var(--space-3)' }}>
+        {found?.ok === true && found.unicode !== null && (
+          <p className="t-small subtle">
+            Stored as punycode; displays as <span className="t-mono">{found.unicode}</span>.
+          </p>
+        )}
+
+        {rendered.map((warning, index) => (
+          <div
+            key={index}
+            className={`callout callout-${warning.tone === 'problem' ? 'warning' : 'info'}`}
+            style={{ marginTop: 'var(--space-2)' }}
+          >
+            <div className="guidance">
+              <strong className="headline" style={{ fontSize: 'var(--text-base)' }}>
+                {warning.headline}
+              </strong>
+              <p className="body">{warning.body}</p>
+              {warning.fix !== undefined && <p className="fix">{warning.fix}</p>}
+            </div>
+          </div>
+        ))}
+
+        {rendered.length > 0 && (
+          <p className="t-small subtle" style={{ marginTop: 'var(--space-2)' }}>
             None of this stops you claiming the domain.
           </p>
         )}
