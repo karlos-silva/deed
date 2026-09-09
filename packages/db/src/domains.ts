@@ -281,13 +281,3 @@ export async function recordSweep(
   if (error) throw new Error(error.message)
 }
 
-export async function lastSweep(db: Db): Promise<Timestamp | null> {
-  const { data, error } = await db
-    .from('sweep_runs')
-    .select('at')
-    .order('at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  if (error) throw new Error(error.message)
-  return data === null ? null : stamp(data.at)
-}

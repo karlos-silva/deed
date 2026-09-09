@@ -3,7 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { at, isExclusive, isTerminal } from '@deed/core'
-import { type StoredDomain, lastSweep, listDomains } from '@deed/db'
+import { type StoredDomain, listDomains } from '@deed/db'
 import { session } from '@/lib/session'
 import { humanSince } from '@/lib/copy'
 import { ClaimBadge } from '@/components/StatusBadge'
@@ -27,10 +27,7 @@ export default async function DomainsPage({
   if (current === null) redirect('/')
 
   const { error, domain: attempted } = await searchParams
-  const [domains, sweptAt] = await Promise.all([
-    listDomains(current.db, current.userId),
-    lastSweep(current.db),
-  ])
+  const domains = await listDomains(current.db, current.userId)
   const clock = at(Date.now())
 
   // A removed claim is off the list for good; nothing on the page goes looking
@@ -86,7 +83,6 @@ export default async function DomainsPage({
         {listed.length > 0 && (
           <p className="table-foot">
             {listed.length} {listed.length === 1 ? 'domain' : 'domains'}
-            {sweptAt !== null && <> · checked in the background {humanSince(sweptAt, clock)}</>}
           </p>
         )}
       </main>

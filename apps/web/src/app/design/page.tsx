@@ -321,7 +321,7 @@ export default function DesignGallery() {
               </tbody>
             </table>
           </div>
-          <p className="table-foot">5 domains · checked in the background 1 min ago</p>
+          <p className="table-foot">5 domains</p>
         </Section>
 
         <Section title="The release confirmation">
