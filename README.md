@@ -24,7 +24,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screens/sign-in.png" alt="The Deed sign-in screen: the mark, 'Log in to Deed', and a GitHub button over a field of dots spreading from the upper-left corner" />
+  <img src="docs/screens/landing.png" alt="The Deed landing page: 'Prove you own a domain. And see exactly why when you can't.' beside an example claim for acme.com, stamped with a green Verified seal and proven at two of three resolvers" />
 </p>
 
 ---
@@ -66,23 +66,18 @@ keeps reading afterwards, because DNS is mutable and verification decays.
 ## A tour
 
 <p align="center">
-  <img src="docs/screens/domains.png" alt="The domains list: five domains, each with a globe coloured by state — pending in yellow, verified in green, at risk in red, expired and released in grey — and a simulated badge on acme.test" />
-  <br /><sub><b>The list.</b> Each domain's mark takes the colour of its claim, so the state reads before the badge does.</sub>
+  <img src="docs/screens/domains.png" alt="The register: five domains under a tally of 2 proven, 1 pending, 1 at risk and 1 closed, each with a ring coloured by its claim — dashed yellow while pending, green once proven, red at risk, grey once closed" />
+  <br /><sub><b>The register.</b> A tally of where every claim stands, and a ring per domain in its claim's colour — dashed while it is still being proved.</sub>
 </p>
 
 <p align="center">
-  <img src="docs/screens/diagnosis.png" alt="A wrong-value diagnosis: 'Your provider wrapped the value in quotes', the fix, 'Waiting will not fix this', a diff marking exactly the two quote characters, and each resolver's answer" />
+  <img src="docs/screens/diagnosis.png" alt="The deed for demo.karlos.dev with an amber Pending seal, and the verdict 'Your provider wrapped the value in quotes' under the kicker 'Waiting will not fix this', followed by a diff marking exactly the two quote characters" />
   <br /><sub><b>A diagnosis.</b> One resolver sees a wrong value, so the clock stops — even though another already has the right one. The diff marks exactly the two characters the panel added.</sub>
 </p>
 
 <p align="center">
-  <img src="docs/screens/propagating.png" alt="A propagating record: seen by 1 of 3 resolvers, 'Waiting helps', and a table of each resolver's answer and how long it is cached for" />
-  <br /><sub><b>Propagation.</b> Not a spinner: who already has it, who is still serving a cached answer, and for how long.</sub>
-</p>
-
-<p align="center">
-  <img src="docs/screens/record.png" alt="The record to publish, shown twice: once with the zone greyed out for panels that append it, once in full for panels that want the whole name" />
-  <br /><sub><b>The record.</b> The copyable host is exactly what the panel expects — relative or absolute — so <code>_x.example.com.example.com</code> cannot happen.</sub>
+  <img src="docs/screens/propagating.png" alt="A pending claim: 'Seen by 1 of 3 resolvers' under the kicker 'Waiting helps', the TXT record to publish with copy buttons, and each resolver's answer with how long it is cached for" />
+  <br /><sub><b>Propagation.</b> Not a spinner: the record to publish, in the field names of the panel you are about to open, then who already has it and who is still serving a cached answer, for how long.</sub>
 </p>
 
 ## Try it without owning a domain
@@ -206,8 +201,9 @@ pnpm --filter @deed/web dev
 ```
 
 You need `apps/web/.env.local`; [`apps/web/.env.example`](apps/web/.env.example)
-lists the variables and which of them are secret. The `/design` route renders
-every state the product can draw, with no sign-in, in development.
+lists the variables and which of them are secret. In development, `/design`
+renders every state the product can draw and `/design/preview` composes whole
+signed-in pages over example claims — no sign-in and no DNS needed.
 
 ```bash
 pnpm test        # every package — the db suite starts a Postgres container

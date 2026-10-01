@@ -148,12 +148,13 @@ is out of scope is building a second one, not being able to.
 
 ## 6. The experience, moment by moment
 
-0. **Sign in.** One screen, no marketing: the mark, the product name, and one
-   button — GitHub (D22). Nothing to read, nothing to scroll, no landing
-   page. The mark is a 740px tile drawn for this project — a flag planted on a
-   horizon lit the green of a verified claim. It is RGB with its near-black face
-   baked in and no alpha, so it only sits correctly on the app's near-black
-   canvas — which is where it lives.
+0. **Arrive.** A short landing page (D23): what Deed does, shown on an example
+   claim, and one button — GitHub (D22). No marketing claims and no invented
+   numbers; everything on it describes the product or quotes it. The mark is
+   a 740px tile drawn for this project — a flag planted on a horizon lit the
+   green of a verified claim. It is RGB with its near-black face baked in and no
+   alpha, so it only sits correctly on the app's near-black canvas — which is
+   where it lives.
 1. **Claim.** One field. Accepts a pasted URL, a trailing dot, uppercase, or an
    IDN, and normalises silently. Pre-flight runs as they type — debounced to
    pauses on a plausible name, never per keystroke (state-model §5) — so the

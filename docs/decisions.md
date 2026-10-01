@@ -7,7 +7,7 @@ it matters. Entries are append-only; supersede rather than edit.
 
 ## D1 — Identity: social login (GitHub / Google) up front
 
-*Amended by D22: GitHub is now the only provider.*
+*Amended by D22 (GitHub is now the only provider) and D23 (a small landing page now stands in front of sign-in).*
 
 **Decided.** Supabase Auth with GitHub and Google OAuth. Sign in before claiming
 anything. No anonymous tier.
@@ -735,3 +735,31 @@ changed, every live claim belonged to an account in the first group.
 
 **Reversal cost.** Low: the provider toggle in Supabase, one button, and one
 branch of the sign-in action.
+
+---
+
+## D23 — A small landing page in front of sign-in
+
+**Decided.** The root is a short landing page rather than a bare sign-in
+screen: what Deed does, shown on an example claim drawn with the app's own
+pieces — the seal, the record slip, the resolver readings — then three steps,
+three diagnoses taken from the product's own copy, and one way in. Signing in
+is a button on the page, not the page. **Amends D1**, which ruled a landing
+page out.
+
+**Why.** D1 assumed that whoever arrived had a link and a reason, and that the
+README could do the explaining. A public project is mostly arrived at cold, and
+an OAuth button is a lot to ask of someone who does not yet know what the
+product does. The cost D1 accepted — a visitor must grant OAuth to see anything
+— is now paid only by the people who want to use it.
+
+**What it is not.** No marketing claims and no invented numbers; D8's rule
+against fabricated stakes applies here too. Everything on the page is either a
+description of what the product does or the product's own words, and the
+example claim is labelled as an example.
+
+**Consequences.** The landing page is indexable; every page behind sign-in stays
+`noindex`. It shares the signed-in app's surface (`.shell`), so signing in
+changes the content and not the identity.
+
+**Reversal cost.** Low: one route.
