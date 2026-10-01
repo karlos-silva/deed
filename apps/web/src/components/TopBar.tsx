@@ -15,7 +15,7 @@ export function TopBar({ email }: { email: string | null }) {
     <header className="topbar">
       <Link className="brand" href="/domains">
         <span className="brand-mark">
-          <Image src="/domains-tile.png" alt="" width={740} height={740} />
+          <Image src="/mark.png" alt="" width={740} height={740} />
         </span>
         Deed
       </Link>

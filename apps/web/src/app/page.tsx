@@ -37,7 +37,7 @@ export default async function SignInPage({
     <div className="signin-stage">
       <div className="signin-panel enter">
         <div className="tile-mark">
-          <Image src="/domains-tile.png" alt="" width={740} height={740} priority />
+          <Image src="/mark.png" alt="" width={740} height={740} priority />
         </div>
 
         <div className="stack-2">
