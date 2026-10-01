@@ -17,58 +17,58 @@
      Layers separate with BORDERS, not with fill. Canvas, sidebar and card
      bodies all sit within #02–#0a; only the table header and the active nav
      item carry a real fill. Do not invent a lighter card background. */
-  --bg:            #080808;  /* app canvas                          [sampled] */
-  --bg-sidebar:    #030303;  /* sidebar — a hair below canvas       [sampled] */
-  --surface-1:     #050505;  /* card / panel body                   [sampled] */
-  --surface-2:     #111111;  /* table header fill                   [sampled] */
-  --surface-3:     #1d1d1d;  /* active nav item, hover, badge base  [sampled] */
+  --bg:            #080808;  /* app canvas */
+  --bg-sidebar:    #030303;  /* sidebar — a hair below canvas */
+  --surface-1:     #050505;  /* card / panel body */
+  --surface-2:     #111111;  /* table header fill */
+  --surface-3:     #1d1d1d;  /* active nav item, hover, badge base */
 
   /* --- Borders ------------------------------------------------------------
      Three weights, all neutral. The heavier #292929 is reserved for the rule
      under a table header; cards use #202020; inner dividers #1b1b1b. */
-  --border-subtle: #1b1b1b;  /* dividers inside a panel             [sampled] */
-  --border:        #202020;  /* card / panel edge                   [sampled] */
-  --border-strong: #292929;  /* table header rule, focused edge     [sampled] */
+  --border-subtle: #1b1b1b;  /* dividers inside a panel */
+  --border:        #202020;  /* card / panel edge */
+  --border-strong: #292929;  /* table header rule, focused edge */
 
   /* --- Foreground ramp ----------------------------------------------------
      #fdfdfd rather than pure white: on a near-black canvas #fff halates at
      small sizes. It is also the fill of the mark's glyph. */
-  --fg:            #fdfdfd;  /* headings, table values, icon fill   [sampled] */
-  --fg-2:          #bdbdbd;  /* active nav label, secondary UI      [sampled] */
-  --fg-muted:      #9b9b9b;  /* CREATED / STATUS eyebrow labels     [sampled] */
-  --fg-subtle:     #6f6f6f;  /* table column headers, placeholders  [sampled] */
-  --fg-faint:      #454545;  /* disabled, faint meta                [sampled] */
+  --fg:            #fdfdfd;  /* headings, table values, icon fill */
+  --fg-2:          #bdbdbd;  /* active nav label, secondary UI */
+  --fg-muted:      #9b9b9b;  /* CREATED / STATUS eyebrow labels */
+  --fg-subtle:     #6f6f6f;  /* table column headers, placeholders */
+  --fg-faint:      #454545;  /* disabled, faint meta */
   --fg-inverse:    #000000;  /* text on a white button */
 
   /* --- Semantic palette ---------------------------------------------------
      Solid values are status dots; fill/border pairs are the status badges and
      the "every record is verified" banner. Close to Radix dark scales, tuned
      so each fill sits at the same perceived weight on this canvas. */
-  --green:         #3bd48a;  /* Delivered · Verified                [sampled] */
-  --green-fg:      #3cd98d;  /* badge label                         [sampled] */
-  --green-bg:      #0a2418;  /* badge fill                          [sampled] */
-  --green-border:  #1d4934;  /* success banner edge                 [sampled] */
+  --green:         #3bd48a;  /* verified */
+  --green-fg:      #3cd98d;  /* badge label */
+  --green-bg:      #0a2418;  /* badge fill */
+  --green-border:  #1d4934;  /* success banner edge */
 
-  --blue:          #56adff;  /* Sent · info                         [sampled] */
+  --blue:          #56adff;  /* informational */
   --blue-fg:       #56adff;
-  --blue-bg:       #152b40;  /*                                     [sampled] */
-  --blue-border:   #22496e;  /* derived: blue-bg lifted to match green pairing */
+  --blue-bg:       #152b40;
+  --blue-border:   #22496e;  /* blue-bg lifted to match the green pair */
 
-  --red:           #ff6369;  /* Bounced · failed                    [sampled] */
+  --red:           #ff6369;  /* wrong value · failed */
   --red-fg:        #ff6369;
-  --red-bg:        #331415;  /*                                     [sampled] */
-  --red-border:    #66282a;  /*                                     [sampled] */
+  --red-bg:        #331415;
+  --red-border:    #66282a;
 
-  --yellow:        #ffca16;  /* Complained · warning / pending      [sampled] */
+  --yellow:        #ffca16;  /* pending · warning */
   --yellow-fg:     #ffca16;
-  --yellow-bg:     #2b2005;  /* derived to match the red/green fill weight */
-  --yellow-border: #5c4a0a;  /* derived */
+  --yellow-bg:     #2b2005;  /* matched to the red/green fill weight */
+  --yellow-border: #5c4a0a;
 
-  --purple:        #baa7ff;  /* Opened · partial states             [sampled] */
-  --purple-bg:     #1f1a36;  /* derived */
-  --purple-border: #3d3470;  /* derived */
+  --purple:        #baa7ff;  /* partial states */
+  --purple-bg:     #1f1a36;
+  --purple-border: #3d3470;
 
-  --gray:          #818181;  /* Unsubscribed · neutral dot          [sampled] */
+  --gray:          #818181;  /* closed · neutral dot */
 
   /* --- Typography ---------------------------------------------------------
      Inter for UI and body: OFL, drawn for screens, and unremarkable in the
