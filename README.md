@@ -355,5 +355,5 @@ what was cut, and why.
 ---
 
 <p align="center">
-  <sub>Designed and built by <a href="https://github.com/karlos-silva">Karlos Silva</a>. Deed only ever reads your DNS; it never writes to it.</sub>
+  <sub>Designed and built by <a href="https://github.com/karlos-silva">Karlos Silva</a> · <a href="LICENSE">MIT licensed</a>. Deed only ever reads your DNS; it never writes to it.</sub>
 </p>
