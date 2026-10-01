@@ -10,19 +10,20 @@ import { TopBar } from '@/components/TopBar'
 export default function Loading() {
   return (
     <div className="shell">
-      <TopBar email={null} />
+      <TopBar email={null} trail={[{ label: 'Domains', href: '/domains' }]} />
 
-      <main className="main stack-6">
-        <div className="page-head">
-          <div className="stack-2">
-            <div className="skeleton" style={{ height: 30, width: 260, borderRadius: 8 }} />
-            <div className="skeleton" style={{ height: 16, width: 340, borderRadius: 6 }} />
+      <main className="main deed">
+        <header className="deed-head">
+          <div className="deed-id">
+            <p className="eyebrow">Deed of claim</p>
+            <div className="skeleton" style={{ height: 64, width: 'min(520px, 80%)', borderRadius: 12 }} />
           </div>
-          <div className="skeleton" style={{ height: 32, width: 110, borderRadius: 8 }} />
-        </div>
+          <div className="skeleton" style={{ width: 148, height: 148, borderRadius: '50%' }} />
+        </header>
 
-        <div className="skeleton" style={{ height: 190, borderRadius: 'var(--radius-lg)' }} />
-        <div className="skeleton" style={{ height: 240, borderRadius: 'var(--radius-lg)' }} />
+        <div className="skeleton" style={{ height: 70, borderRadius: 12 }} />
+        <div className="skeleton" style={{ height: 180, borderRadius: 18 }} />
+        <div className="skeleton" style={{ height: 220, borderRadius: 18 }} />
       </main>
 
       <Footer />

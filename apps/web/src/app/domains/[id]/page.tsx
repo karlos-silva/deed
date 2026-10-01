@@ -1,5 +1,4 @@
 import { Suspense } from 'react'
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import {
   activeToken,
@@ -17,7 +16,7 @@ import { session } from '@/lib/session'
 import { revalidateIfDue } from '@/lib/verification'
 import { verdict } from '@/lib/verdict'
 import { ValueDiff } from '@/components/ValueDiff'
-import { DomainMeta } from '@/components/DomainMeta'
+import { DeedHeader } from '@/components/DeedHeader'
 import { VerdictBanner } from '@/components/VerdictBanner'
 import { SandboxZonePanel } from '@/components/SandboxZonePanel'
 import { Footer } from '@/components/Footer'
@@ -70,7 +69,10 @@ export default async function DomainPage({
 
   return (
     <div className="shell">
-      <TopBar email={current.email} />
+      <TopBar
+        email={current.email}
+        trail={[{ label: 'Domains', href: '/domains' }, { label: domain.name, mono: true }]}
+      />
       <Suspense fallback={null}>
         <Notices />
       </Suspense>
@@ -78,45 +80,36 @@ export default async function DomainPage({
           A closed claim never changes again and is left alone. */}
       {!closed && <AutoRefresh seconds={domain.ownership.status === 'pending' ? 20 : 45} />}
 
-      <main className="main stack-6">
-        <div className="page-head">
-          <div className="stack-2">
-            <div className="row" style={{ gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-              <h1 className="t-title t-mono wrap-anywhere">{domain.name}</h1>
-              {domain.isSandbox && <span className="badge badge-info">simulated zone</span>}
-            </div>
-            {unicode !== null && (
-              <p className="t-small subtle">
-                Displays as <span className="t-mono">{unicode}</span>. Stored and compared as
-                punycode, so two names that look alike can never be confused.
-              </p>
-            )}
-          </div>
-
-          <div className="row" style={{ gap: 'var(--space-2)' }}>
-            <Link className="btn btn-ghost btn-sm" href="/domains">
-              All domains
-            </Link>
-            {!closed && (
-              <form action={checkNow}>
-                <input type="hidden" name="id" value={domain.id} />
-                <SubmitButton pendingLabel="Checking…">Check now</SubmitButton>
-              </form>
-            )}
-            {/* The same menu the list row carries, so a closed claim still has
-                somewhere to be removed from the list from. */}
-            <RowActions
-              domainId={domain.id}
-              name={domain.name}
-              state={closed ? 'closed' : 'live'}
-              requireTyping={isExclusive(domain.ownership)}
-              release={releaseDomain}
-              remove={removeFromList}
-            />
-          </div>
-        </div>
-
-        <DomainMeta domain={domain} now={clock} closed={closed} />
+      <main className="main deed enter">
+        <DeedHeader
+          domain={domain}
+          now={clock}
+          closed={closed}
+          unicode={unicode}
+          actions={
+            <>
+              {!closed && (
+                <form action={checkNow}>
+                  <input type="hidden" name="id" value={domain.id} />
+                  <SubmitButton className="btn btn-secondary" pendingLabel="Checking…">
+                    <RecheckIcon />
+                    Check now
+                  </SubmitButton>
+                </form>
+              )}
+              {/* The same menu the list row carries, so a closed claim still has
+                  somewhere to be removed from the list from. */}
+              <RowActions
+                domainId={domain.id}
+                name={domain.name}
+                state={closed ? 'closed' : 'live'}
+                requireTyping={isExclusive(domain.ownership)}
+                release={releaseDomain}
+                remove={removeFromList}
+              />
+            </>
+          }
+        />
 
         <VerdictBanner verdict={said} />
 
@@ -162,5 +155,19 @@ export default async function DomainPage({
 
       <Footer />
     </div>
+  )
+}
+
+function RecheckIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   )
 }

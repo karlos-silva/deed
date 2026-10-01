@@ -1,23 +1,10 @@
 import { notFound } from 'next/navigation'
-import {
-  RESOLVERS,
-  type Domain,
-  type OwnershipState,
-  type RecordState,
-  at,
-  days,
-  domainId,
-  expectedValue,
-  isTerminal,
-  plus,
-  token,
-  userId,
-} from '@deed/core'
+import { RESOLVERS, isTerminal } from '@deed/core'
 import { claimGuidance, recordGuidance } from '@/lib/copy'
 import { verdict } from '@/lib/verdict'
 import { DomainMeta } from '@/components/DomainMeta'
 import { VerdictBanner } from '@/components/VerdictBanner'
-import { ClaimBadge, RecordBadge, claimTone } from '@/components/StatusBadge'
+import { ClaimBadge, RecordBadge } from '@/components/StatusBadge'
 import { ValueDiff } from '@/components/ValueDiff'
 import { TopBar } from '@/components/TopBar'
 import { NothingClaimedYet } from '@/components/NothingClaimedYet'
@@ -25,132 +12,18 @@ import { AddDomainDialog } from '@/components/AddDomainDialog'
 import { RecordTable, ResolverEvidence } from '@/components/RecordToPublish'
 import { claimDomain, releaseDomain, removeFromList } from '@/app/domains/actions'
 import { ReleaseDialog } from '@/components/ReleaseDialog'
-import { RowActions } from '@/components/RowActions'
-import { DomainMark } from '@/components/DomainMark'
+import { RegisterTable, Tally } from '@/components/Register'
+import { Seal } from '@/components/Seal'
+import { CLAIMS, ENTRIES, RECORDS, T0, TOKEN, VALUE, domain, ttl } from './fixtures'
 
 export const dynamic = 'force-dynamic'
-
-// Every state the product can render, on one page, with no sign-in. Development only (S8).
-const T0 = at(1_767_225_600_000)
-const TOKEN = token('uyxawsmda4slfuoy5kqsxemuu2vfgzuzdmb6e2np2dzscadiqa3q')
-const VALUE = expectedValue(TOKEN)
-const ttl = {
-  perResolver: [
-    { resolver: 'cloudflare' as const, ttl: 300 },
-    { resolver: 'google' as const, ttl: 14_400 },
-  ],
-  max: 14_400,
-}
-
-const domain = (record: RecordState, ownership?: OwnershipState): Domain => ({
-  id: domainId('d'),
-  ownerId: userId('u'),
-  name: 'demo.karlos.dev',
-  isSandbox: false,
-  ownership: ownership ?? {
-    status: 'pending',
-    token: TOKEN,
-    claimedAt: T0,
-    expiresAt: plus(T0, days(14)),
-  },
-  record,
-  supersession: null,
-  lastCheckedAt: T0,
-  nextCheckAt: plus(T0, days(1)),
-  lastChangedAt: T0,
-  createdAt: T0,
-})
-
-const RECORDS: [string, RecordState][] = [
-  ['unchecked', { status: 'unchecked' }],
-  ['absent · nxdomain', { status: 'absent', kind: 'nxdomain' }],
-  ['absent · cname at host', { status: 'absent', kind: 'nodata', cname: 'shop.myshopify.com' }],
-  [
-    'propagating · arriving',
-    { status: 'propagating', direction: 'arriving', seenBy: ['cloudflare'], staleAt: [], ttl },
-  ],
-  [
-    'propagating · receding',
-    { status: 'propagating', direction: 'receding', seenBy: ['cloudflare'], staleAt: [], ttl },
-  ],
-  [
-    'propagating · stale token',
-    { status: 'propagating', direction: 'arriving', seenBy: [], staleAt: ['google', 'adguard'], ttl },
-  ],
-  ['verified', { status: 'verified', seenBy: [...RESOLVERS], ttl }],
-  [
-    'zone_error · dnssec',
-    { status: 'zone_error', errors: [{ resolver: 'cloudflare', side: 'zone', detail: 'dnssec' }] },
-  ],
-  [
-    'check_failed',
-    { status: 'check_failed', errors: [{ resolver: 'google', side: 'ours', detail: 'timeout' }] },
-  ],
-  ...(
-    [
-      'quoted_value',
-      'appended_apex',
-      'whitespace',
-      'truncated',
-      'wrong_token',
-      'wildcard_shadow',
-      'unknown_value',
-    ] as const
-  ).map(
-    (cause): [string, RecordState] => [
-      `mismatch · ${cause}`,
-      {
-        status: 'mismatch',
-        cause,
-        observed: [
-          { resolver: 'cloudflare', value: `"${VALUE}"`, kind: 'unknown' },
-          { resolver: 'google', value: VALUE, kind: 'current' },
-        ],
-        correcting: null,
-      },
-    ],
-  ),
-  [
-    'mismatch · correcting',
-    {
-      status: 'mismatch',
-      cause: 'quoted_value',
-      observed: [
-        { resolver: 'cloudflare', value: `"${VALUE}"`, kind: 'unknown' },
-        { resolver: 'google', value: VALUE, kind: 'current' },
-        { resolver: 'adguard', value: VALUE, kind: 'current' },
-      ],
-      correcting: { seenBy: ['google', 'adguard'], clearingAt: ['cloudflare'], ttl },
-    },
-  ],
-]
-
-const CLAIMS: [string, OwnershipState][] = [
-  ['pending', { status: 'pending', token: TOKEN, claimedAt: T0, expiresAt: plus(T0, days(14)) }],
-  ['verified', { status: 'verified', token: TOKEN, verifiedAt: T0 }],
-  [
-    'degraded',
-    {
-      status: 'degraded',
-      token: TOKEN,
-      verifiedAt: T0,
-      degradedAt: T0,
-      revokesAt: plus(T0, days(7)),
-      cause: 'record_missing',
-    },
-  ],
-  ['expired', { status: 'expired', claimedAt: T0 }],
-  ['revoked · grace_expired', { status: 'revoked', reason: 'grace_expired' }],
-  ['revoked · released_by_owner', { status: 'revoked', reason: 'released_by_owner' }],
-  ['revoked · claimed_by_other', { status: 'revoked', reason: 'claimed_by_other' }],
-]
 
 export default function DesignGallery() {
   if (process.env.NODE_ENV === 'production') notFound()
 
   return (
     <div className="shell">
-      <TopBar email="alan.turing@example.com" />
+      <TopBar email="alan.turing@example.com" trail={[{ label: 'Every state' }]} />
 
       <main className="main stack-6">
         <div className="stack-2">
@@ -168,6 +41,17 @@ export default function DesignGallery() {
                 <ClaimBadge ownership={ownership} />
                 <span className="t-small subtle">{label}</span>
               </span>
+            ))}
+          </div>
+        </Section>
+
+        <Section title="The seal, in every standing">
+          <div className="row" style={{ gap: 'var(--space-6)', flexWrap: 'wrap' }}>
+            {CLAIMS.slice(0, 5).map(([label, ownership]) => (
+              <div key={label} className="stack-2" style={{ justifyItems: 'center' }}>
+                <Seal ownership={ownership} />
+                <span className="t-small subtle">{label}</span>
+              </div>
             ))}
           </div>
         </Section>
@@ -275,52 +159,21 @@ export default function DesignGallery() {
         </Section>
 
         <Section title="The list, and the Add domain dialog">
-          <div className="page-head">
-            <h2 className="t-title">Domains</h2>
+          <header className="register-head">
+            <div className="stack-3">
+              <p className="eyebrow">The register</p>
+              <h2 className="display">Domains</h2>
+              <Tally entries={ENTRIES} />
+            </div>
             <AddDomainDialog action={claimDomain} />
-          </div>
-          <div className="table-wrap">
-            <table className="domains">
-              <thead>
-                <tr>
-                  <th scope="col">Domain</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">Last checked</th>
-                  <th scope="col" className="created">Created</th>
-                  <th scope="col"><span className="visually-hidden">Actions</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                {CLAIMS.slice(0, 5).map(([label, ownership], i) => (
-                  <tr key={label}>
-                    <th scope="row">
-                      <a href="#">
-                        <span className="row-mark" data-state={claimTone(ownership)}>
-                          <DomainMark />
-                        </span>
-                        <span className="name">{['acme.com', 'updates.acme.com', 'shop.acme.co.uk', 'acme.test', 'lapsed.com'][i]}</span>
-                        {i === 3 && <span className="badge badge-info">simulated</span>}
-                      </a>
-                    </th>
-                    <td><ClaimBadge ownership={ownership} /></td>
-                    <td className="when">{['1 min ago', '4 min ago', '2 h ago', 'just now', '—'][i]}</td>
-                    <td className="when created">{['3 mo ago', '2 mo ago', '6 d ago', '1 h ago', '14 d ago'][i]}</td>
-                    <td className="row-actions">
-                      <RowActions
-                        domainId={`live-${i}`}
-                        name={['acme.com', 'updates.acme.com', 'shop.acme.co.uk', 'acme.test', 'lapsed.com'][i] ?? 'example.com'}
-                        state={i === 4 ? 'closed' : 'live'}
-                        requireTyping={i === 1}
-                        release={releaseDomain}
-                        remove={removeFromList}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="table-foot">5 domains</p>
+          </header>
+          <RegisterTable
+            entries={ENTRIES}
+            now={T0}
+            release={releaseDomain}
+            remove={removeFromList}
+          />
+          <p className="table-foot">{ENTRIES.length} domains on record</p>
         </Section>
 
         <Section title="The release confirmation">

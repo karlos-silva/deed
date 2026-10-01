@@ -21,26 +21,38 @@ export function claimTone(ownership: OwnershipState): ClaimTone {
   }
 }
 
-export function ClaimBadge({ ownership }: { ownership: OwnershipState }) {
+/** The claim's state in one word — the badge's text and the seal's legend. */
+export function claimLabel(ownership: OwnershipState): string {
   switch (ownership.status) {
     case 'pending':
-      return (
-        <span className="badge badge-pending">
-          {/* The pulse is what says "still checking" without spending a word on
-              it. The rule has been in the CSS since S3 with nothing to animate. */}
-          <span className="dot" aria-hidden="true" />
-          Pending
-        </span>
-      )
+      return 'Pending'
     case 'verified':
-      return <span className="badge badge-verified">Verified</span>
+      return 'Verified'
     case 'degraded':
-      return <span className="badge badge-failed">At risk</span>
+      return 'At risk'
     case 'expired':
-      return <span className="badge badge-neutral">Expired</span>
+      return 'Expired'
     case 'revoked':
-      return <span className="badge badge-neutral">Released</span>
+      return 'Released'
   }
+}
+
+const BADGE: Record<ClaimTone, string> = {
+  progress: 'badge-pending',
+  ok: 'badge-verified',
+  problem: 'badge-failed',
+  closed: 'badge-neutral',
+}
+
+export function ClaimBadge({ ownership }: { ownership: OwnershipState }) {
+  return (
+    <span className={`badge ${BADGE[claimTone(ownership)]}`}>
+      {/* The pulse is what says "still checking" without spending a word on it.
+          Only pending gets it: a dot pulsing on a final state would be a lie. */}
+      {ownership.status === 'pending' && <span className="dot" aria-hidden="true" />}
+      {claimLabel(ownership)}
+    </span>
+  )
 }
 
 export function RecordBadge({ record }: { record: RecordState }) {

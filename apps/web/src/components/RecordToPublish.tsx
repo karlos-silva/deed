@@ -5,7 +5,7 @@ import {
   type Timestamp,
   zoneOf,
 } from '@deed/core'
-import { preflight, randomProbeLabel } from '@deed/dns'
+import { type Preflight, preflight, randomProbeLabel } from '@deed/dns'
 import type { Db } from '@deed/db'
 import { RESOLVER_NAMES, fieldLabels, humanTtl, matrixSummary, warningCopy } from '@/lib/copy'
 import { router } from '@/lib/verification'
@@ -46,6 +46,24 @@ export async function RecordToPublish({
         }).catch(() => null)
       : null
 
+  return <RecordCard domain={domain} value={value} host={host} zoneInfo={zoneInfo} />
+}
+
+/**
+ * The card itself, with what preflight found passed in rather than fetched, so
+ * it renders the same in the page and in the design gallery.
+ */
+export function RecordCard({
+  domain,
+  value,
+  host,
+  zoneInfo,
+}: {
+  domain: Domain
+  value: string
+  host: string
+  zoneInfo: Preflight | null
+}) {
   const labels = fieldLabels(zoneInfo?.provider ?? null)
 
   // Split off the zone the panel is already in, so what is copied and what is
@@ -59,7 +77,7 @@ export async function RecordToPublish({
   const relativeHost = host.endsWith(`.${zone}`) ? host.slice(0, -(zone.length + 1)) : host
 
   return (
-    <section className="card">
+    <section className="card record-card">
       <div className="card-header">
         <h2 className="t-section">
           {domain.ownership.status === 'pending' ? 'The record to publish' : 'The record'}
@@ -68,7 +86,7 @@ export async function RecordToPublish({
             else — so it is context for the card rather than a column holding
             three letters, and the 47px it held is what the value needed to stop
             breaking at its own hyphen. */}
-        <span className="t-small subtle">TXT record</span>
+        <span className="record-kind">TXT record</span>
       </div>
       <div className="card-body">
         <RecordTable
@@ -95,9 +113,7 @@ export async function RecordToPublish({
             style={{ marginTop: 'var(--space-3)' }}
           >
             <div className="guidance">
-              <strong className="headline" style={{ fontSize: 'var(--text-base)' }}>
-                {warning.headline}
-              </strong>
+              <strong className="headline headline-sm">{warning.headline}</strong>
               <p className="body">{warning.body}</p>
               {warning.fix !== undefined && <p className="fix">{warning.fix}</p>}
             </div>
@@ -121,10 +137,10 @@ export async function RecordToPublish({
 /** The card's own geometry, so what arrives replaces something the same shape. */
 export function RecordToPublishSkeleton() {
   return (
-    <section className="card">
+    <section className="card record-card">
       <div className="card-header row-between">
         <h2 className="t-section">The record to publish</h2>
-        <span className="t-small subtle">reading your zone…</span>
+        <span className="record-kind">reading your zone…</span>
       </div>
       <div className="card-body stack-3">
         <div className="skeleton" style={{ height: 16, width: '40%' }} />

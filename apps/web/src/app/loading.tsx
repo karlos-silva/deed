@@ -11,15 +11,23 @@ import { TopBar } from '@/components/TopBar'
 export default function Loading() {
   return (
     <div className="shell">
-      <TopBar email={null} />
+      <TopBar email={null} trail={[{ label: 'Domains' }]} />
 
-      <main className="main">
-        <div className="page-head">
-          <div className="skeleton" style={{ height: 30, width: 170, borderRadius: 8 }} />
-          <div className="skeleton" style={{ height: 32, width: 130, borderRadius: 8 }} />
+      <main className="main register-page">
+        <header className="register-head">
+          <div className="stack-3">
+            <p className="eyebrow">The register</p>
+            <h1 className="display">Domains</h1>
+            <div className="skeleton" style={{ height: 14, width: 220, marginTop: 8 }} />
+          </div>
+          <div className="skeleton" style={{ height: 36, width: 132, borderRadius: 10 }} />
+        </header>
+
+        <div className="stack-3">
+          {[0, 1, 2, 3].map((row) => (
+            <div key={row} className="skeleton" style={{ height: 54, borderRadius: 10 }} />
+          ))}
         </div>
-
-        <div className="skeleton" style={{ height: 220, borderRadius: 'var(--radius-lg)' }} />
       </main>
 
       <Footer />

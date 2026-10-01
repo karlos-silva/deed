@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import type { Route } from 'next'
 
 /**
  * The account end of the bar is two icons now, not an address and a word. The
@@ -10,7 +11,14 @@ import Link from 'next/link'
  * Neither loses its name: the avatar carries the whole address for a screen
  * reader and in its tooltip, and the button says "Sign out" the same way.
  */
-export function TopBar({ email }: { email: string | null }) {
+export type Crumb = { label: string; href?: Route; mono?: boolean }
+
+/**
+ * Where you are, as a trail after the mark rather than as a button in the page:
+ * "All domains" was a control that only ever meant "up one level", and the
+ * trail says that while also saying which domain this is.
+ */
+export function TopBar({ email, trail = [] }: { email: string | null; trail?: Crumb[] }) {
   return (
     <header className="topbar">
       <Link className="brand" href="/domains">
@@ -19,6 +27,31 @@ export function TopBar({ email }: { email: string | null }) {
         </span>
         Deed
       </Link>
+
+      {trail.length > 0 && (
+        <nav className="trail" aria-label="Breadcrumb">
+          <ol>
+            {trail.map((crumb, index) => {
+              const last = index === trail.length - 1
+              const className = crumb.mono === true ? 't-mono' : undefined
+              return (
+                <li key={`${crumb.label}-${String(index)}`}>
+                  {crumb.href !== undefined && !last ? (
+                    <Link href={crumb.href} className={className}>
+                      {crumb.label}
+                    </Link>
+                  ) : (
+                    <span className={className} {...(last && { 'aria-current': 'page' as const })}>
+                      {crumb.label}
+                    </span>
+                  )}
+                </li>
+              )
+            })}
+          </ol>
+        </nav>
+      )}
+
       <span className="spacer" />
 
       {email !== null && (

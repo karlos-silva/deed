@@ -14,20 +14,21 @@ import type { Verdict } from '@/lib/verdict'
 export function VerdictBanner({ verdict }: { verdict: Verdict }) {
   return (
     <section
-      className={`callout callout-${verdict.tone}${verdict.celebrate ? ' did-verify' : ''}`}
+      className={`callout callout-${verdict.tone} verdict${verdict.celebrate ? ' did-verify' : ''}`}
       role={verdict.tone === 'danger' ? 'alert' : 'status'}
     >
       <div className="guidance">
-        <strong className="headline">{verdict.headline}</strong>
-        <p className="body">{verdict.body}</p>
-        {verdict.fix !== undefined && <p className="fix">{verdict.fix}</p>}
-        {/* prd §7: a diagnosis has to answer whether waiting helps. When there
-            is nothing to wait for it says nothing, rather than saying so. */}
+        {/* prd §7: a diagnosis has to answer whether waiting helps — first, as
+            the line's kicker, because it decides how the rest is read. When
+            there is nothing to wait for it says nothing, rather than saying so. */}
         {verdict.waitingHelps !== null && (
-          <p className="verdict-line">
+          <p className="verdict-line" data-helps={verdict.waitingHelps}>
             {verdict.waitingHelps ? 'waiting helps' : 'waiting will not fix this'}
           </p>
         )}
+        <strong className="headline">{verdict.headline}</strong>
+        <p className="body">{verdict.body}</p>
+        {verdict.fix !== undefined && <p className="fix">{verdict.fix}</p>}
       </div>
     </section>
   )

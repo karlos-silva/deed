@@ -237,9 +237,9 @@ export const revokedHeadline = (reason: Extract<OwnershipState, { status: 'revok
 const revokedBody = (reason: Extract<OwnershipState, { status: 'revoked' }>['reason']): string => {
   switch (reason) {
     case 'grace_expired':
-      return 'The proof stayed gone through the whole grace window and a conclusive check confirmed it, so the name went back to the pool. The history below is still yours to read.'
+      return 'The proof stayed gone through the whole grace window and a conclusive check confirmed it, so the name went back to the pool.'
     case 'released_by_owner':
-      return 'You deleted this claim, which freed the name for others. The history below is still yours to read.'
+      return 'You deleted this claim, which freed the name for others.'
     case 'claimed_by_other':
       return 'Claiming is open to anyone — proof is not. Somebody published their token at this domain before you did, so their claim is now the exclusive one and yours was closed. Nothing you did was wrong; you did not control the zone.'
   }

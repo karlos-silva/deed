@@ -27,10 +27,13 @@ export function SandboxZonePanel({
   const clearing = zone.records.filter((record) => record.deletedAt !== null)
 
   return (
-    <section className="card">
+    <section className="card sandbox">
       <div className="card-header row-between">
-        <h2 className="t-section">The simulated zone</h2>
-        <span className="t-small subtle">
+        <div className="stack-2">
+          <p className="eyebrow">Simulation</p>
+          <h2 className="t-section">The simulated zone</h2>
+        </div>
+        <span className="sandbox-delays">
           you are the DNS admin · {Object.entries(SANDBOX_DELAY)
             .map(([resolver, delay]) => `${RESOLVER_NAMES[resolver as keyof typeof SANDBOX_DELAY].split(' ')[0]} +${delay / 1000}s`)
             .join(' · ')}
