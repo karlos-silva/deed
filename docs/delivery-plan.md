@@ -84,7 +84,7 @@ on day one, so that no later slice is blocked by infrastructure I assumed.
 - [x] Sign in with GitHub and Google, both working on the deployed origin.
       *Verified from a cold signed-out browser: the app hands off to Supabase,
       Supabase to the provider, and GitHub names the app back — "to continue to
-      Deed".*
+      Deed". Google was later removed as a provider (D22).*
 - [x] A route handler resolves one hardcoded TXT record over DoH against all
       three resolvers and renders the raw answers. *Proven against the real
       internet by the release check in S2; the assumption it existed to test —

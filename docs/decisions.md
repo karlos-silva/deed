@@ -7,6 +7,8 @@ it matters. Entries are append-only; supersede rather than edit.
 
 ## D1 — Identity: social login (GitHub / Google) up front
 
+*Amended by D22: GitHub is now the only provider.*
+
 **Decided.** Supabase Auth with GitHub and Google OAuth. Sign in before claiming
 anything. No anonymous tier.
 
@@ -709,3 +711,27 @@ when it ended has no route to it in the product. The data is all still there —
 `domains`, `audit_events`, and D19's guarantee that neither is deleted — so the
 answer exists; nothing on screen asks it. That is the trade, and it is the same
 one D20 made: the page stops carrying a room for claims that ended.
+
+---
+
+## D22 — Sign-in is GitHub only
+
+**Decided.** Google is removed as an identity provider. The sign-in screen
+offers GitHub alone, and the Google provider is switched off in Supabase Auth,
+so it cannot be reached by calling the auth endpoint directly either. **Amends
+D1**, which offered both.
+
+**Why.** The audience is developers (prd §2), and a developer arriving at a DNS
+tool has a GitHub account to hand. A second provider costs a second OAuth
+client, a consent screen to brand and keep published, and a second place for
+the app's name to drift — for nobody the first does not already serve. It also
+takes the one choice the sign-in screen asked of a visitor off the screen.
+
+**What it costs.** An account created through Google cannot come back through
+Google. Supabase links identities that share a verified email, so an owner
+whose GitHub account carries the same address signs in to the same account,
+claims intact; anyone else would need the provider switched back on. When this
+changed, every live claim belonged to an account in the first group.
+
+**Reversal cost.** Low: the provider toggle in Supabase, one button, and one
+branch of the sign-in action.

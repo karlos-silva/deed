@@ -98,13 +98,13 @@
 
 .signin-lede { color: var(--fg-2); font-size: var(--text-lg); line-height: var(--lh-lg); max-width: 38ch; }
 
-/* Neither provider is the primary one. Choosing between GitHub and Google is
-   not a primary/secondary decision, so they carry identical weight. */
+/* One way in (D22), so one button — sized like a control rather than a
+   banner, because a full-column bar reads as the page shouting. */
 .signin-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: var(--space-3);
-  width: 100%;
+  width: min(300px, 100%);
 }
 .signin-actions .btn {
   height: 48px;
@@ -128,7 +128,6 @@
   }
   .signin-title { font-size: 26px; }
   .signin-panel { width: 100%; }
-  .signin-actions { grid-template-columns: 1fr; }
 }
 
 

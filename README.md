@@ -24,7 +24,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screens/sign-in.png" alt="The Deed sign-in screen: the mark, 'Log in to Deed', and GitHub and Google buttons over a field of dots spreading from the upper-left corner" />
+  <img src="docs/screens/sign-in.png" alt="The Deed sign-in screen: the mark, 'Log in to Deed', and a GitHub button over a field of dots spreading from the upper-left corner" />
 </p>
 
 ---
@@ -302,23 +302,14 @@ servers.
 | Where | Value |
 | --- | --- |
 | GitHub OAuth app → *Authorization callback URL* | `https://<ref>.supabase.co/auth/v1/callback` |
-| Google OAuth client → *Authorised redirect URI* | `https://<ref>.supabase.co/auth/v1/callback` |
 | Supabase → Authentication → URL Configuration → *Site URL* | `https://<your domain>` |
 | Supabase → *Redirect URLs* | `https://<your domain>/auth/callback` |
 
-The providers redirect to **Supabase**, and Supabase redirects to **the app**.
-Pointing the provider at the app directly is the usual first mistake.
-
-Two more things on the Google side, both of which a visitor hits before they
-see a single screen of the product:
-
-- **Set an app name** under *APIs & Services → Branding*. Without one, Google's
-  consent screen falls back to the redirect URI's host and asks the visitor to
-  sign in to `<ref>.supabase.co` — an unidentifiable string, on the first screen
-  of a product whose entire subject is proving identity (D9).
-- **Publish the consent screen to Production.** While it is in *Testing*, only
-  addresses added as test users can sign in. The scopes are `email` and
-  `profile`, which are not sensitive, so publishing needs no review.
+GitHub redirects to **Supabase**, and Supabase redirects to **the app**.
+Pointing the OAuth app at the app directly is the usual first mistake. Name the
+OAuth app after the product, too: GitHub's consent screen says "to continue to"
+whatever it is called, on the first screen of a product whose entire subject is
+proving identity (D9). GitHub is the only provider ([D22](docs/decisions.md)).
 
 **The sweep.** Store the shared secret in Supabase Vault, using the same value
 set as `SWEEP_SECRET` in the deployment:

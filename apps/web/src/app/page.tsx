@@ -3,11 +3,11 @@ import { redirect } from 'next/navigation'
 import { requestDb } from '@/lib/db'
 import { origin } from '@/lib/origin'
 import { session } from '@/lib/session'
-import { GitHubMark, GoogleMark } from '@/components/ProviderIcon'
+import { GitHubMark } from '@/components/ProviderIcon'
 
 export const dynamic = 'force-dynamic'
 
-// prd §6.0 / D1: one screen, no marketing, no landing page.
+// prd §6.0 / D1, D22: one screen, no marketing, no landing page, one way in.
 export default async function SignInPage({
   searchParams,
 }: {
@@ -16,14 +16,11 @@ export default async function SignInPage({
   if ((await session()) !== null) redirect('/domains')
   const { error } = await searchParams
 
-  async function signIn(formData: FormData) {
+  async function signIn() {
     'use server'
-    const provider = formData.get('provider')
-    if (provider !== 'github' && provider !== 'google') return
-
     const db = await requestDb()
     const { data, error: failure } = await db.auth.signInWithOAuth({
-      provider,
+      provider: 'github',
       options: { redirectTo: `${await origin()}/auth/callback` },
     })
     if (failure !== null) {
@@ -48,13 +45,9 @@ export default async function SignInPage({
         </div>
 
         <form className="signin-actions" action={signIn}>
-          <button className="btn" name="provider" value="github" type="submit">
+          <button className="btn" type="submit">
             <GitHubMark />
             Log in with GitHub
-          </button>
-          <button className="btn" name="provider" value="google" type="submit">
-            <GoogleMark />
-            Log in with Google
           </button>
         </form>
 

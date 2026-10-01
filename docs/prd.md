@@ -148,8 +148,8 @@ is out of scope is building a second one, not being able to.
 
 ## 6. The experience, moment by moment
 
-0. **Sign in.** One screen, no marketing: the mark, the product name, and two
-   buttons — GitHub and Google. Nothing to read, nothing to scroll, no landing
+0. **Sign in.** One screen, no marketing: the mark, the product name, and one
+   button — GitHub (D22). Nothing to read, nothing to scroll, no landing
    page. The mark is a 740px tile drawn for this project — a flag planted on a
    horizon lit the green of a verified claim. It is RGB with its near-black face
    baked in and no alpha, so it only sits correctly on the app's near-black
@@ -227,7 +227,7 @@ Trust is the product here, so these are positions, not features:
   internal TLDs, and malformed labels — `.test` is the single reserved-suffix
   exception, and it routes to the sandbox (D2), never to real DNS. Rate limit
   per user and per domain (values in state-model §5).
-- **Claims are bound to a real identity.** Sign-in is GitHub or Google (D1), so
+- **Claims are bound to a real identity.** Sign-in is GitHub (D1, D22), so
   every claim traces to an account, not a browser session. Accounts are capped at
   25 domains, and lookups are rate limited per user and per domain — OAuth stops
   anonymous abuse, not throwaway-account abuse.
