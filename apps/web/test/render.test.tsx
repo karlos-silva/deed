@@ -224,3 +224,22 @@ describe('the detail page renders every state', () => {
     expect(html).toContain('a'.repeat(52))
   })
 })
+
+describe('the domains list', () => {
+  it('A first-time account has somewhere to start', () => {
+    const html = renderToStaticMarkup(<NothingClaimedYet />)
+
+    // It says what claiming does and names the way in that needs nothing you do
+    // not already have…
+    expect(html).toMatch(/token/i)
+    expect(html).toMatch(/TXT record/i)
+    expect(html).toMatch(/\.test/)
+
+    // …and it is not an empty table under a heading.
+    expect(html).not.toContain('<table')
+    expect(html).not.toContain('<tbody')
+
+    // Two lines, not a lecture. The screen this replaces had three paragraphs.
+    expect(html.replace(/<[^>]+>/g, ' ').trim().length).toBeLessThan(200)
+  })
+})
